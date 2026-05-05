@@ -2,8 +2,16 @@
 
 import { useState } from 'react';
 import Icon from './Icon';
-import { PageHeader, Stat, StageBadge, InvoiceBadge, Avatar, Stepper } from './chrome';
+import { PageHeader, Stat, StageBadge, InvoiceBadge, UserAvatar, Stepper } from './chrome';
 import { SEED_ORDERS, SEED_SITES, SEED_INVOICES, STAGES } from '@/lib/data';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Textarea } from '@/components/ui/textarea';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import { cn } from '@/lib/utils';
 
 export function ManagerHome({ setPage, openOrder }: { setPage: (p: string) => void; openOrder: (id: string) => void }) {
   const cols = STAGES.map(st => ({ ...st, orders: SEED_ORDERS.filter(o => o.stage === st.id) }));
@@ -13,8 +21,8 @@ export function ManagerHome({ setPage, openOrder }: { setPage: (p: string) => vo
         title="Operations dashboard"
         sub="All active orders across your team."
         actions={<>
-          <button className="btn"><Icon name="filter" size={14} />Filters</button>
-          <button className="btn btn-primary"><Icon name="plus" size={14} />New order</button>
+          <Button variant="outline" size="sm"><Icon name="filter" size={14} />Filters</Button>
+          <Button size="sm"><Icon name="plus" size={14} />New order</Button>
         </>}
       />
       <div className="stats">
@@ -23,7 +31,7 @@ export function ManagerHome({ setPage, openOrder }: { setPage: (p: string) => vo
         <Stat label="Published this week" value="9" meta="+2 vs last week" metaTone="up" />
         <Stat label="Team utilization" value="78%" meta="3 writers active" />
       </div>
-      <div className="card" style={{ padding: 14 }}>
+      <Card className="p-3.5">
         <div className="kanban">
           {cols.map(col => (
             <div key={col.id} className="kcol">
@@ -53,7 +61,7 @@ export function ManagerHome({ setPage, openOrder }: { setPage: (p: string) => vo
             </div>
           ))}
         </div>
-      </div>
+      </Card>
     </div>
   );
 }
@@ -65,14 +73,16 @@ export function ManagerPipeline({ openOrder }: { openOrder: (id: string) => void
 export function ManagerOrders({ openOrder }: { openOrder: (id: string) => void }) {
   return (
     <div className="page">
-      <PageHeader title="All orders" sub="Every order across all clients." actions={<button className="btn btn-primary"><Icon name="plus" size={14} />New order</button>} />
+      <PageHeader title="All orders" sub="Every order across all clients." actions={
+        <Button size="sm"><Icon name="plus" size={14} />New order</Button>
+      } />
       <div className="filterbar">
-        <input className="input" placeholder="Search by ID, client, anchor…" style={{ width: 320 }} />
-        <button className="btn btn-sm"><Icon name="filter" size={12} />Stage</button>
-        <button className="btn btn-sm"><Icon name="filter" size={12} />Client</button>
-        <button className="btn btn-sm"><Icon name="filter" size={12} />Writer</button>
+        <Input className="w-80" placeholder="Search by ID, client, anchor…" />
+        <Button variant="outline" size="sm"><Icon name="filter" size={12} />Stage</Button>
+        <Button variant="outline" size="sm"><Icon name="filter" size={12} />Client</Button>
+        <Button variant="outline" size="sm"><Icon name="filter" size={12} />Writer</Button>
       </div>
-      <div className="card">
+      <Card>
         <table className="table">
           <thead><tr><th>Order</th><th>Client</th><th>Target</th><th>Sites</th><th>Writer</th><th>Stage</th><th>Due</th><th>Amount</th></tr></thead>
           <tbody>
@@ -83,7 +93,7 @@ export function ManagerOrders({ openOrder }: { openOrder: (id: string) => void }
                 <td>{o.target}</td>
                 <td className="mono">{o.sites.length}</td>
                 <td>{o.copywriter
-                  ? <span className="hstack"><Avatar name={o.copywriter} /><span>{o.copywriter}</span></span>
+                  ? <span className="hstack"><UserAvatar name={o.copywriter} /><span>{o.copywriter}</span></span>
                   : <span className="faint">unassigned</span>}
                 </td>
                 <td><StageBadge stage={o.stage} /></td>
@@ -93,7 +103,7 @@ export function ManagerOrders({ openOrder }: { openOrder: (id: string) => void }
             ))}
           </tbody>
         </table>
-      </div>
+      </Card>
     </div>
   );
 }
@@ -106,24 +116,24 @@ export function ManagerOrderDetail({ orderId, back }: { orderId: string; back: (
   return (
     <div className="page">
       <div style={{ marginBottom: 16 }}>
-        <button className="btn btn-ghost btn-sm" onClick={back}><Icon name="chev" size={12} />Back</button>
+        <Button variant="ghost" size="sm" onClick={back}><Icon name="chev" size={12} />Back</Button>
       </div>
       <PageHeader
         title={<><span className="mono" style={{ fontSize: 15, color: 'var(--text-muted)', marginRight: 10 }}>{order.id}</span>{order.target}</>}
         sub={<>{order.client} · Anchor &ldquo;{order.anchor}&rdquo; · Created {order.created}</>}
         actions={<>
-          <button className="btn" onClick={() => setShowAssign(true)}>Assign writer</button>
-          <button className="btn btn-primary">Advance stage <Icon name="arrow" size={14} /></button>
+          <Button variant="outline" onClick={() => setShowAssign(true)}>Assign writer</Button>
+          <Button>Advance stage <Icon name="arrow" size={14} /></Button>
         </>}
       />
       <Stepper currentStage={order.stage} />
       <div className="split">
         <div className="vstack">
-          <div className="card">
-            <div className="card-h">
-              <div className="card-h-title">Tasks</div>
-              <button className="btn btn-sm"><Icon name="plus" size={12} />Add task</button>
-            </div>
+          <Card>
+            <CardHeader className="card-h">
+              <CardTitle className="card-h-title">Tasks</CardTitle>
+              <Button variant="outline" size="sm"><Icon name="plus" size={12} />Add task</Button>
+            </CardHeader>
             <table className="table">
               <thead><tr><th>Task</th><th>Site</th><th>Writer</th><th>Status</th><th>Due</th></tr></thead>
               <tbody>
@@ -132,7 +142,7 @@ export function ManagerOrderDetail({ orderId, back }: { orderId: string; back: (
                     <td><span className="mono faint">T-{200 + i}</span> · Write article</td>
                     <td className="mono">{s.domain}</td>
                     <td>{order.copywriter
-                      ? <span className="hstack"><Avatar name={order.copywriter} /><span>{order.copywriter}</span></span>
+                      ? <span className="hstack"><UserAvatar name={order.copywriter} /><span>{order.copywriter}</span></span>
                       : <span className="faint">unassigned</span>}
                     </td>
                     <td>{i === 0
@@ -144,18 +154,20 @@ export function ManagerOrderDetail({ orderId, back }: { orderId: string; back: (
                 ))}
               </tbody>
             </table>
-          </div>
-          <div className="card">
-            <div className="card-h"><div className="card-h-title">Activity</div></div>
+          </Card>
+          <Card>
+            <CardHeader className="card-h">
+              <CardTitle className="card-h-title">Activity</CardTitle>
+            </CardHeader>
             <ul className="activity">
               <li><span className="when">10:24</span><span><span className="who">Writer A</span> submitted draft for site-alpha.com</span></li>
               <li><span className="when">09:12</span><span><span className="who">You</span> assigned Writer A to site-gamma.com</span></li>
               <li><span className="when">Apr 28</span><span><span className="who">You</span> assigned Writer A to site-alpha.com</span></li>
               <li><span className="when">Apr 28</span><span><span className="who">Client A</span> created order with 2 sites</span></li>
             </ul>
-          </div>
+          </Card>
         </div>
-        <div className="card">
+        <Card>
           <div className="side-section">
             <div className="side-label">Order</div>
             <div className="side-row"><span className="k">Client</span><span className="v">{order.client}</span></div>
@@ -177,48 +189,50 @@ export function ManagerOrderDetail({ orderId, back }: { orderId: string; back: (
             <div className="side-row"><span className="k">Amount</span><span className="v mono">${order.amount}</span></div>
             <div className="side-row"><span className="k">Invoice</span><span className="v"><InvoiceBadge status={order.invoiceStatus} /></span></div>
           </div>
-        </div>
+        </Card>
       </div>
 
-      {showAssign && (
-        <div className="modal-bd" onClick={() => setShowAssign(false)}>
-          <div className="modal" onClick={e => e.stopPropagation()}>
-            <div className="modal-h">
-              <div className="modal-h-title">Assign tasks</div>
-              <button className="icon-btn" onClick={() => setShowAssign(false)}><Icon name="close" size={14} /></button>
+      <Dialog open={showAssign} onOpenChange={setShowAssign}>
+        <DialogContent className="max-w-140">
+          <DialogHeader>
+            <DialogTitle>Assign tasks</DialogTitle>
+          </DialogHeader>
+          <div className="modal-b">
+            <div className="field">
+              <Label>Writer</Label>
+              <Select defaultValue="writer-a">
+                <SelectTrigger className="mt-1.5">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="writer-a">Writer A — 2 active tasks</SelectItem>
+                  <SelectItem value="writer-b">Writer B — 1 active task</SelectItem>
+                  <SelectItem value="writer-c">Writer C — 0 active tasks</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
-            <div className="modal-b">
-              <div className="field">
-                <label className="field-label">Writer</label>
-                <select className="select">
-                  <option>Writer A — 2 active tasks</option>
-                  <option>Writer B — 1 active task</option>
-                  <option>Writer C — 0 active tasks</option>
-                </select>
-              </div>
-              <div className="field">
-                <label className="field-label">Apply to</label>
-                <div className="vstack">
-                  {sites.map(s => (
-                    <label key={s.id} className="check-row selected">
-                      <div className="check-box">✓</div>
-                      <span className="mono">{s.domain}</span>
-                    </label>
-                  ))}
-                </div>
-              </div>
-              <div className="field" style={{ marginBottom: 0 }}>
-                <label className="field-label">Internal note (optional)</label>
-                <textarea className="textarea" placeholder="Special instructions…" />
+            <div className="field">
+              <Label>Apply to</Label>
+              <div className="vstack mt-1.5">
+                {sites.map(s => (
+                  <label key={s.id} className="check-row selected">
+                    <div className="check-box">✓</div>
+                    <span className="mono">{s.domain}</span>
+                  </label>
+                ))}
               </div>
             </div>
-            <div className="modal-f">
-              <button className="btn" onClick={() => setShowAssign(false)}>Cancel</button>
-              <button className="btn btn-primary" onClick={() => setShowAssign(false)}>Assign</button>
+            <div className="field" style={{ marginBottom: 0 }}>
+              <Label>Internal note (optional)</Label>
+              <Textarea className="mt-1.5" placeholder="Special instructions…" />
             </div>
           </div>
-        </div>
-      )}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowAssign(false)}>Cancel</Button>
+            <Button onClick={() => setShowAssign(false)}>Assign</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
@@ -226,13 +240,15 @@ export function ManagerOrderDetail({ orderId, back }: { orderId: string; back: (
 export function ManagerTeam() {
   return (
     <div className="page">
-      <PageHeader title="Team" sub="Workload and recent activity." actions={<button className="btn"><Icon name="plus" size={14} />Invite</button>} />
+      <PageHeader title="Team" sub="Workload and recent activity." actions={
+        <Button variant="outline"><Icon name="plus" size={14} />Invite</Button>
+      } />
       <div className="stats" style={{ gridTemplateColumns: 'repeat(3, 1fr)' }}>
         <Stat label="Active writers" value="3" meta="of 4 total" />
         <Stat label="Avg. tasks / writer" value="2.0" meta="balanced" />
         <Stat label="Pending writer pickup" value="2" meta="2 unassigned tasks" metaTone="down" />
       </div>
-      <div className="card">
+      <Card>
         <table className="table">
           <thead><tr><th>Member</th><th>Role</th><th>Active tasks</th><th>This week</th><th>Avg. turnaround</th><th /></tr></thead>
           <tbody>
@@ -244,17 +260,17 @@ export function ManagerTeam() {
               ['Sourcer B', 'Sourcer', '—', 2, '—'],
             ] as const).map(([n, r, a, w, t]) => (
               <tr key={n} className="clickable">
-                <td className="hstack"><Avatar name={n} /><span style={{ fontWeight: 500 }}>{n}</span></td>
+                <td className="hstack"><UserAvatar name={n} /><span style={{ fontWeight: 500 }}>{n}</span></td>
                 <td className="muted">{r}</td>
                 <td className="mono">{a}</td>
                 <td className="mono">{w}</td>
                 <td className="mono muted">{t}</td>
-                <td><button className="btn btn-sm btn-ghost"><Icon name="more" /></button></td>
+                <td><Button variant="ghost" size="sm"><Icon name="more" /></Button></td>
               </tr>
             ))}
           </tbody>
         </table>
-      </div>
+      </Card>
     </div>
   );
 }
@@ -263,7 +279,7 @@ export function ManagerSites() {
   return (
     <div className="page">
       <PageHeader title="Sites" sub="All approved sites in the catalog." />
-      <div className="card">
+      <Card>
         <table className="table">
           <thead><tr><th>Domain</th><th>Category</th><th>DR</th><th>Traffic</th><th>Price</th><th>Sourcer</th><th>Status</th></tr></thead>
           <tbody>
@@ -276,7 +292,7 @@ export function ManagerSites() {
                 <td className="mono">${s.price}</td>
                 <td className="muted">{s.sourcer}</td>
                 <td>
-                  <span className={`badge ${s.status === 'approved' ? 'b-live' : s.status === 'pending' ? 'b-write' : 'b-rejected'}`}>
+                  <span className={cn('badge', s.status === 'approved' ? 'b-live' : s.status === 'pending' ? 'b-write' : 'b-rejected')}>
                     <span className="dot" />{s.status.charAt(0).toUpperCase() + s.status.slice(1)}
                   </span>
                 </td>
@@ -284,7 +300,7 @@ export function ManagerSites() {
             ))}
           </tbody>
         </table>
-      </div>
+      </Card>
     </div>
   );
 }
@@ -299,8 +315,10 @@ export function AdminFinance() {
         <Stat label="Overdue" value="$700" meta="1 invoice" metaTone="down" />
         <Stat label="Sourcer payouts (mo)" value="$540" meta="due May 15" />
       </div>
-      <div className="card">
-        <div className="card-h"><div className="card-h-title">All invoices</div></div>
+      <Card>
+        <CardHeader className="card-h">
+          <CardTitle className="card-h-title">All invoices</CardTitle>
+        </CardHeader>
         <table className="table">
           <thead><tr><th>Invoice</th><th>Client</th><th>Order</th><th>Issued</th><th>Due</th><th>Amount</th><th>Status</th></tr></thead>
           <tbody>
@@ -317,7 +335,7 @@ export function AdminFinance() {
             ))}
           </tbody>
         </table>
-      </div>
+      </Card>
     </div>
   );
 }

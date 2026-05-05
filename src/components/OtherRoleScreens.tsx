@@ -2,8 +2,15 @@
 
 import { useState } from 'react';
 import Icon from './Icon';
-import { PageHeader, Stat, SiteStatusBadge, InvoiceBadge, Avatar } from './chrome';
+import { PageHeader, Stat, SiteStatusBadge, InvoiceBadge, UserAvatar } from './chrome';
 import { SEED_SITES, SEED_TASKS, SEED_USERS, STAGES } from '@/lib/data';
+import { Button } from '@/components/ui/button';
+import { Card, CardHeader, CardTitle } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Textarea } from '@/components/ui/textarea';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 // ── Copywriter ──────────────────────────────────────────────────────────────
 
@@ -17,14 +24,16 @@ export function CopywriterHome({ setPage }: { setPage: (p: string) => void }) {
         <Stat label="In review" value="1" />
         <Stat label="Completed (mo)" value="11" metaTone="up" meta="+3 vs last mo" />
       </div>
-      <div className="card">
+      <Card>
         <div className="card-h">
           <div className="card-h-title">Active tasks</div>
-          <div className="tabs">
-            <div className="tab active">All</div>
-            <div className="tab">Mine</div>
-            <div className="tab">Available</div>
-          </div>
+          <Tabs defaultValue="all">
+            <TabsList>
+              <TabsTrigger value="all">All</TabsTrigger>
+              <TabsTrigger value="mine">Mine</TabsTrigger>
+              <TabsTrigger value="available">Available</TabsTrigger>
+            </TabsList>
+          </Tabs>
         </div>
         <table className="table">
           <thead><tr><th>Task</th><th>Order</th><th>Site</th><th>Brief</th><th>Status</th><th>Due</th><th /></tr></thead>
@@ -51,7 +60,7 @@ export function CopywriterHome({ setPage }: { setPage: (p: string) => void }) {
             })}
           </tbody>
         </table>
-      </div>
+      </Card>
     </div>
   );
 }
@@ -60,25 +69,25 @@ export function CopywriterEditor({ back }: { back: () => void }) {
   return (
     <div className="page">
       <div style={{ marginBottom: 16 }}>
-        <button className="btn btn-ghost btn-sm" onClick={back}><Icon name="chev" size={12} />Back to tasks</button>
+        <Button variant="ghost" size="sm" onClick={back}><Icon name="chev" size={12} />Back to tasks</Button>
       </div>
       <PageHeader
         title="Write article — site-alpha.com"
         sub={<><span className="mono">T-201</span> · ORD-1042 · Due May 06</>}
         actions={<>
-          <button className="btn">Save draft</button>
-          <button className="btn btn-primary">Submit for review</button>
+          <Button variant="outline">Save draft</Button>
+          <Button>Submit for review</Button>
         </>}
       />
       <div className="split">
         <div>
-          <div className="card" style={{ marginBottom: 16, padding: 14 }}>
+          <Card className="p-3.5 mb-4">
             <div className="hstack" style={{ marginBottom: 10 }}>
               <span className="badge b-assign"><span className="dot" />Brief</span>
               <span className="muted text-sm">800 words · informational tone</span>
             </div>
             <div className="text-sm">Write a 800-word informational article about <strong>&ldquo;best widgets&rdquo;</strong>, linking to <span className="mono">/landing-page-1</span> using the anchor &ldquo;best widgets&rdquo;. Avoid direct comparison; focus on buying considerations.</div>
-          </div>
+          </Card>
           <div className="editor-doc">
             <h1>How to choose the best widgets in 2026</h1>
             <p>Widgets have come a long way since the early days. What was once a single-axis decision — price vs. capability — is now a multidimensional choice that touches your team&rsquo;s workflow, your downstream tooling, and your long-term roadmap.</p>
@@ -92,7 +101,7 @@ export function CopywriterEditor({ back }: { back: () => void }) {
             <span style={{ marginLeft: 'auto' }}>Auto-saved 2 min ago</span>
           </div>
         </div>
-        <div className="card">
+        <Card>
           <div className="side-section">
             <div className="side-label">Brief at a glance</div>
             <div className="side-row"><span className="k">Target URL</span><span className="v mono">/landing-page-1</span></div>
@@ -115,7 +124,7 @@ export function CopywriterEditor({ back }: { back: () => void }) {
               </div>
             </div>
           </div>
-        </div>
+        </Card>
       </div>
     </div>
   );
@@ -130,7 +139,9 @@ export function SourcerHome({ setPage }: { setPage: (p: string) => void }) {
       <PageHeader
         title="My sites"
         sub="Sites you've submitted to LinkFlow."
-        actions={<button className="btn btn-primary" onClick={() => setPage('submit')}><Icon name="plus" size={14} />Submit site</button>}
+        actions={
+          <Button onClick={() => setPage('submit')}><Icon name="plus" size={14} />Submit site</Button>
+        }
       />
       <div className="stats" style={{ gridTemplateColumns: 'repeat(4, 1fr)' }}>
         <Stat label="Approved" value="3" meta="earning commissions" metaTone="up" />
@@ -138,7 +149,7 @@ export function SourcerHome({ setPage }: { setPage: (p: string) => void }) {
         <Stat label="Rejected (90d)" value="0" />
         <Stat label="Earnings (mo)" value="$320" meta="3 placements" metaTone="up" />
       </div>
-      <div className="card">
+      <Card>
         <table className="table">
           <thead><tr><th>Domain</th><th>Category</th><th>DR</th><th>Traffic</th><th>Price</th><th>Status</th><th>Submitted</th></tr></thead>
           <tbody>
@@ -155,7 +166,7 @@ export function SourcerHome({ setPage }: { setPage: (p: string) => void }) {
             ))}
           </tbody>
         </table>
-      </div>
+      </Card>
     </div>
   );
 }
@@ -167,46 +178,62 @@ export function SourcerSubmit({ back }: { back: () => void }) {
   return (
     <div className="page">
       <div style={{ marginBottom: 16 }}>
-        <button className="btn btn-ghost btn-sm" onClick={back}><Icon name="chev" size={12} />Back</button>
+        <Button variant="ghost" size="sm" onClick={back}><Icon name="chev" size={12} />Back</Button>
       </div>
       <PageHeader title="Submit a new site" sub="If approved, you earn commission on every order placed on this site." />
       <div className="split">
-        <div className="card card-pad">
+        <Card className="p-5">
           <div className="field">
-            <label className="field-label">Domain</label>
-            <input className="input" placeholder="example.com" value={domain} onChange={e => setDomain(e.target.value)} />
+            <Label>Domain</Label>
+            <Input
+              className="mt-1.5"
+              placeholder="example.com"
+              value={domain}
+              onChange={e => setDomain(e.target.value)}
+            />
             {dupe && domain && (
-              <div className="text-xs" style={{ color: 'var(--st-rejected-fg)', marginTop: 4 }}>
+              <p className="text-xs mt-1" style={{ color: 'var(--st-rejected-fg)' }}>
                 This domain already exists in the system.
-              </div>
+              </p>
             )}
             {domain && !dupe && (
-              <div className="text-xs" style={{ color: 'var(--st-live-fg)', marginTop: 4 }}>
+              <p className="text-xs mt-1" style={{ color: 'var(--st-live-fg)' }}>
                 Domain is unique.
-              </div>
+              </p>
             )}
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
             <div className="field">
-              <label className="field-label">Category</label>
-              <select className="select"><option>Tech</option><option>Finance</option><option>Health</option><option>Lifestyle</option><option>Travel</option></select>
+              <Label>Category</Label>
+              <Select defaultValue="Tech">
+                <SelectTrigger className="mt-1.5">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Tech">Tech</SelectItem>
+                  <SelectItem value="Finance">Finance</SelectItem>
+                  <SelectItem value="Health">Health</SelectItem>
+                  <SelectItem value="Lifestyle">Lifestyle</SelectItem>
+                  <SelectItem value="Travel">Travel</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
             <div className="field">
-              <label className="field-label">Niche</label>
-              <input className="input" placeholder="SaaS, B2B…" />
+              <Label>Niche</Label>
+              <Input className="mt-1.5" placeholder="SaaS, B2B…" />
             </div>
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12 }}>
-            <div className="field"><label className="field-label">DR</label><input className="input" placeholder="0–100" /></div>
-            <div className="field"><label className="field-label">Monthly traffic</label><input className="input" placeholder="e.g. 25K" /></div>
-            <div className="field"><label className="field-label">Price (USD)</label><input className="input" placeholder="e.g. 250" /></div>
+            <div className="field"><Label>DR</Label><Input className="mt-1.5" placeholder="0–100" /></div>
+            <div className="field"><Label>Monthly traffic</Label><Input className="mt-1.5" placeholder="e.g. 25K" /></div>
+            <div className="field"><Label>Price (USD)</Label><Input className="mt-1.5" placeholder="e.g. 250" /></div>
           </div>
           <div className="field" style={{ marginBottom: 0 }}>
-            <label className="field-label">Notes for admin</label>
-            <textarea className="textarea" placeholder="Editorial guidelines, contact, anything reviewers should know…" />
+            <Label>Notes for admin</Label>
+            <Textarea className="mt-1.5" placeholder="Editorial guidelines, contact, anything reviewers should know…" />
           </div>
-        </div>
-        <div className="card">
+        </Card>
+        <Card>
           <div className="side-section">
             <div className="side-label">How approval works</div>
             <ol style={{ paddingLeft: 18, margin: 0, fontSize: 13, lineHeight: 1.7, color: 'var(--text-muted)' }}>
@@ -222,16 +249,15 @@ export function SourcerSubmit({ back }: { back: () => void }) {
             <div className="side-row"><span className="k">Rate</span><span className="v mono">15%</span></div>
           </div>
           <div style={{ padding: '14px 18px' }}>
-            <button
-              className="btn btn-primary"
+            <Button
+              className="w-full justify-center"
               disabled={!domain || dupe}
-              style={{ width: '100%', justifyContent: 'center', opacity: !domain || dupe ? 0.5 : 1, cursor: !domain || dupe ? 'not-allowed' : 'pointer' }}
               onClick={back}
             >
               Submit for review
-            </button>
+            </Button>
           </div>
-        </div>
+        </Card>
       </div>
     </div>
   );
@@ -240,14 +266,18 @@ export function SourcerSubmit({ back }: { back: () => void }) {
 export function SourcerEarnings() {
   return (
     <div className="page">
-      <PageHeader title="Commissions" sub="Earnings from approved sites." actions={<button className="btn"><Icon name="ext" size={14} />Export</button>} />
+      <PageHeader title="Commissions" sub="Earnings from approved sites." actions={
+        <Button variant="outline"><Icon name="ext" size={14} />Export</Button>
+      } />
       <div className="stats" style={{ gridTemplateColumns: 'repeat(3, 1fr)' }}>
         <Stat label="This month" value="$320" meta="+$80 vs last month" metaTone="up" />
         <Stat label="Pending payout" value="$140" meta="Pays May 15" />
         <Stat label="Lifetime" value="$2,180" meta="14 placements" />
       </div>
-      <div className="card" style={{ marginBottom: 16 }}>
-        <div className="card-h"><div className="card-h-title">Earnings — last 6 months</div></div>
+      <Card className="mb-4">
+        <CardHeader className="card-h">
+          <CardTitle className="card-h-title">Earnings — last 6 months</CardTitle>
+        </CardHeader>
         <div style={{ padding: 20 }}>
           <div className="bar-chart">
             {[180, 240, 200, 260, 240, 320].map((v, i) => (
@@ -258,9 +288,11 @@ export function SourcerEarnings() {
             {['Dec','Jan','Feb','Mar','Apr','May'].map(m => <span key={m}>{m}</span>)}
           </div>
         </div>
-      </div>
-      <div className="card">
-        <div className="card-h"><div className="card-h-title">Recent placements</div></div>
+      </Card>
+      <Card>
+        <CardHeader className="card-h">
+          <CardTitle className="card-h-title">Recent placements</CardTitle>
+        </CardHeader>
         <table className="table">
           <thead><tr><th>Order</th><th>Site</th><th>Client</th><th>Date</th><th>Sale</th><th>Your commission</th></tr></thead>
           <tbody>
@@ -276,12 +308,12 @@ export function SourcerEarnings() {
                 <td>{row[2]}</td>
                 <td className="mono muted">{row[3]}</td>
                 <td className="mono">${row[4]}</td>
-                <td className="mono" style={{ color: 'var(--st-live-fg)', fontWeight: 500 }}>+${row[5]}</td>
+                <td className="mono font-medium" style={{ color: 'var(--st-live-fg)' }}>+${row[5]}</td>
               </tr>
             ))}
           </tbody>
         </table>
-      </div>
+      </Card>
     </div>
   );
 }
@@ -299,8 +331,10 @@ export function AdminHome({ setPage }: { setPage: (p: string) => void }) {
         <Stat label="Overdue invoices" value="$700" meta="1 invoice" metaTone="down" />
       </div>
       <div className="split" style={{ gridTemplateColumns: '1.5fr 1fr' }}>
-        <div className="card">
-          <div className="card-h"><div className="card-h-title">Orders by stage — last 30 days</div></div>
+        <Card>
+          <CardHeader className="card-h">
+            <CardTitle className="card-h-title">Orders by stage — last 30 days</CardTitle>
+          </CardHeader>
           <div style={{ padding: 20 }}>
             <div className="bar-chart" style={{ height: 160 }}>
               {STAGES.map((s, i) => {
@@ -312,11 +346,11 @@ export function AdminHome({ setPage }: { setPage: (p: string) => void }) {
               {STAGES.map(s => <span key={s.id}>{s.short}</span>)}
             </div>
           </div>
-        </div>
-        <div className="card">
+        </Card>
+        <Card>
           <div className="card-h">
             <div className="card-h-title">Action queue</div>
-            <button className="btn btn-sm" onClick={() => setPage('approvals')}>View all</button>
+            <Button variant="outline" size="sm" onClick={() => setPage('approvals')}>View all</Button>
           </div>
           <div className="side-section">
             <div className="hstack">
@@ -325,7 +359,7 @@ export function AdminHome({ setPage }: { setPage: (p: string) => void }) {
                 <div style={{ fontWeight: 500 }}>4 sites awaiting approval</div>
                 <div className="text-xs muted">Oldest submitted 1 day ago</div>
               </div>
-              <button className="btn btn-sm" style={{ marginLeft: 'auto' }} onClick={() => setPage('approvals')}>Review</button>
+              <Button variant="outline" size="sm" className="ml-auto" onClick={() => setPage('approvals')}>Review</Button>
             </div>
           </div>
           <div className="side-section">
@@ -335,7 +369,7 @@ export function AdminHome({ setPage }: { setPage: (p: string) => void }) {
                 <div style={{ fontWeight: 500 }}>1 invoice overdue</div>
                 <div className="text-xs muted">INV-3013 · Client C · $700</div>
               </div>
-              <button className="btn btn-sm" style={{ marginLeft: 'auto' }} onClick={() => setPage('finance')}>Open</button>
+              <Button variant="outline" size="sm" className="ml-auto" onClick={() => setPage('finance')}>Open</Button>
             </div>
           </div>
           <div className="side-section">
@@ -345,10 +379,10 @@ export function AdminHome({ setPage }: { setPage: (p: string) => void }) {
                 <div style={{ fontWeight: 500 }}>2 user invitations pending</div>
                 <div className="text-xs muted">Sent &gt; 3 days ago</div>
               </div>
-              <button className="btn btn-sm" style={{ marginLeft: 'auto' }} onClick={() => setPage('users')}>Manage</button>
+              <Button variant="outline" size="sm" className="ml-auto" onClick={() => setPage('users')}>Manage</Button>
             </div>
           </div>
-        </div>
+        </Card>
       </div>
     </div>
   );
@@ -360,15 +394,17 @@ export function AdminApprovals() {
     <div className="page">
       <PageHeader title="Site approvals" sub="Review submitted sites and approve or reject." />
       <div className="filterbar">
-        <div className="tabs">
-          <div className="tab active">Pending ({pending.length})</div>
-          <div className="tab">Approved</div>
-          <div className="tab">Rejected</div>
-        </div>
+        <Tabs defaultValue="pending">
+          <TabsList>
+            <TabsTrigger value="pending">Pending ({pending.length})</TabsTrigger>
+            <TabsTrigger value="approved">Approved</TabsTrigger>
+            <TabsTrigger value="rejected">Rejected</TabsTrigger>
+          </TabsList>
+        </Tabs>
       </div>
       <div className="vstack">
         {pending.map(s => (
-          <div key={s.id} className="card">
+          <Card key={s.id}>
             <div style={{ padding: 18, display: 'grid', gridTemplateColumns: '1.5fr 2fr auto', gap: 24, alignItems: 'center' }}>
               <div>
                 <div className="mono" style={{ fontSize: 15, fontWeight: 500, marginBottom: 4 }}>{s.domain}</div>
@@ -380,11 +416,11 @@ export function AdminApprovals() {
                 <div><div className="text-xs muted">Price</div><div className="mono" style={{ fontWeight: 500 }}>${s.price}</div></div>
               </div>
               <div className="hstack">
-                <button className="btn btn-danger">Reject</button>
-                <button className="btn btn-primary"><Icon name="check" size={14} />Approve</button>
+                <Button variant="outline" className="text-(--st-rejected-fg)">Reject</Button>
+                <Button><Icon name="check" size={14} />Approve</Button>
               </div>
             </div>
-          </div>
+          </Card>
         ))}
       </div>
     </div>
@@ -394,27 +430,29 @@ export function AdminApprovals() {
 export function AdminUsers() {
   return (
     <div className="page">
-      <PageHeader title="Users" sub="All accounts on LinkFlow." actions={<button className="btn btn-primary"><Icon name="plus" size={14} />Invite user</button>} />
+      <PageHeader title="Users" sub="All accounts on LinkFlow." actions={
+        <Button><Icon name="plus" size={14} />Invite user</Button>
+      } />
       <div className="filterbar">
-        <input className="input" placeholder="Search…" style={{ width: 280 }} />
-        <button className="btn btn-sm"><Icon name="filter" size={12} />Role</button>
+        <Input className="w-70" placeholder="Search…" />
+        <Button variant="outline" size="sm"><Icon name="filter" size={12} />Role</Button>
       </div>
-      <div className="card">
+      <Card>
         <table className="table">
           <thead><tr><th>Name</th><th>Role</th><th>Orders</th><th>Member since</th><th /></tr></thead>
           <tbody>
             {SEED_USERS.map(u => (
               <tr key={u.name} className="clickable">
-                <td className="hstack"><Avatar name={u.name} /><span style={{ fontWeight: 500 }}>{u.name}</span></td>
+                <td className="hstack"><UserAvatar name={u.name} /><span style={{ fontWeight: 500 }}>{u.name}</span></td>
                 <td><span className="badge b-neutral"><span className="dot" />{u.role}</span></td>
                 <td className="mono">{u.orders}</td>
                 <td className="mono muted">{u.since}</td>
-                <td><button className="btn btn-sm btn-ghost"><Icon name="more" /></button></td>
+                <td><Button variant="ghost" size="sm"><Icon name="more" /></Button></td>
               </tr>
             ))}
           </tbody>
         </table>
-      </div>
+      </Card>
     </div>
   );
 }

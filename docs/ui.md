@@ -9,3 +9,5 @@ All UI must be built exclusively with [shadcn/ui](https://ui.shadcn.com/) compon
 - **Do not install or use any other component library** (e.g. MUI, Chakra, Headless UI).
 
 All installed components live in `src/components/ui/`. Do not modify these files unless absolutely necessary — shadcn components are meant to be used as-is or composed together.
+
+Prefer shadcn `Button`, `Badge`, `Card`, `Dialog`, `Tabs`, `Input`, `Select`, `Textarea`, `Tooltip`, `Avatar`, `DropdownMenu`, `Separator` over the legacy CSS classes (`.btn`, `.badge`, `.card`, etc.). Existing components using legacy classes do not need to be retroactively converted unless you are editing them.
