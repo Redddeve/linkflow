@@ -9,5 +9,9 @@
       "PowerShell(Set-Location d:\\\\Projects\\\\linkflow; $env:TERM = \"dumb\"; echo \"`n`n`n`n`n\" | npx shadcn@canary init --yes 2>&1)",
       "PowerShell(Set-Location d:\\\\Projects\\\\linkflow; $env:TERM = \"dumb\"; \"`n`n`n`n`n`n`n`n`n`n\" | npx shadcn@canary init --yes 2>&1)"
     ]
-  }
+  },
+  "enabledMcpjsonServers": [
+    "supabase"
+  ],
+  "enableAllProjectMcpServers": true
 }
