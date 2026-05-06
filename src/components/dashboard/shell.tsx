@@ -1,7 +1,7 @@
-'use client'
+'use client';
 
-import Link from 'next/link'
-import { usePathname, useRouter } from 'next/navigation'
+import Link from 'next/link';
+import { usePathname, useRouter } from 'next/navigation';
 import {
   LayoutDashboard,
   Users,
@@ -12,90 +12,175 @@ import {
   BadgeDollarSign,
   Bell,
   LogOut,
-} from 'lucide-react'
-import { createClient } from '@/lib/client'
-import { Avatar, AvatarFallback } from '@/components/ui/avatar'
-import { Separator } from '@/components/ui/separator'
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
+} from 'lucide-react';
+import { createClient } from '@/lib/supabase/client';
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { Separator } from '@/components/ui/separator';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu'
-import type { UserRow, UserRole } from '@/lib/auth'
+} from '@/components/ui/dropdown-menu';
+import type { UserRow, UserRole } from '@/lib/auth';
 
 interface NavItem {
-  href: string
-  label: string
-  icon: React.ReactNode
+  href: string;
+  label: string;
+  icon: React.ReactNode;
 }
 
 const NAV_ITEMS: Record<UserRole, NavItem[]> = {
   Client: [
-    { href: '/dashboard', label: 'Dashboard', icon: <LayoutDashboard className="nav-icon" /> },
-    { href: '/dashboard/catalog', label: 'Catalog', icon: <Globe className="nav-icon" /> },
-    { href: '/dashboard/cart', label: 'Cart', icon: <ShoppingCart className="nav-icon" /> },
-    { href: '/dashboard/orders', label: 'Orders', icon: <FileText className="nav-icon" /> },
-    { href: '/dashboard/invoices', label: 'Invoices', icon: <Receipt className="nav-icon" /> },
+    {
+      href: '/dashboard',
+      label: 'Dashboard',
+      icon: <LayoutDashboard className="nav-icon" />,
+    },
+    {
+      href: '/dashboard/catalog',
+      label: 'Catalog',
+      icon: <Globe className="nav-icon" />,
+    },
+    {
+      href: '/dashboard/cart',
+      label: 'Cart',
+      icon: <ShoppingCart className="nav-icon" />,
+    },
+    {
+      href: '/dashboard/orders',
+      label: 'Orders',
+      icon: <FileText className="nav-icon" />,
+    },
+    {
+      href: '/dashboard/invoices',
+      label: 'Invoices',
+      icon: <Receipt className="nav-icon" />,
+    },
   ],
   Manager: [
-    { href: '/dashboard', label: 'Dashboard', icon: <LayoutDashboard className="nav-icon" /> },
-    { href: '/dashboard/orders', label: 'Orders', icon: <FileText className="nav-icon" /> },
-    { href: '/dashboard/sites', label: 'Sites', icon: <Globe className="nav-icon" /> },
-    { href: '/dashboard/invoices', label: 'Invoices', icon: <Receipt className="nav-icon" /> },
+    {
+      href: '/dashboard',
+      label: 'Dashboard',
+      icon: <LayoutDashboard className="nav-icon" />,
+    },
+    {
+      href: '/dashboard/orders',
+      label: 'Orders',
+      icon: <FileText className="nav-icon" />,
+    },
+    {
+      href: '/dashboard/sites',
+      label: 'Sites',
+      icon: <Globe className="nav-icon" />,
+    },
+    {
+      href: '/dashboard/invoices',
+      label: 'Invoices',
+      icon: <Receipt className="nav-icon" />,
+    },
   ],
   Copywriter: [
-    { href: '/dashboard', label: 'Dashboard', icon: <LayoutDashboard className="nav-icon" /> },
-    { href: '/dashboard/orders', label: 'My Orders', icon: <FileText className="nav-icon" /> },
+    {
+      href: '/dashboard',
+      label: 'Dashboard',
+      icon: <LayoutDashboard className="nav-icon" />,
+    },
+    {
+      href: '/dashboard/orders',
+      label: 'My Orders',
+      icon: <FileText className="nav-icon" />,
+    },
   ],
   Sourcer: [
-    { href: '/dashboard', label: 'Dashboard', icon: <LayoutDashboard className="nav-icon" /> },
-    { href: '/dashboard/sites', label: 'My Sites', icon: <Globe className="nav-icon" /> },
-    { href: '/dashboard/commissions', label: 'Commissions', icon: <BadgeDollarSign className="nav-icon" /> },
+    {
+      href: '/dashboard',
+      label: 'Dashboard',
+      icon: <LayoutDashboard className="nav-icon" />,
+    },
+    {
+      href: '/dashboard/sites',
+      label: 'My Sites',
+      icon: <Globe className="nav-icon" />,
+    },
+    {
+      href: '/dashboard/commissions',
+      label: 'Commissions',
+      icon: <BadgeDollarSign className="nav-icon" />,
+    },
   ],
   Admin: [
-    { href: '/dashboard', label: 'Dashboard', icon: <LayoutDashboard className="nav-icon" /> },
-    { href: '/dashboard/users', label: 'Users', icon: <Users className="nav-icon" /> },
-    { href: '/dashboard/sites', label: 'Sites', icon: <Globe className="nav-icon" /> },
-    { href: '/dashboard/orders', label: 'Orders', icon: <FileText className="nav-icon" /> },
-    { href: '/dashboard/invoices', label: 'Invoices', icon: <Receipt className="nav-icon" /> },
-    { href: '/dashboard/commissions', label: 'Commissions', icon: <BadgeDollarSign className="nav-icon" /> },
+    {
+      href: '/dashboard',
+      label: 'Dashboard',
+      icon: <LayoutDashboard className="nav-icon" />,
+    },
+    {
+      href: '/dashboard/users',
+      label: 'Users',
+      icon: <Users className="nav-icon" />,
+    },
+    {
+      href: '/dashboard/sites',
+      label: 'Sites',
+      icon: <Globe className="nav-icon" />,
+    },
+    {
+      href: '/dashboard/orders',
+      label: 'Orders',
+      icon: <FileText className="nav-icon" />,
+    },
+    {
+      href: '/dashboard/invoices',
+      label: 'Invoices',
+      icon: <Receipt className="nav-icon" />,
+    },
+    {
+      href: '/dashboard/commissions',
+      label: 'Commissions',
+      icon: <BadgeDollarSign className="nav-icon" />,
+    },
   ],
-}
+};
 
 function userInitials(user: UserRow): string {
-  const f = user.first_name.trim()
-  const l = user.last_name.trim()
-  if (f && l) return `${f[0]}${l[0]}`.toUpperCase()
-  if (f) return f[0].toUpperCase()
-  return (user.email[0] ?? '?').toUpperCase()
+  const f = user.first_name.trim();
+  const l = user.last_name.trim();
+  if (f && l) return `${f[0]}${l[0]}`.toUpperCase();
+  if (f) return f[0].toUpperCase();
+  return (user.email[0] ?? '?').toUpperCase();
 }
 
 function displayName(user: UserRow): string {
-  const f = user.first_name.trim()
-  const l = user.last_name.trim()
-  if (f || l) return `${f} ${l}`.trim()
-  return user.email
+  const f = user.first_name.trim();
+  const l = user.last_name.trim();
+  if (f || l) return `${f} ${l}`.trim();
+  return user.email;
 }
 
 export function DashboardShell({
   user,
   children,
 }: {
-  user: UserRow
-  children: React.ReactNode
+  user: UserRow;
+  children: React.ReactNode;
 }) {
-  const pathname = usePathname()
-  const router = useRouter()
-  const navItems = NAV_ITEMS[user.role] ?? []
+  const pathname = usePathname();
+  const router = useRouter();
+  const navItems = NAV_ITEMS[user.role] ?? [];
 
   const handleSignOut = async () => {
-    const supabase = createClient()
-    await supabase.auth.signOut()
-    router.push('/login')
-  }
+    const supabase = createClient();
+    await supabase.auth.signOut();
+    router.push('/login');
+  };
 
   return (
     <TooltipProvider>
@@ -177,15 +262,25 @@ export function DashboardShell({
                 </Avatar>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-52">
-                <div className="px-2 py-1.5 text-sm font-medium">{displayName(user)}</div>
-                <div className="px-2 pb-1.5 text-xs" style={{ color: 'var(--text-muted)' }}>
+                <div className="px-2 py-1.5 text-sm font-medium">
+                  {displayName(user)}
+                </div>
+                <div
+                  className="px-2 pb-1.5 text-xs"
+                  style={{ color: 'var(--text-muted)' }}
+                >
                   {user.email}
                 </div>
-                <div className="px-2 pb-2 text-xs" style={{ color: 'var(--text-faint)' }}>
+                <div
+                  className="px-2 pb-2 text-xs"
+                  style={{ color: 'var(--text-faint)' }}
+                >
                   {user.role}
                 </div>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={handleSignOut}>Sign out</DropdownMenuItem>
+                <DropdownMenuItem onClick={handleSignOut}>
+                  Sign out
+                </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
           </div>
@@ -194,5 +289,5 @@ export function DashboardShell({
         </div>
       </div>
     </TooltipProvider>
-  )
+  );
 }

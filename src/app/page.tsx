@@ -1,14 +1,14 @@
-import { createClient } from '@/lib/server'
-import { redirect } from 'next/navigation'
-import Link from 'next/link'
-import { buttonVariants } from '@/components/ui/button'
+import { createClient } from '@/lib/supabase/server';
+import { redirect } from 'next/navigation';
+import Link from 'next/link';
+import { buttonVariants } from '@/components/ui/button';
 
 export default async function HomePage() {
-  const supabase = await createClient()
-  const { data } = await supabase.auth.getClaims()
+  const supabase = await createClient();
+  const { data } = await supabase.auth.getClaims();
 
   if (data?.claims) {
-    redirect('/dashboard')
+    redirect('/dashboard');
   }
 
   return (
@@ -29,5 +29,5 @@ export default async function HomePage() {
         Sign in
       </Link>
     </main>
-  )
+  );
 }

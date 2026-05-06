@@ -1,4 +1,4 @@
-import { createClient } from '@/lib/server';
+import { createClient } from '@/lib/supabase/server';
 import type { Database } from '@/types/database.types';
 
 type NotificationChannel = Database['public']['Enums']['notification_channel'];
