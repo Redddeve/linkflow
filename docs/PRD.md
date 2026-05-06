@@ -163,11 +163,11 @@ States: `New` → `In Progress` → `Content Sent` → `Content Approved` → `P
 
 States: `Draft` → `Sent` → `Paid`
 
-| From | To | Who | Trigger / Required fields |
-|---|---|---|---|
-| (new) | `Draft` | System | Created by monthly job; `sent_at` and `sent_by_id` null |
-| `Draft` | `Sent` | Admin / Manager | Send to client → `sent_at`, `sent_by_id` required |
-| `Sent` | `Paid` | Admin | Mark as paid → `marked_as_paid_at`, `marked_as_paid_by_id` required |
+| From    | To      | Who             | Trigger / Required fields                                           |
+| ------- | ------- | --------------- | ------------------------------------------------------------------- |
+| (new)   | `Draft` | System          | Created by monthly job; `sent_at` and `sent_by_id` null             |
+| `Draft` | `Sent`  | Admin / Manager | Send to client → `sent_at`, `sent_by_id` required                   |
+| `Sent`  | `Paid`  | Admin           | Mark as paid → `marked_as_paid_at`, `marked_as_paid_by_id` required |
 
 ---
 
@@ -301,28 +301,28 @@ All CartItem fields except `site_id` are editable in-cart.
 
 `New` | `In Progress` | `Content Sent` | `Needs changes` | `Content Approved` | `Published` | `Completed`
 
-| Field                | Type              | Notes                                                 |
-| -------------------- | ----------------- | ----------------------------------------------------- |
-| id                   | UUID PK           |                                                                             |
-| created_at           | timestamp         |                                                                             |
-| created_by_id        | UUID FK → User    | The Client who placed the order                                             |
-| status               | enum orderStatus  | Required; default `New`                                                     |
-| site_id              | UUID FK → Site    | Required; Site must be `Active` at creation time                            |
-| publish_date         | date              | Required; snapshotted from CartItem at order creation                       |
-| price_cents          | int               | Required; snapshot of `Site.price_cents` at creation                        |
-| invoice_id?          | UUID FK → Invoice | Set when this Order is included on an Invoice                               |
-| copywriter_id?       | UUID FK → User    | `role = Copywriter`; optional                                               |
-| manager_id?          | UUID FK → User    | `role = Manager`; first Manager who acted on it                             |
-| content_body?        | text              | Required when `status = Content Sent`; overwritten on each copywriter save  |
-| sent_at?             | timestamp         | Required when `status = Content Sent`; set when copywriter submits          |
-| approved_at?         | timestamp         | Required when `status = Content Approved`                                   |
-| published_at?        | timestamp         | Required when `status = Published`; default value for `billing_month`       |
-| published_by_id?     | UUID FK → User    | Required when `status = Published`; the Manager/Admin who published         |
-| published_url?       | string            | Required when `status = Published`                                          |
-| billing_month?       | date (1st of month) | Required when `status = Published`; defaults to month of `published_at`   |
-| canceled_at?         | timestamp         |                                                                             |
-| cancellation_reason? | text              | Required when `status = Canceled`                                           |
-| _(comments)_         | Comment[]         | Resolved via Comment.order_id                                               |
+| Field                | Type                | Notes                                                                      |
+| -------------------- | ------------------- | -------------------------------------------------------------------------- |
+| id                   | UUID PK             |                                                                            |
+| created_at           | timestamp           |                                                                            |
+| created_by_id        | UUID FK → User      | The Client who placed the order                                            |
+| status               | enum orderStatus    | Required; default `New`                                                    |
+| site_id              | UUID FK → Site      | Required; Site must be `Active` at creation time                           |
+| publish_date         | date                | Required; snapshotted from CartItem at order creation                      |
+| price_cents          | int                 | Required; snapshot of `Site.price_cents` at creation                       |
+| invoice_id?          | UUID FK → Invoice   | Set when this Order is included on an Invoice                              |
+| copywriter_id?       | UUID FK → User      | `role = Copywriter`; optional                                              |
+| manager_id?          | UUID FK → User      | `role = Manager`; first Manager who acted on it                            |
+| content_body?        | text                | Required when `status = Content Sent`; overwritten on each copywriter save |
+| sent_at?             | timestamp           | Required when `status = Content Sent`; set when copywriter submits         |
+| approved_at?         | timestamp           | Required when `status = Content Approved`                                  |
+| published_at?        | timestamp           | Required when `status = Published`; default value for `billing_month`      |
+| published_by_id?     | UUID FK → User      | Required when `status = Published`; the Manager/Admin who published        |
+| published_url?       | string              | Required when `status = Published`                                         |
+| billing_month?       | date (1st of month) | Required when `status = Published`; defaults to month of `published_at`    |
+| canceled_at?         | timestamp           |                                                                            |
+| cancellation_reason? | text                | Required when `status = Canceled`                                          |
+| _(comments)_         | Comment[]           | Resolved via Comment.order_id                                              |
 
 **Snapshotted Site fields (read-only on Order, copied at creation):**
 
@@ -364,23 +364,24 @@ Comments replace the previous `ChangeRequest` entity. Multiple comments per Orde
 
 `Draft` | `Sent` | `Paid`
 
-| Field                | Type                  | Notes                                                                       |
-| -------------------- | --------------------- | --------------------------------------------------------------------------- |
-| id                   | UUID PK               |                                                                             |
-| created_at           | timestamp             |                                                                             |
-| billing_month        | date (1st of month)   | The month being billed; unique per `(client_id, billing_month)`             |
-| orders               | Order[]               | Resolved via `Order.invoice_id`; all Orders must share the same `billing_month` |
-| client_id            | UUID FK → User        | `role = Client`                                                             |
-| total_price_cents    | int                   | Sum of linked Orders' `price_cents`                                         |
-| status               | enum invoiceStatus    | Required; default `Draft`                                                   |
-| sent_at?             | timestamp             | Required when `status = Sent`                                               |
-| sent_by_id?          | UUID FK → User        | Required when `status = Sent`; the Admin/Manager who sent it                |
-| marked_as_paid_at?   | timestamp             | Required when `status = Paid`                                               |
-| marked_as_paid_by_id? | UUID FK → User       | Required when `status = Paid`; the Admin who marked it                      |
+| Field                 | Type                | Notes                                                                           |
+| --------------------- | ------------------- | ------------------------------------------------------------------------------- |
+| id                    | UUID PK             |                                                                                 |
+| created_at            | timestamp           |                                                                                 |
+| billing_month         | date (1st of month) | The month being billed; unique per `(client_id, billing_month)`                 |
+| orders                | Order[]             | Resolved via `Order.invoice_id`; all Orders must share the same `billing_month` |
+| client_id             | UUID FK → User      | `role = Client`                                                                 |
+| total_price_cents     | int                 | Sum of linked Orders' `price_cents`                                             |
+| status                | enum invoiceStatus  | Required; default `Draft`                                                       |
+| sent_at?              | timestamp           | Required when `status = Sent`                                                   |
+| sent_by_id?           | UUID FK → User      | Required when `status = Sent`; the Admin/Manager who sent it                    |
+| marked_as_paid_at?    | timestamp           | Required when `status = Paid`                                                   |
+| marked_as_paid_by_id? | UUID FK → User      | Required when `status = Paid`; the Admin who marked it                          |
 
 **Constraint:** unique on `(client_id, billing_month)`.
 
 **Notes:**
+
 - `InvoiceLine` is removed. Orders belong to an Invoice via `Order.invoice_id` directly; `total_price_cents` is the sum of those Orders' `price_cents`.
 - Invoice generation groups `Published` Orders by `billing_month` and creates one Invoice per `(client, billing_month)` pair.
 
@@ -505,7 +506,7 @@ Auth is handled entirely by **Supabase Auth**. The application does not manage p
 
 **UC-U-5. Edit User**
 
-- 5.1 Select user → "Edit" → "Edit User" → fill form → Save. Editable fields: `full_name`, `phone`, `company_name`, `timezone`, `payout_details`, `role` (Admin-only; with confirmation if changing role of a user with active Orders/Sites).
+- 5.1 Select user → "Edit" → "Edit User" → fill form → Save. Editable fields: `firstName`, `lastName`, `email`, `role`, `manager_id` (when `role = Client`). (Admin-only; with confirmation if changing role of a user with active Orders/Sites)
 
 **UC-U-6. Change User Status**
 
@@ -527,13 +528,13 @@ Auth is handled entirely by **Supabase Auth**. The application does not manage p
 
 - 4.1 From "All Sites" or "Cart" → "Remove from cart" → CartItem deleted.
 
-**UC-O-5. View Cart** → "Cart" screen lists CartItems with editable `target_url`, `anchor_text`, `brief`, `publish_month`; shows running total.
+**UC-O-5. View Cart** → "Cart" screen lists CartItems with editable `publish_date`; shows site info and running total.
 
 **UC-O-6. Create Orders**
 
-- 6.1 All CartItems' Sites are `ACTIVE` and all required fields are filled → user selects `publish_month` per CartItem → "Create Order" → System creates one Order per CartItem (status `NEW`), snapshots `price_cents`, snapshots all CartItem fields, deletes CartItems. Notifies Managers (group).
-- 6.2 If any CartItem's Site is no longer `ACTIVE` → System displays Cart with a disclaimer per affected row ("This site is no longer available"); checkout is blocked until those rows are removed.
-- AC: `publish_month` cannot be in the past (relative to current month, client timezone).
+- 6.1 All CartItems' Sites are `Active` and all required fields are filled → user sets `publish_date` per CartItem → "Order" button → System creates one Order per CartItem (status `New`), snapshots `price_cents` and all Site fields onto the Order, deletes CartItems. Notifies Managers (group).
+- 6.2 If any CartItem's Site is no longer `Active` → System displays Cart with a disclaimer per affected row; checkout is blocked until those rows are removed.
+- AC: `publish_date` cannot be in the past.
 
 ### 6.6 Order — Client actions
 
@@ -544,16 +545,16 @@ Auth is handled entirely by **Supabase Auth**. The application does not manage p
 
 **UC-O-8. Cancel Order**
 
-- 8.1 Status `NEW` only → "Cancel" → "Cancel Order" screen → Confirm → status `CANCELED`. Order excluded from future invoicing. Other statuses: action hidden / 403.
+- 8.1 Status `New` only → "Cancel" button on All Orders → Confirm → status `Canceled`. Order excluded from future invoicing. Other statuses: action hidden / 403.
 
 **UC-O-9. Edit Order**
 
-- 9.1 Status `NEW` only → "Edit" → "Edit Order" screen → fields: `target_url`, `anchor_text`, `brief`, `publish_month` → Save. Other statuses: action hidden / 403.
+- 9.1 Status `New` only → "Edit" button on All Orders → "Edit Order" screen → editable fields: `publish_date` → Save. Other statuses: action hidden / 403.
 
 **UC-O-10. Review Order**
 
-- 10.1 Approve (from `CONTENT_SENT`) → "Review" → "Order" screen → "Approve" → status `CONTENT_APPROVED`. Notifies Manager.
-- 10.2 Needs changes (from `CONTENT_SENT`) → "Review" → "Order" → "Needs changes" → "Leave a Comment" screen → `comment` ≥ 20 chars → Send → System creates ChangeRequest, sets status `NEEDS_CHANGES`. Notifies Copywriter.
+- 10.1 Approve (from `Content Sent`) → View Order screen → "Approve" button → status `Content Approved`; sets `approved_at`. Notifies Manager.
+- 10.2 Reject (from `Content Sent`) → View Order screen → "Reject" button → "Leave a Comment" screen → `comment` ≥ 20 chars → Send → System creates Comment, sets status `Needs changes`. Notifies Copywriter.
 
 ### 6.7 Order — Manager / Admin actions
 
@@ -562,17 +563,17 @@ Auth is handled entirely by **Supabase Auth**. The application does not manage p
 - 1.1 "All Orders" with kanban + table toggle, grouped by status.
 - 1.2 Detail → "View Order".
 
-**UC-OM-2. Filter Orders** → by client, copywriter, status, publish month, site, due date.
+**UC-OM-2. Filter Orders** → by status, publish date, copywriter (see §8.8 Filters).
 
 **UC-OM-3. Manage Copywriter**
 
-- 3.1 Assign → On `NEW` Order → "Assign a copywriter" → screen → pick copywriter → Save → status `IN_PROGRESS`, `copywriter_id` set, `manager_id` set if first action, notify Copywriter.
-- 3.2 Reassign → On any non-terminal Order with a copywriter assigned → "Reassign a copywriter" → screen → pick new copywriter → Save → `copywriter_id` updated, status unchanged, notify both copywriters.
+- 3.1 Assign → "Assign a copywriter" button on All Orders (visible when `order.copywriter_id` is empty) → screen → pick Copywriter → Save → status `In Progress`, `copywriter_id` set, `manager_id` set if first action, notify Copywriter.
+- 3.2 Reassign → "Reassign a copywriter" button (visible when `order.copywriter_id` is set) → screen → pick new Copywriter → Save → `copywriter_id` updated, status unchanged, notify both Copywriters.
 
 **UC-OM-4. Publish Order**
 
-- 4.1 From `CONTENT_APPROVED` → "Publish" → "Publish Order" screen → user enters `published_url` (HTTPS) → "Publish" → System verifies URL by fetching it and confirming it contains an `<a href>` whose `href` matches `target_url` (after canonicalization) and whose visible text matches `anchor_text` (case-insensitive, trimmed). Manager may override with a typed reason on verification failure (logged).
-- AC: status → `PUBLISHED`, `published_at` set (drives invoice grouping), Commission accrued if `sourcer_id` present, Client notified.
+- 4.1 From `Content Approved` → "Publish" button on All Orders → "Publish Order" screen → enter `published_url` (HTTPS) and confirm `publish_date` (default = `order.publish_date`) → "Publish" → System verifies URL contains an `<a href>` matching `anchor_text` (case-insensitive). Manager may override with a typed reason on verification failure (logged).
+- AC: status → `Published`, `published_at` and `published_by_id` set, `billing_month` defaulted to month of `published_at`, Commission accrued if `sourcer_id` present, Client notified.
 
 ### 6.8 Order — Copywriter actions
 
@@ -582,29 +583,28 @@ Auth is handled entirely by **Supabase Auth**. The application does not manage p
 
 **UC-OC-3. Copywriting**
 
-- 3.1 Status `IN_PROGRESS` or `NEEDS_CHANGES` → select Order → "Edit Content" → "Edit Content" screen (rich-text editor) → Save → `content_body` and `content_updated_at` updated. Status unchanged. Multiple saves permitted before submit.
+- 3.1 Status `In Progress` or `Needs changes` → All Orders → "Edit" button → "Edit Content" screen → Save → `content_body` updated. Status unchanged. Multiple saves permitted before submit.
 
 **UC-OC-4. Submit**
 
-- 4.1 From "View Order" → "Submit" → status → `CONTENT_SENT`. AC: blocked if `content_body` is empty or below configured minimum (default 50 chars). Notifies Client.
+- 4.1 All Orders → "Submit" button (visible when `order.status = In Progress`) → status → `Content Sent`; sets `sent_at`. AC: blocked if `content_body` is empty or < 50 chars. Notifies Client.
 
 ### 6.9 Invoicing (monthly)
 
-**FR-INV-1.** **Monthly invoice generation job.** On day 1 of each calendar month at 00:05 in the system timezone, for each Client:
+**FR-INV-1.** **Monthly invoice generation job.** On day 1 of each calendar month at 00:05 UTC, for each Client:
 
-- Find all Orders with `status = PUBLISHED` and `published_at` in the **previous** calendar month, that are not already on an InvoiceLine.
-- If ≥ 1 such Order exists, create one Invoice for that `(client, previous_month)` with one InvoiceLine per Order.
-- Set `issued_at = now`, `due_date = issued_at + 14 days`, `amount_cents = sum of lines`, generate PDF, send email.
-- AC: idempotent — re-running the job for the same `(client, period_month)` is a no-op.
-- AC: an Order published in month M never appears on an Invoice for any month other than M.
+- Find all Orders with `status = Published` and `billing_month` in the **previous** calendar month, that have no `invoice_id` yet.
+- If ≥ 1 such Order exists, create one Invoice (`status = Draft`) for that `(client_id, billing_month)`, set `Order.invoice_id` on each, set `total_price_cents = sum of Orders' price_cents`.
+- AC: idempotent — re-running for the same `(client_id, billing_month)` is a no-op.
+- AC: an Order's `billing_month` determines which Invoice it belongs to; the default is the month of `published_at` but can be overridden via Edit Invoice Orders (§8.10) while the Invoice is still `Draft`.
 
-**FR-INV-2.** Client can view own Invoices and download PDF.
+**FR-INV-2.** Admin/Manager can view Invoices and download PDF (§8.10 All Invoices / View Invoice).
 
-**FR-INV-3.** Admin can mark Invoice `PAID` (manual; payment integration is Phase 2).
+**FR-INV-3.** Admin/Manager sends Invoice to Client: `Draft → Sent` (records `sent_at`, `sent_by_id`).
 
-**FR-INV-4.** Nightly job: any `PENDING` Invoice past `due_date` → `OVERDUE`; email Client + Admin.
+**FR-INV-4.** Admin marks Invoice as paid: `Sent → Paid` (records `marked_as_paid_at`, `marked_as_paid_by_id`).
 
-**FR-INV-5.** **Late-publish handling.** If an Order is `PUBLISHED` after its `(period_month + 1)` Invoice has already been generated (e.g., manual fix-ups, late entry), it is included on the **next** monthly Invoice covering its `published_at` month — i.e., create a new Invoice for that older `period_month` if one doesn't exist, otherwise add a line. Re-issuing modifies an existing Invoice only if it is still `PENDING`; otherwise a new corrective Invoice is created.
+**FR-INV-5.** **Late-publish / billing-month adjustment.** If an Order's `billing_month` is changed via Edit Invoice Orders to a month that already has a `Sent` or `Paid` Invoice, it is placed on a new corrective `Draft` Invoice for that period instead.
 
 ### 6.10 Commissions (Sourcer)
 
@@ -695,33 +695,551 @@ Auth is handled entirely by **Supabase Auth**. The application does not manage p
 
 - Top nav: logo, role-aware primary links, notifications bell with unread count, profile menu.
 - Responsive: desktop primary, tablet supported, mobile read-only acceptable for v1.
+- Every list view defines: empty-state copy + primary CTA, loading skeleton, error state with retry.
+- Form validation: inline per-field plus summary on submit.
 
 ### 8.2 Dashboards (per role)
 
 **Client:** active Orders by status (cards), Orders awaiting review CTA, Cart summary with item count, latest Invoice + outstanding balance, "Browse catalog" CTA.
 
-**Manager:** kanban of Orders by status; counters for Unassigned (`NEW`), In Progress, Needs Changes, Awaiting Publication (`CONTENT_APPROVED`), Overdue-vs-publish-month; recent activity feed.
+**Manager:** All Orders list filtered to their active work; counters for Unassigned (`New`), In Progress, Needs Changes, Awaiting Publication (`Content Approved`).
 
-**Copywriter:** assigned Orders with brief preview, publish month, status; quick filters: In Progress / Needs Changes.
+**Copywriter:** assigned Orders with publish date and status; quick filters: In Progress / Needs Changes.
 
-**Sourcer:** my Sites by status (Pending / Needs Changes / Active / Archived), commissions summary (Accrued / Payable / Paid totals), recent activity.
+**Sourcer:** my Sites by status, commissions summary (Accrued / Payable / Paid totals).
 
-**Admin:** Site review queue count, User invitations awaiting acceptance, overdue Invoices count, payable commissions total, system health widgets.
+**Admin:** Site review queue count, User invitations awaiting acceptance, Draft/Sent Invoice counts, payable commissions total.
 
-### 8.3 Key Screens (named per your flows)
+---
 
-- **All Sites** / **Add Site** / **Edit Site** / **View Site** / **Change status**
-- **All Categories** / **Create Category** / **Edit Category**
-- **All Users** / **User details** / **Invitation** / **Resent invite** / **Edit User** / **Confirm status change** / **Reassign active Orders**
-- **All Orders** / **View Order** / **Edit Order** / **Cancel Order** / **Order** (review screen) / **Leave a Comment**
-- **Assign a copywriter** / **Reassign a copywriter** / **Publish Order**
-- **Edit Content**
-- **Cart**
+### 8.3 Authentication Screens
 
-### 8.4 Empty / Error States
+#### Login
 
-- Every list view defines: empty-state copy + primary CTA, loading skeleton, error state with retry.
-- Form validation: inline per-field plus summary on submit.
+| Field          | Type   | Validation | Notes              |
+| -------------- | ------ | ---------- | ------------------ |
+| Logo           | image  |            | Navigates to index |
+| Email          | string | required   |                    |
+| Password       | string | required   |                    |
+| Login          | button |            |                    |
+| Reset password | button |            |                    |
+
+#### Forgot Password
+
+| Field           | Type   | Validation | Notes              |
+| --------------- | ------ | ---------- | ------------------ |
+| Logo            | image  |            | Navigates to index |
+| Email           | string | required   |                    |
+| Send reset link | button |            |                    |
+
+#### Reset Password
+
+| Field            | Type   | Validation | Notes              |
+| ---------------- | ------ | ---------- | ------------------ |
+| Logo             | image  |            | Navigates to index |
+| Password         | string | required   |                    |
+| Confirm password | string | required   |                    |
+| Save             | button |            |                    |
+
+#### Set Password _(invitation acceptance)_
+
+| Field    | Type   | Validation | Notes              |
+| -------- | ------ | ---------- | ------------------ |
+| Logo     | image  |            | Navigates to index |
+| Password | string | required   |                    |
+| Save     | button |            |                    |
+
+---
+
+### 8.4 Profile Screens
+
+#### View Profile
+
+| Field           | Type   | Validation | Notes                  |
+| --------------- | ------ | ---------- | ---------------------- |
+| Avatar          | image  | read only  |                        |
+| Name            | string | read only  | First name + Last name |
+| Email           | string | read only  |                        |
+| Edit            | button |            |                        |
+| Change password | button |            |                        |
+
+#### Edit Profile
+
+| Field      | Type   | Validation | Notes |
+| ---------- | ------ | ---------- | ----- |
+| Avatar     | image  | optional   |       |
+| First name | string | required   |       |
+| Last name  | string | required   |       |
+| Save       | button |            |       |
+| Cancel     | button |            |       |
+
+#### Change Credentials
+
+| Field            | Type   | Validation | Notes |
+| ---------------- | ------ | ---------- | ----- |
+| Email            | string | required   |       |
+| Current password | string | required   |       |
+| New password     | string | required   |       |
+| Confirm password | string | required   |       |
+| Save             | button |            |       |
+| Cancel           | button |            |       |
+
+---
+
+### 8.5 User Management Screens _(Admin)_
+
+#### All Users
+
+| Field         | Type            | Validation | Notes                         |
+| ------------- | --------------- | ---------- | ----------------------------- |
+| Avatar        | image           | read only  |                               |
+| Name          | string          | read only  | First name + Last name        |
+| Email         | string          | read only  |                               |
+| Role          | enum userRole   | read only  |                               |
+| Status        | enum userStatus | read only  |                               |
+| Invite User   | button          |            |                               |
+| Resend invite | button          |            | Only when `status = Pending`  |
+| Edit          | button          |            |                               |
+| Disable       | button          |            |                               |
+| Activate      | button          |            | Only when `status = Disabled` |
+
+#### User Details
+
+| Field      | Type            | Validation | Notes                          |
+| ---------- | --------------- | ---------- | ------------------------------ |
+| Avatar     | image           | read only  |                                |
+| Name       | string          | read only  | First name + Last name         |
+| Email      | string          | read only  |                                |
+| Role       | enum userRole   | read only  |                                |
+| Status     | enum userStatus | read only  |                                |
+| Invited at | date            | read only  |                                |
+| Manager    | User            | read only  | Only when `user.role = Client` |
+
+#### All Users — Filters
+
+| Field  | Type            | Validation | Notes                           |
+| ------ | --------------- | ---------- | ------------------------------- |
+| Search | string          | optional   | By first name, last name, email |
+| Role   | enum userRole   | optional   |                                 |
+| Status | enum userStatus | optional   |                                 |
+
+#### Invitation
+
+| Field      | Type          | Validation                              | Notes                                                                           |
+| ---------- | ------------- | --------------------------------------- | ------------------------------------------------------------------------------- |
+| First name | string        | required                                |                                                                                 |
+| Last name  | string        | required                                |                                                                                 |
+| Email      | string        | required                                |                                                                                 |
+| Role       | enum userRole | required                                |                                                                                 |
+| Manager    | User          | optional; required when `role = Client` | Hidden when inviting from a Manager account (auto-assigned); visible when Admin |
+
+#### Resend Invite
+
+| Field   | Type          | Validation | Notes                  |
+| ------- | ------------- | ---------- | ---------------------- |
+| Name    | string        | read only  | First name + Last name |
+| Email   | string        | read only  |                        |
+| Role    | enum userRole | read only  |                        |
+| Confirm | button        |            |                        |
+| Cancel  | button        |            |                        |
+
+#### Edit User
+
+| Field      | Type          | Validation                              | Notes              |
+| ---------- | ------------- | --------------------------------------- | ------------------ |
+| First name | string        | required                                |                    |
+| Last name  | string        | required                                |                    |
+| Email      | string        | required                                |                    |
+| Role       | enum userRole | required                                |                    |
+| Manager    | User          | optional; required when `role = Client` | Visible when Admin |
+| Save       | button        |                                         |                    |
+| Cancel     | button        |                                         |                    |
+
+#### Confirm Status Change _(Disable / Activate)_
+
+| Field      | Type          | Validation | Notes                                                      |
+| ---------- | ------------- | ---------- | ---------------------------------------------------------- |
+| Disclaimer | string        | read only  | Human-readable description of what the status change means |
+| Name       | string        | read only  | First name + Last name                                     |
+| Email      | string        | read only  |                                                            |
+| Role       | enum userRole | read only  |                                                            |
+| Confirm    | button        |            |                                                            |
+| Cancel     | button        |            |                                                            |
+
+#### Reassign Active Orders _(shown when disabling a Copywriter with active Orders)_
+
+| Field        | Type    | Validation | Notes                                                              |
+| ------------ | ------- | ---------- | ------------------------------------------------------------------ |
+| Disclaimer   | string  | read only  |                                                                    |
+| Checkbox     | boolean | required   | Confirmation; default `false`                                      |
+| Clients info | User[]  | read only  | Clients whose Orders are assigned to the Copywriter being disabled |
+| Copywriter   | User    | required   | Replacement copywriter; `role = Copywriter`                        |
+| Reassign     | button  |            |                                                                    |
+| Cancel       | button  |            |                                                                    |
+
+---
+
+### 8.6 Site Management Screens
+
+#### All Sites
+
+| Field         | Type            | Validation | Notes                                                                                    |
+| ------------- | --------------- | ---------- | ---------------------------------------------------------------------------------------- |
+| Domain        | string          | read only  |                                                                                          |
+| DR            | number          | read only  |                                                                                          |
+| Category      | Category        | read only  |                                                                                          |
+| Top countries | string          | read only  |                                                                                          |
+| Countries     | enum Country[]  | read only  |                                                                                          |
+| Languages     | enum Language[] | read only  |                                                                                          |
+| Price         | number          | read only  |                                                                                          |
+| Status        | enum siteStatus | read only  | Visible when `user.role = Sourcer` or `Admin`                                            |
+| Create        | button          |            | Only when `user.role = Sourcer`                                                          |
+| Add to Cart   | button          |            | Only when `user.role = Client`                                                           |
+| Edit          | button          |            | Admin always; Sourcer only when `site.created_by = user`                                 |
+| Change status | button          |            | Only when `user.role = Admin`; actions: Request changes / Activate / Archive / Unarchive |
+
+#### All Sites — Filters
+
+| Field      | Type            | Validation | Notes                                      |
+| ---------- | --------------- | ---------- | ------------------------------------------ |
+| Search     | string          | optional   | By domain, keywords relevance, description |
+| Category   | Category        | optional   |                                            |
+| Status     | enum siteStatus | optional   |                                            |
+| Countries  | enum Country[]  | optional   |                                            |
+| Language   | enum Language   | optional   |                                            |
+| Link type  | enum linkType   | optional   |                                            |
+| Price from | number          | optional   |                                            |
+| Price to   | number          | optional   |                                            |
+
+#### View Site
+
+| Field                  | Type            | Validation | Notes                                                         |
+| ---------------------- | --------------- | ---------- | ------------------------------------------------------------- |
+| Domain                 | string          | read only  |                                                               |
+| DR                     | number          | read only  |                                                               |
+| Category               | Category        | read only  |                                                               |
+| Top countries          | string          | read only  |                                                               |
+| Countries              | enum Country[]  | read only  |                                                               |
+| Languages              | enum Language[] | read only  |                                                               |
+| Price                  | number          | read only  |                                                               |
+| Status                 | enum siteStatus | read only  | Visible when `user.role = Sourcer` or `Admin`                 |
+| Needs changes by       | User            | read only  | Required when `status = Needs changes`; visible to Admin only |
+| Needs changes at       | date            | read only  | Required when `status = Needs changes`; visible to Admin only |
+| Approved at            | date            | read only  | Required when `status = Active`; visible to Admin only        |
+| Approved by            | User            | read only  | Required when `status = Active`; visible to Admin only        |
+| Requirements           | string          | read only  | Visible to Sourcer, Manager, Admin                            |
+| Description            | string          | read only  |                                                               |
+| Sourcer notes          | string          | read only  | Visible to Sourcer and Admin only                             |
+| Contact info           | string          | read only  | Visible to Sourcer, Manager, Admin                            |
+| Link type              | enum linkType   | read only  |                                                               |
+| Keywords relevance     | string          | read only  |                                                               |
+| Organic keywords count | number          | read only  |                                                               |
+| Organic traffic count  | number          | read only  |                                                               |
+| Created by             | User            | read only  | Visible to Admin only                                         |
+| Is still working?      | boolean         | read only  | Whether the Sourcer is still assigned (not disabled/cleared)  |
+
+#### Create Site / Edit Site
+
+| Field                  | Type            | Validation | Notes              |
+| ---------------------- | --------------- | ---------- | ------------------ |
+| Domain                 | string          | required   |                    |
+| DR                     | number          | required   |                    |
+| Category               | Category        | required   |                    |
+| Top countries          | string          | required   |                    |
+| Countries              | enum Country[]  | required   |                    |
+| Languages              | enum Language[] | required   |                    |
+| Price                  | number          | required   |                    |
+| Requirements           | string          | optional   |                    |
+| Description            | string          | optional   |                    |
+| Sourcer notes          | string          | optional   |                    |
+| Contact info           | string          | optional   |                    |
+| Link type              | enum linkType   | required   | Default `dofollow` |
+| Keywords relevance     | string          | optional   |                    |
+| Organic keywords count | number          | required   | Default `0`        |
+| Organic traffic count  | number          | required   | Default `0`        |
+| Save                   | button          |            |                    |
+| Cancel                 | button          |            |                    |
+
+#### Change Status _(Site — Admin only)_
+
+| Field      | Type   | Validation | Notes                                     |
+| ---------- | ------ | ---------- | ----------------------------------------- |
+| Disclaimer | string | read only  | Describes the status change being applied |
+| Confirm    | button |            |                                           |
+| Cancel     | button |            |                                           |
+
+#### All Categories
+
+| Field  | Type   | Validation | Notes |
+| ------ | ------ | ---------- | ----- |
+| Name   | string | read only  |       |
+| Create | button |            |       |
+| Edit   | button |            |       |
+
+#### Create Category / Edit Category
+
+| Field  | Type   | Validation | Notes |
+| ------ | ------ | ---------- | ----- |
+| Name   | string | required   |       |
+| Save   | button |            |       |
+| Cancel | button |            |       |
+
+---
+
+### 8.7 Order Management — Client Screens
+
+#### All Sites _(Client view — catalog)_
+
+Shows the standard All Sites list (§8.6) plus:
+
+| Field            | Type   | Notes                                   |
+| ---------------- | ------ | --------------------------------------- |
+| Add to Cart      | button | Adds site to Cart                       |
+| Remove from Cart | button | Removes site from Cart if already added |
+
+#### Cart
+
+| Field               | Type   | Validation | Notes                                              |
+| ------------------- | ------ | ---------- | -------------------------------------------------- |
+| Disclaimer          | string | read only  | Shown per row when `cartItem.site.status ≠ Active` |
+| Cart item site info | string | read only  | Domain, DR, price                                  |
+| Publish date        | date   | required   | Month and year; must not be in the past            |
+| Remove from Cart    | button |            |                                                    |
+| Order               | button |            | Creates Orders from all valid CartItems            |
+
+#### All Orders _(Client)_
+
+| Field        | Type             | Validation | Notes                          |
+| ------------ | ---------------- | ---------- | ------------------------------ |
+| Site domain  | string           | read only  |                                |
+| Site DR      | number           | read only  |                                |
+| Publish date | date             | read only  | Month and year                 |
+| Price        | number           | read only  |                                |
+| Status       | enum orderStatus | read only  |                                |
+| Invoice      | Invoice          | read only  |                                |
+| Cancel       | button           |            | Only when `order.status = New` |
+| Edit         | button           |            | Only when `order.status = New` |
+
+#### View Order _(Client)_
+
+| Field                       | Type             | Validation | Notes                                                                 |
+| --------------------------- | ---------------- | ---------- | --------------------------------------------------------------------- |
+| Publish date                | date             | read only  | Month and year                                                        |
+| Price                       | number           | read only  |                                                                       |
+| Status                      | enum orderStatus | read only  |                                                                       |
+| Invoice                     | Invoice          | read only  |                                                                       |
+| Site DR                     | number           | read only  |                                                                       |
+| Site domain                 | string           | read only  |                                                                       |
+| Site category               | Category         | read only  |                                                                       |
+| Site top countries          | string           | read only  |                                                                       |
+| Site countries              | enum Country[]   | read only  |                                                                       |
+| Site languages              | enum Language[]  | read only  |                                                                       |
+| Site description            | string           | read only  |                                                                       |
+| Site link type              | enum linkType    | read only  |                                                                       |
+| Site keywords relevance     | string           | read only  |                                                                       |
+| Site organic keywords count | number           | read only  |                                                                       |
+| Site organic traffic count  | number           | read only  |                                                                       |
+| Comments                    | Comment[]        | read only  |                                                                       |
+| Approve                     | button           |            | Only when `order.status = Content Sent`                               |
+| Reject                      | button           |            | Only when `order.status = Content Sent`; opens Leave a Comment screen |
+
+#### Leave a Comment _(Client — Reject flow)_
+
+| Field      | Type   | Validation | Notes                         |
+| ---------- | ------ | ---------- | ----------------------------- |
+| Order info | string | read only  |                               |
+| Comment    | string | required   | ≥ 20 chars                    |
+| Send       | button |            | Sets status → `Needs changes` |
+| Cancel     | button |            |                               |
+
+---
+
+### 8.8 Order Management — Internal Screens _(Manager / Admin)_
+
+#### All Orders _(Manager / Admin)_
+
+| Field                 | Type             | Validation | Notes                                          |
+| --------------------- | ---------------- | ---------- | ---------------------------------------------- |
+| Site domain           | string           | read only  |                                                |
+| Site DR               | number           | read only  |                                                |
+| Publish date          | date             | read only  | Month and year                                 |
+| Price                 | number           | read only  |                                                |
+| Status                | enum orderStatus | read only  |                                                |
+| Invoice               | Invoice          | read only  |                                                |
+| Sourcer               | User             | read only  |                                                |
+| Client                | User             | read only  |                                                |
+| Copywriter            | User             | read only  |                                                |
+| Assign a copywriter   | button           |            | Visible when `order.copywriter_id` is empty    |
+| Reassign a copywriter | button           |            | Visible when `order.copywriter_id` is set      |
+| Publish               | button           |            | Visible when `order.status = Content Approved` |
+
+#### All Orders — Filters _(Manager / Admin)_
+
+| Field        | Type             | Validation | Notes |
+| ------------ | ---------------- | ---------- | ----- |
+| Status       | enum orderStatus | optional   |       |
+| Publish date | date             | optional   |       |
+| Copywriter   | User             | optional   |       |
+
+#### View Order _(Manager / Admin)_
+
+| Field                       | Type             | Validation | Notes                                    |
+| --------------------------- | ---------------- | ---------- | ---------------------------------------- |
+| Publish date                | date             | read only  | Month and year                           |
+| Price                       | number           | read only  |                                          |
+| Status                      | enum orderStatus | read only  |                                          |
+| Approved at                 | date             | read only  | Visible when `status = Content Approved` |
+| Published at                | date             | read only  | Visible when `status = Published`        |
+| Published by                | User             | read only  | Visible when `status = Published`        |
+| Published URL               | string           | read only  | Visible when `status = Published`        |
+| Invoice                     | Invoice          | read only  |                                          |
+| Sourcer                     | User             | read only  |                                          |
+| Client                      | User             | read only  |                                          |
+| Copywriter                  | User             | read only  |                                          |
+| Created at                  | date             | read only  |                                          |
+| Site domain                 | string           | read only  |                                          |
+| Site DR                     | number           | read only  |                                          |
+| Site category               | Category         | read only  |                                          |
+| Site top countries          | string           | read only  |                                          |
+| Site countries              | enum Country[]   | read only  |                                          |
+| Site languages              | enum Language[]  | read only  |                                          |
+| Site requirements           | string           | read only  |                                          |
+| Site description            | string           | read only  |                                          |
+| Site contact info           | string           | read only  |                                          |
+| Site link type              | enum linkType    | read only  |                                          |
+| Site keywords relevance     | string           | read only  |                                          |
+| Site organic keywords count | number           | read only  |                                          |
+| Site organic traffic count  | number           | read only  |                                          |
+| Comments                    | Comment[]        | read only  |                                          |
+
+#### Assign a Copywriter / Reassign a Copywriter
+
+| Field      | Type   | Validation | Notes               |
+| ---------- | ------ | ---------- | ------------------- |
+| Order      | Order  | read only  | Main order info     |
+| Copywriter | User   | required   | `role = Copywriter` |
+| Save       | button |            |                     |
+| Cancel     | button |            |                     |
+
+#### Publish Order
+
+| Field         | Type   | Validation | Notes                                      |
+| ------------- | ------ | ---------- | ------------------------------------------ |
+| Order         | Order  | read only  | Main order info                            |
+| Published URL | string | required   | HTTPS; link-verified against `anchor_text` |
+| Publish date  | date   | required   | Default = `order.publish_date`             |
+| Publish       | button |            |                                            |
+| Cancel        | button |            |                                            |
+
+---
+
+### 8.9 Copywriting Screens
+
+#### All Orders _(Copywriter)_
+
+| Field          | Type             | Validation | Notes                                  |
+| -------------- | ---------------- | ---------- | -------------------------------------- |
+| Site domain    | string           | read only  |                                        |
+| Site DR        | number           | read only  |                                        |
+| Publish date   | date             | read only  | Month and year                         |
+| Status         | enum orderStatus | read only  |                                        |
+| Client         | User             | read only  |                                        |
+| Comments count | number           | read only  |                                        |
+| Edit           | button           |            | Only when `order.status = In Progress` |
+| Submit         | button           |            | Only when `order.status = In Progress` |
+
+#### View Order _(Copywriter)_
+
+| Field                       | Type             | Validation | Notes                                    |
+| --------------------------- | ---------------- | ---------- | ---------------------------------------- |
+| Publish date                | date             | read only  | Month and year                           |
+| Status                      | enum orderStatus | read only  |                                          |
+| Approved at                 | date             | read only  | Visible when `status = Content Approved` |
+| Client                      | User             | read only  |                                          |
+| Created at                  | date             | read only  |                                          |
+| Site domain                 | string           | read only  |                                          |
+| Site DR                     | number           | read only  |                                          |
+| Site category               | Category         | read only  |                                          |
+| Site top countries          | string           | read only  |                                          |
+| Site countries              | enum Country[]   | read only  |                                          |
+| Site languages              | enum Language[]  | read only  |                                          |
+| Site description            | string           | read only  |                                          |
+| Site link type              | enum linkType    | read only  |                                          |
+| Site keywords relevance     | string           | read only  |                                          |
+| Site organic keywords count | number           | read only  |                                          |
+| Site organic traffic count  | number           | read only  |                                          |
+| Comments                    | Comment[]        | read only  |                                          |
+
+#### Edit Content
+
+| Field   | Type   | Validation | Notes                               |
+| ------- | ------ | ---------- | ----------------------------------- |
+| Order   | Order  | read only  | As shown in View Order              |
+| Content | string | required   | ≥ 50 chars before submit            |
+| Save    | button |            | Saves draft; does not change status |
+| Cancel  | button |            |                                     |
+
+---
+
+### 8.10 Invoicing Screens _(Admin / Manager)_
+
+#### All Invoices
+
+| Field         | Type               | Validation | Notes                              |
+| ------------- | ------------------ | ---------- | ---------------------------------- |
+| Client        | User               | read only  | First name + Last name             |
+| Orders count  | number             | read only  |                                    |
+| Total price   | number             | read only  |                                    |
+| Billing month | date               | read only  |                                    |
+| Status        | enum invoiceStatus | read only  |                                    |
+| Edit          | button             |            | Only when `invoice.status = Draft` |
+| Send          | button             |            | Only when `invoice.status = Draft` |
+| Mark as paid  | button             |            | Only when `invoice.status = Sent`  |
+| Download PDF  | button             |            |                                    |
+
+#### View Invoice
+
+| Field             | Type               | Validation | Notes                                  |
+| ----------------- | ------------------ | ---------- | -------------------------------------- |
+| Client            | User               | read only  | Main user info                         |
+| Orders            | Order[]            | read only  | Main order info per line               |
+| Total price       | number             | read only  |                                        |
+| Billing month     | date               | read only  |                                        |
+| Status            | enum invoiceStatus | read only  |                                        |
+| Sent at           | date               | read only  | Visible when `status = Sent` or `Paid` |
+| Sent by           | User               | read only  | Visible when `status = Sent` or `Paid` |
+| Marked as paid at | date               | read only  | Visible when `status = Paid`           |
+| Marked as paid by | User               | read only  | Visible when `status = Paid`           |
+
+#### Edit Invoice Orders _(reassign Order billing months within Draft invoice)_
+
+| Field          | Type               | Validation | Notes                                                               |
+| -------------- | ------------------ | ---------- | ------------------------------------------------------------------- |
+| Client         | User               | read only  | Main user info                                                      |
+| Total price    | number             | read only  | Recalculated live                                                   |
+| Billing month  | date               | read only  | Current invoice billing month                                       |
+| Status         | enum invoiceStatus | read only  |                                                                     |
+| Orders         | Order[]            | read only  | List of attached orders                                             |
+| Published date | date               | read only  | Per-order                                                           |
+| Billing month  | date               | required   | Per-order; editable to reassign order to a different invoice period |
+| Save           | button             |            |                                                                     |
+| Cancel         | button             |            |                                                                     |
+
+#### Send Invoice
+
+| Field   | Type    | Validation | Notes                                                  |
+| ------- | ------- | ---------- | ------------------------------------------------------ |
+| Invoice | Invoice | read only  | Main invoice info                                      |
+| Send    | button  |            | Sets `status = Sent`, records `sent_at` / `sent_by_id` |
+| Cancel  | button  |            |                                                        |
+
+#### Mark as Paid
+
+| Field        | Type    | Validation | Notes                                                                      |
+| ------------ | ------- | ---------- | -------------------------------------------------------------------------- |
+| Invoice      | Invoice | read only  | Main invoice info                                                          |
+| Mark as paid | button  |            | Sets `status = Paid`, records `marked_as_paid_at` / `marked_as_paid_by_id` |
+| Cancel       | button  |            |                                                                            |
 
 ---
 
