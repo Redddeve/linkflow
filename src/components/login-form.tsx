@@ -28,6 +28,8 @@ const ROLE_DEMO_EMAILS: Record<UserRole, string> = {
   Client: 'dmitry.popko+client@archysoft.com',
 };
 
+const ROLE_DEMO_PASSWORD = 'demo123456';
+
 const ROLE_COLORS: Record<UserRole, string> = {
   Admin: 'var(--accent)',
   Manager: 'var(--st-assign-fg)',
@@ -48,6 +50,7 @@ export function LoginForm({
 
   const handleLogin = async (e: React.SubmitEvent) => {
     e.preventDefault();
+
     const supabase = createClient();
     setIsLoading(true);
     setError(null);
@@ -57,7 +60,9 @@ export function LoginForm({
         email,
         password,
       });
+
       if (error) throw error;
+
       router.push('/dashboard');
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'An error occurred');
@@ -68,6 +73,7 @@ export function LoginForm({
 
   const fillRole = (role: UserRole) => {
     setEmail(ROLE_DEMO_EMAILS[role]);
+    setPassword(ROLE_DEMO_PASSWORD);
     setError(null);
   };
 

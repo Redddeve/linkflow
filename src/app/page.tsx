@@ -25,7 +25,7 @@ export default async function HomePage() {
           Linkbuilding Operations Platform
         </p>
       </div>
-      <Link href="/auth/login" className={buttonVariants({ size: 'lg' })}>
+      <Link href="/login" className={buttonVariants({ size: 'lg' })}>
         Sign in
       </Link>
     </main>

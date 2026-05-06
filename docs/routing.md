@@ -38,7 +38,7 @@ Use the helpers in `src/lib/auth.ts` inside Server Components and Server Actions
 ```ts
 import { getCurrentUser, requireUser, requireRole } from '@/lib/auth';
 
-// In layouts / pages — redirects to /auth/login if unauthenticated
+// In layouts / pages — redirects to /login if unauthenticated
 const user = await requireUser();
 
 // In server actions — throws FORBIDDEN if wrong role

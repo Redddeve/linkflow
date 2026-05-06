@@ -34,7 +34,7 @@ export async function getCurrentUser(): Promise<UserRow | null> {
 
 export async function requireUser(): Promise<UserRow> {
   const user = await getCurrentUser();
-  if (!user) redirect('/auth/login');
+  if (!user) redirect('/login');
   return user;
 }
 
