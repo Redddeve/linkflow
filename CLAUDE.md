@@ -8,8 +8,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 Before writing any code, always check the `docs/` directory for a relevant standards document and follow it. Current docs:
 
-- `docs/auth.md` — Auth standards (middleware, server auth, UI components)
 - `docs/routing.md` — Routing standards (route structure, protected /dashboard routes, middleware)
+- `docs/ui.md` — UI standards (component library, styling, layout patterns)
+- `docs/validation.md` — Form validation standards (react-hook-form, Zod server-side validation, error display)
 
 ## Commands
 
