@@ -1,5 +1,3 @@
-'use client';
-
 import { createClient } from '@/lib/supabase/client';
 import { updatePasswordSchema } from '@/lib/schemas/auth';
 

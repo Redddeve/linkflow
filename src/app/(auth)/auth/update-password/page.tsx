@@ -30,7 +30,7 @@ export default function UpdatePasswordForm() {
   async function onSubmit(data: FormValues) {
     try {
       await updatePassword(data.password);
-      router.push('/protected');
+      router.push('/dashboard');
     } catch (err: unknown) {
       setError('root', {
         message: err instanceof Error ? err.message : 'An error occurred',
