@@ -4,6 +4,13 @@ import { useState } from 'react';
 import Icon from './Icon';
 import { PageHeader, Stat, StageBadge, InvoiceBadge, Stepper } from './chrome';
 import { SEED_ORDERS, SEED_SITES, SEED_INVOICES } from '@/lib/data';
+import { Button } from '@/components/ui/button';
+import { Card } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 
 export function ClientHome({ setPage, openOrder }: { setPage: (p: string) => void; openOrder: (id: string) => void }) {
   const myOrders = SEED_ORDERS.filter(o => o.client === 'Client A');
@@ -14,7 +21,9 @@ export function ClientHome({ setPage, openOrder }: { setPage: (p: string) => voi
       <PageHeader
         title="Welcome back, Client A"
         sub="Here's a quick view of your linkbuilding activity."
-        actions={<button className="btn btn-primary" onClick={() => setPage('new')}><Icon name="plus" size={14} />New order</button>}
+        actions={
+          <Button onClick={() => setPage('new')}><Icon name="plus" size={14} />New order</Button>
+        }
       />
       <div className="stats">
         <Stat label="Active orders" value="4" meta="2 awaiting your review" />
@@ -23,13 +32,13 @@ export function ClientHome({ setPage, openOrder }: { setPage: (p: string) => voi
         <Stat label="Avg. turnaround" value="11d" meta="−2d vs last month" metaTone="up" />
       </div>
       <div className="split">
-        <div className="card">
+        <Card>
           <div className="card-h">
             <div>
               <div className="card-h-title">Recent orders</div>
               <div className="card-h-sub">Your last {recent.length} orders</div>
             </div>
-            <button className="btn btn-sm" onClick={() => setPage('orders')}>View all</button>
+            <Button variant="outline" size="sm" onClick={() => setPage('orders')}>View all</Button>
           </div>
           <table className="table">
             <thead><tr><th>Order</th><th>Target</th><th>Sites</th><th>Stage</th><th /></tr></thead>
@@ -45,8 +54,8 @@ export function ClientHome({ setPage, openOrder }: { setPage: (p: string) => voi
               ))}
             </tbody>
           </table>
-        </div>
-        <div className="card">
+        </Card>
+        <Card>
           <div className="card-h"><div className="card-h-title">Awaiting your approval</div></div>
           {toApprove.length === 0 ? (
             <div className="empty">All caught up.</div>
@@ -58,10 +67,10 @@ export function ClientHome({ setPage, openOrder }: { setPage: (p: string) => voi
               </div>
               <div style={{ fontWeight: 500, marginBottom: 4 }}>{o.target}</div>
               <div className="text-xs muted">Anchor: &ldquo;{o.anchor}&rdquo; · Due {o.due}</div>
-              <button className="btn btn-sm btn-primary" style={{ marginTop: 10 }}>Review draft</button>
+              <Button size="sm" className="mt-2.5">Review draft</Button>
             </div>
           ))}
-        </div>
+        </Card>
       </div>
     </div>
   );
@@ -75,15 +84,18 @@ export function ClientOrders({ openOrder }: { openOrder: (id: string) => void })
     <div className="page">
       <PageHeader title="My orders" sub="Track every order you've placed." />
       <div className="filterbar">
-        <div className="tabs">
-          {[['all','All'],['content','In progress'],['approval','For review'],['done','Live']].map(([id,l]) => (
-            <div key={id} className={`tab ${tab===id?'active':''}`} onClick={() => setTab(id)}>{l}</div>
-          ))}
-        </div>
-        <button className="btn btn-sm"><Icon name="filter" size={12} />Filter</button>
-        <button className="btn btn-sm"><Icon name="sort" size={12} />Sort</button>
+        <Tabs value={tab} onValueChange={setTab}>
+          <TabsList>
+            <TabsTrigger value="all">All</TabsTrigger>
+            <TabsTrigger value="content">In progress</TabsTrigger>
+            <TabsTrigger value="approval">For review</TabsTrigger>
+            <TabsTrigger value="done">Live</TabsTrigger>
+          </TabsList>
+        </Tabs>
+        <Button variant="outline" size="sm"><Icon name="filter" size={12} />Filter</Button>
+        <Button variant="outline" size="sm"><Icon name="sort" size={12} />Sort</Button>
       </div>
-      <div className="card">
+      <Card>
         <table className="table">
           <thead><tr><th>Order</th><th>Target URL</th><th>Anchor</th><th>Sites</th><th>Stage</th><th>Due</th><th>Amount</th></tr></thead>
           <tbody>
@@ -100,7 +112,7 @@ export function ClientOrders({ openOrder }: { openOrder: (id: string) => void })
             ))}
           </tbody>
         </table>
-      </div>
+      </Card>
     </div>
   );
 }
@@ -128,31 +140,29 @@ export function NewOrder({ setPage }: { setPage: (p: string) => void }) {
       </div>
       <div className="split">
         <div>
-          <div className="card card-pad" style={{ marginBottom: 16 }}>
-            <div className="hstack" style={{ marginBottom: 16 }}>
-              <h3 style={{ margin: 0, fontSize: 15 }}>Brief</h3>
+          <Card className="p-5 mb-4">
+            <h3 className="text-[15px] font-semibold mb-4">Brief</h3>
+            <div className="field">
+              <Label>Target URL</Label>
+              <Input className="mt-1.5" value={target} onChange={e => setTarget(e.target.value)} />
             </div>
             <div className="field">
-              <label className="field-label">Target URL</label>
-              <input className="input" value={target} onChange={e => setTarget(e.target.value)} />
-            </div>
-            <div className="field">
-              <label className="field-label">Anchor text</label>
-              <input className="input" value={anchor} onChange={e => setAnchor(e.target.value)} />
-              <div className="field-hint">The visible link text on the destination article.</div>
+              <Label>Anchor text</Label>
+              <Input className="mt-1.5" value={anchor} onChange={e => setAnchor(e.target.value)} />
+              <p className="field-hint">The visible link text on the destination article.</p>
             </div>
             <div className="field" style={{ marginBottom: 0 }}>
-              <label className="field-label">Notes for copywriter (optional)</label>
-              <textarea className="textarea" placeholder="Tone, audience, must-mention points…" />
+              <Label>Notes for copywriter (optional)</Label>
+              <Textarea className="mt-1.5" placeholder="Tone, audience, must-mention points…" />
             </div>
-          </div>
-          <div className="card">
+          </Card>
+          <Card>
             <div className="card-h">
               <div>
                 <div className="card-h-title">Pick sites · {selected.length} selected</div>
                 <div className="card-h-sub">Approved sites from our catalog</div>
               </div>
-              <button className="btn btn-sm"><Icon name="filter" size={12} />Filter</button>
+              <Button variant="outline" size="sm"><Icon name="filter" size={12} />Filter</Button>
             </div>
             <table className="table">
               <thead><tr><th /><th>Domain</th><th>Category</th><th>DR</th><th>Traffic</th><th>Price</th></tr></thead>
@@ -176,9 +186,9 @@ export function NewOrder({ setPage }: { setPage: (p: string) => void }) {
                 })}
               </tbody>
             </table>
-          </div>
+          </Card>
         </div>
-        <div className="card">
+        <Card>
           <div className="card-h"><div className="card-h-title">Order summary</div></div>
           <div className="side-section">
             <div className="side-label">Brief</div>
@@ -205,12 +215,12 @@ export function NewOrder({ setPage }: { setPage: (p: string) => void }) {
             </div>
           </div>
           <div style={{ padding: '14px 18px' }}>
-            <button className="btn btn-primary" style={{ width: '100%', justifyContent: 'center' }} onClick={() => setPage('orders')}>
+            <Button className="w-full justify-center" onClick={() => setPage('orders')}>
               Submit order <Icon name="arrow" size={14} />
-            </button>
-            <button className="btn btn-ghost" style={{ width: '100%', justifyContent: 'center', marginTop: 6 }}>Save as draft</button>
+            </Button>
+            <Button variant="ghost" className="w-full justify-center mt-1.5">Save as draft</Button>
           </div>
-        </div>
+        </Card>
       </div>
     </div>
   );
@@ -222,17 +232,20 @@ export function ClientOrderDetail({ orderId, back }: { orderId: string; back: ()
   return (
     <div className="page">
       <div style={{ marginBottom: 16 }}>
-        <button className="btn btn-ghost btn-sm" onClick={back}><Icon name="chev" size={12} />Back to orders</button>
+        <Button variant="ghost" size="sm" onClick={back}><Icon name="chev" size={12} />Back to orders</Button>
       </div>
       <PageHeader
         title={<><span className="mono" style={{ fontSize: 15, color: 'var(--text-muted)', marginRight: 10 }}>{order.id}</span>{order.target}</>}
         sub={<>Anchor: &ldquo;{order.anchor}&rdquo; · Created {order.created} · Due {order.due}</>}
-        actions={<><button className="btn"><Icon name="more" /></button><button className="btn btn-primary">View draft</button></>}
+        actions={<>
+          <Button variant="outline"><Icon name="more" /></Button>
+          <Button>View draft</Button>
+        </>}
       />
       <Stepper currentStage={order.stage} />
       <div className="split">
         <div className="vstack">
-          <div className="card">
+          <Card>
             <div className="card-h"><div className="card-h-title">Placements</div></div>
             <table className="table">
               <thead><tr><th>Site</th><th>Category</th><th>DR</th><th>Status</th><th>URL</th></tr></thead>
@@ -248,8 +261,8 @@ export function ClientOrderDetail({ orderId, back }: { orderId: string; back: ()
                 ))}
               </tbody>
             </table>
-          </div>
-          <div className="card">
+          </Card>
+          <Card>
             <div className="card-h"><div className="card-h-title">Activity</div></div>
             <ul className="activity">
               <li><span className="when">10:24</span><span><span className="who">Writer A</span> submitted a draft for site-alpha.com</span></li>
@@ -257,9 +270,9 @@ export function ClientOrderDetail({ orderId, back }: { orderId: string; back: ()
               <li><span className="when">Apr 28</span><span><span className="who">Manager A</span> assigned writer to site-alpha.com</span></li>
               <li><span className="when">Apr 28</span><span><span className="who">Client A</span> created order</span></li>
             </ul>
-          </div>
+          </Card>
         </div>
-        <div className="card">
+        <Card>
           <div className="side-section">
             <div className="side-label">Order details</div>
             <div className="side-row"><span className="k">Manager</span><span className="v">{order.manager}</span></div>
@@ -276,7 +289,7 @@ export function ClientOrderDetail({ orderId, back }: { orderId: string; back: ()
             <div className="side-row"><span className="k">Amount</span><span className="v mono">${order.amount}</span></div>
             <div className="side-row"><span className="k">Invoice</span><span className="v"><InvoiceBadge status={order.invoiceStatus} /></span></div>
           </div>
-        </div>
+        </Card>
       </div>
     </div>
   );
@@ -287,14 +300,14 @@ export function ApproveContent({ back }: { back: () => void }) {
   return (
     <div className="page">
       <div style={{ marginBottom: 16 }}>
-        <button className="btn btn-ghost btn-sm" onClick={back}><Icon name="chev" size={12} />Back</button>
+        <Button variant="ghost" size="sm" onClick={back}><Icon name="chev" size={12} />Back</Button>
       </div>
       <PageHeader
         title="Review draft"
         sub={<><span className="mono">ORD-1041</span> · site-beta.com · Anchor &ldquo;top tools&rdquo;</>}
         actions={<>
-          <button className="btn">Request changes</button>
-          <button className="btn btn-primary" onClick={() => setShowOk(true)}><Icon name="check" size={14} />Approve &amp; publish</button>
+          <Button variant="outline">Request changes</Button>
+          <Button onClick={() => setShowOk(true)}><Icon name="check" size={14} />Approve &amp; publish</Button>
         </>}
       />
       <div className="split">
@@ -308,7 +321,7 @@ export function ApproveContent({ back }: { back: () => void }) {
           <p>First, don&rsquo;t over-index on integrations. Most teams use three or four tools heavily; the long tail of &ldquo;supported integrations&rdquo; is largely marketing. Second, watch for hidden seat costs. Third, evaluate the export story before you commit.</p>
           <p>Done right, this evaluation pays back many times over.</p>
         </div>
-        <div className="card">
+        <Card>
           <div className="card-h"><div className="card-h-title">Comments</div></div>
           <div className="comment">
             <span className="avatar-xs">M</span>
@@ -325,33 +338,31 @@ export function ApproveContent({ back }: { back: () => void }) {
             </div>
           </div>
           <div style={{ padding: 14 }}>
-            <textarea className="textarea" placeholder="Leave a comment or request changes…" />
-            <button className="btn btn-sm" style={{ marginTop: 8 }}>Comment</button>
+            <Textarea placeholder="Leave a comment or request changes…" />
+            <Button variant="outline" size="sm" className="mt-2">Comment</Button>
           </div>
-        </div>
+        </Card>
       </div>
-      {showOk && (
-        <div className="modal-bd" onClick={() => setShowOk(false)}>
-          <div className="modal" onClick={e => e.stopPropagation()}>
-            <div className="modal-h">
-              <div className="modal-h-title">Approve &amp; queue for publishing</div>
-              <button className="icon-btn" onClick={() => setShowOk(false)}><Icon name="close" size={14} /></button>
-            </div>
-            <div className="modal-b">
-              <p>Once approved, this draft moves to publishing. The site owner will place the article and we&rsquo;ll email you the live URL.</p>
-              <div style={{ background: 'var(--surface-2)', border: '1px solid var(--border)', borderRadius: 8, padding: 12, fontSize: 13 }}>
-                <div className="side-row"><span className="k">Order</span><span className="v mono">ORD-1041</span></div>
-                <div className="side-row"><span className="k">Site</span><span className="v mono">site-beta.com</span></div>
-                <div className="side-row"><span className="k">Anchor</span><span className="v">&ldquo;top tools&rdquo;</span></div>
-              </div>
-            </div>
-            <div className="modal-f">
-              <button className="btn" onClick={() => setShowOk(false)}>Cancel</button>
-              <button className="btn btn-primary" onClick={() => setShowOk(false)}>Confirm approval</button>
+
+      <Dialog open={showOk} onOpenChange={setShowOk}>
+        <DialogContent className="max-w-140">
+          <DialogHeader>
+            <DialogTitle>Approve &amp; queue for publishing</DialogTitle>
+          </DialogHeader>
+          <div className="modal-b">
+            <p>Once approved, this draft moves to publishing. The site owner will place the article and we&rsquo;ll email you the live URL.</p>
+            <div style={{ background: 'var(--surface-2)', border: '1px solid var(--border)', borderRadius: 8, padding: 12, fontSize: 13 }}>
+              <div className="side-row"><span className="k">Order</span><span className="v mono">ORD-1041</span></div>
+              <div className="side-row"><span className="k">Site</span><span className="v mono">site-beta.com</span></div>
+              <div className="side-row"><span className="k">Anchor</span><span className="v">&ldquo;top tools&rdquo;</span></div>
             </div>
           </div>
-        </div>
-      )}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowOk(false)}>Cancel</Button>
+            <Button onClick={() => setShowOk(false)}>Confirm approval</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
@@ -364,12 +375,14 @@ export function ClientCatalog() {
     <div className="page">
       <PageHeader title="Site catalog" sub="Approved sites available for orders." />
       <div className="filterbar">
-        <div className="tabs">
-          {cats.map(c => <div key={c} className={`tab ${cat===c?'active':''}`} onClick={() => setCat(c)}>{c}</div>)}
-        </div>
-        <input className="input" placeholder="Search domains…" style={{ width: 220, marginLeft: 'auto' }} />
+        <Tabs value={cat} onValueChange={setCat}>
+          <TabsList>
+            {cats.map(c => <TabsTrigger key={c} value={c}>{c}</TabsTrigger>)}
+          </TabsList>
+        </Tabs>
+        <Input className="w-55 ml-auto" placeholder="Search domains…" />
       </div>
-      <div className="card">
+      <Card>
         <table className="table">
           <thead><tr><th>Domain</th><th>Category</th><th>DR</th><th>Traffic</th><th>Price</th><th /></tr></thead>
           <tbody>
@@ -380,12 +393,12 @@ export function ClientCatalog() {
                 <td className="mono">{s.dr}</td>
                 <td className="mono muted">{s.traffic}</td>
                 <td className="mono">${s.price}</td>
-                <td><button className="btn btn-sm">Add to order</button></td>
+                <td><Button variant="outline" size="sm">Add to order</Button></td>
               </tr>
             ))}
           </tbody>
         </table>
-      </div>
+      </Card>
     </div>
   );
 }
@@ -393,13 +406,15 @@ export function ClientCatalog() {
 export function ClientInvoices() {
   return (
     <div className="page">
-      <PageHeader title="Invoices" sub="All invoices issued for your account." actions={<button className="btn"><Icon name="ext" size={14} />Export CSV</button>} />
+      <PageHeader title="Invoices" sub="All invoices issued for your account." actions={
+        <Button variant="outline"><Icon name="ext" size={14} />Export CSV</Button>
+      } />
       <div className="stats" style={{ gridTemplateColumns: 'repeat(3, 1fr)' }}>
         <Stat label="Outstanding" value="$1,640" meta="3 invoices" />
         <Stat label="Paid (90d)" value="$2,840" meta="6 invoices" metaTone="up" />
         <Stat label="Overdue" value="$700" meta="1 invoice" metaTone="down" />
       </div>
-      <div className="card">
+      <Card>
         <table className="table">
           <thead><tr><th>Invoice</th><th>Order</th><th>Issued</th><th>Due</th><th>Amount</th><th>Status</th></tr></thead>
           <tbody>
@@ -415,7 +430,7 @@ export function ClientInvoices() {
             ))}
           </tbody>
         </table>
-      </div>
+      </Card>
     </div>
   );
 }

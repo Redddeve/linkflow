@@ -2,6 +2,11 @@
 
 import Icon from './Icon';
 import { NAV, ROLES, STAGES } from '@/lib/data';
+import { Badge } from '@/components/ui/badge';
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { Button } from '@/components/ui/button';
+import { Separator } from '@/components/ui/separator';
+import { cn } from '@/lib/utils';
 
 export function StageBadge({ stage }: { stage: string }) {
   const map: Record<string, [string, string]> = {
@@ -13,7 +18,11 @@ export function StageBadge({ stage }: { stage: string }) {
     done:     ['b-live',   'Live'],
   };
   const [cls, label] = map[stage] ?? ['b-neutral', stage];
-  return <span className={`badge ${cls}`}><span className="dot" />{label}</span>;
+  return (
+    <span className={cn('badge', cls)}>
+      <span className="dot" />{label}
+    </span>
+  );
 }
 
 export function SiteStatusBadge({ status }: { status: string }) {
@@ -23,7 +32,11 @@ export function SiteStatusBadge({ status }: { status: string }) {
     rejected: ['b-rejected', 'Rejected'],
   };
   const [cls, label] = map[status] ?? ['b-neutral', status];
-  return <span className={`badge ${cls}`}><span className="dot" />{label}</span>;
+  return (
+    <span className={cn('badge', cls)}>
+      <span className="dot" />{label}
+    </span>
+  );
 }
 
 export function InvoiceBadge({ status }: { status: string }) {
@@ -34,14 +47,26 @@ export function InvoiceBadge({ status }: { status: string }) {
     draft:   ['b-neutral',  'Draft'],
   };
   const [cls, label] = map[status] ?? ['b-neutral', status];
-  return <span className={`badge ${cls}`}><span className="dot" />{label}</span>;
+  return (
+    <span className={cn('badge', cls)}>
+      <span className="dot" />{label}
+    </span>
+  );
 }
 
-export function Avatar({ name, size = 'sm' }: { name?: string | null; size?: 'sm' | 'md' }) {
+export function UserAvatar({ name, size = 'sm' }: { name?: string | null; size?: 'sm' | 'md' }) {
   const initial = (name ?? '?').replace(/[^A-Za-z]/g, '').slice(0, 1).toUpperCase() || '?';
-  const cls = size === 'sm' ? 'avatar-xs' : 'avatar-md';
-  return <span className={cls}>{initial}</span>;
+  return (
+    <Avatar className={size === 'sm' ? 'h-6 w-6 text-[10px]' : 'h-7.5 w-7.5 text-xs'}>
+      <AvatarFallback className="bg-(--accent-soft) text-(--accent-text) font-semibold">
+        {initial}
+      </AvatarFallback>
+    </Avatar>
+  );
 }
+
+// Keep legacy name exported for backward compat
+export { UserAvatar as Avatar };
 
 export function Sidebar({ role, page, setPage }: { role: string; page: string; setPage: (p: string) => void }) {
   const items = NAV[role] ?? [];
@@ -63,7 +88,7 @@ export function Sidebar({ role, page, setPage }: { role: string; page: string; s
       {items.map(item => (
         <div
           key={item.id}
-          className={`nav-item ${page === item.id ? 'active' : ''}`}
+          className={cn('nav-item', page === item.id && 'active')}
           onClick={() => setPage(item.id)}
         >
           <span className="nav-icon"><Icon name={item.icon} /></span>
@@ -72,6 +97,7 @@ export function Sidebar({ role, page, setPage }: { role: string; page: string; s
         </div>
       ))}
       <div style={{ flex: 1 }} />
+      <Separator className="my-2 bg-border" />
       <div className="nav-item" style={{ color: 'var(--text-muted)' }}>
         <span className="nav-icon"><Icon name="settings" /></span>
         <span>Settings</span>
@@ -97,8 +123,12 @@ export function Topbar({ crumbs }: { crumbs: string[] }) {
         <kbd>⌘K</kbd>
       </div>
       <div className="topbar-actions">
-        <button className="icon-btn"><Icon name="bell" /></button>
-        <div className="avatar-md">U</div>
+        <Button variant="ghost" size="icon" className="h-8 w-8 text-(--text-muted)">
+          <Icon name="bell" />
+        </Button>
+        <Avatar className="h-7.5 w-7.5 text-xs">
+          <AvatarFallback className="bg-(--accent-soft) text-(--accent-text) font-semibold">U</AvatarFallback>
+        </Avatar>
       </div>
     </div>
   );
@@ -139,7 +169,7 @@ export function Stat({
     <div className="stat">
       <div className="stat-label">{label}</div>
       <div className="stat-value">{value}</div>
-      {meta && <div className={`stat-meta ${metaTone ?? ''}`}>{meta}</div>}
+      {meta && <div className={cn('stat-meta', metaTone ?? '')}>{meta}</div>}
     </div>
   );
 }
@@ -152,7 +182,7 @@ export function Stepper({ currentStage }: { currentStage: string }) {
         const cls = i < idx ? 'done' : i === idx ? 'active' : '';
         return (
           <span key={s.id} style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-            <div className={`step ${cls}`}>
+            <div className={cn('step', cls)}>
               <span className="step-num">{i < idx ? '✓' : i + 1}</span>
               <span>{s.label}</span>
             </div>
