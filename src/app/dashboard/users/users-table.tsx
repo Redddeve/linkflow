@@ -178,12 +178,12 @@ export function UsersTable({ users, currentUserId }: Props) {
                 <Badge variant={statusVariant(u.status)}>{statusLabel(u.status)}</Badge>
               </TableCell>
               <TableCell className="text-muted-foreground text-xs">
-                {u.invited_at ? new Date(u.invited_at).toLocaleDateString() : '—'}
+                {u.invited_at ? new Date(u.invited_at).toLocaleDateString('en-CA') : '—'}
               </TableCell>
               <TableCell>
                 <DropdownMenu>
                   <DropdownMenuTrigger
-                    className="inline-flex h-8 w-8 items-center justify-center rounded-md hover:bg-muted"
+                    className="inline-flex h-9 w-9 items-center justify-center rounded-md hover:bg-muted"
                     aria-label="User actions"
                   >
                     <MoreHorizontal className="h-4 w-4" />

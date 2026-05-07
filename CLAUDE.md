@@ -6,8 +6,6 @@ Keep your replies concise and focus on conveying the key information. No unneces
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-@AGENTS.md
-
 ## Docs
 
 Before writing any code, always check the `docs/` directory for a relevant standards document and follow it. Current docs:
@@ -16,13 +14,18 @@ Before writing any code, always check the `docs/` directory for a relevant stand
 - `docs/ui.md` — UI standards (component library, styling, layout patterns)
 - `docs/validation.md` — Form validation standards (react-hook-form, Zod server-side validation, error display)
 
+## Skills
+
+Use your skills when working on related tasks.
+
 ## Commands
 
 ```bash
 npm run dev      # Start dev server (Turbopack, http://localhost:3000)
 npm run build    # Production build (also uses Turbopack by default)
-npm run start    # Start production server
+npm run start    # Start
 npm run lint     # Run ESLint (note: build no longer runs lint automatically)
+npm run test    # Vitest run
 ```
 
 Import alias `@/*` maps to `./src/*`.

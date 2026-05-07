@@ -2,7 +2,6 @@
 
 import Icon from './Icon';
 import { NAV, ROLES, STAGES } from '@/lib/data';
-import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
@@ -10,54 +9,69 @@ import { cn } from '@/lib/utils';
 
 export function StageBadge({ stage }: { stage: string }) {
   const map: Record<string, [string, string]> = {
-    order:    ['b-new',    'New'],
-    assign:   ['b-assign', 'Assigning'],
-    content:  ['b-write',  'Writing'],
+    order: ['b-new', 'New'],
+    assign: ['b-assign', 'Assigning'],
+    content: ['b-write', 'Writing'],
     approval: ['b-review', 'Client review'],
-    publish:  ['b-pub',    'Publishing'],
-    done:     ['b-live',   'Live'],
+    publish: ['b-pub', 'Publishing'],
+    done: ['b-live', 'Live'],
   };
   const [cls, label] = map[stage] ?? ['b-neutral', stage];
   return (
     <span className={cn('badge', cls)}>
-      <span className="dot" />{label}
+      <span className="dot" />
+      {label}
     </span>
   );
 }
 
 export function SiteStatusBadge({ status }: { status: string }) {
   const map: Record<string, [string, string]> = {
-    approved: ['b-live',     'Approved'],
-    pending:  ['b-write',    'Pending'],
+    approved: ['b-live', 'Approved'],
+    pending: ['b-write', 'Pending'],
     rejected: ['b-rejected', 'Rejected'],
   };
   const [cls, label] = map[status] ?? ['b-neutral', status];
   return (
     <span className={cn('badge', cls)}>
-      <span className="dot" />{label}
+      <span className="dot" />
+      {label}
     </span>
   );
 }
 
 export function InvoiceBadge({ status }: { status: string }) {
   const map: Record<string, [string, string]> = {
-    paid:    ['b-live',     'Paid'],
-    pending: ['b-write',    'Pending'],
+    paid: ['b-live', 'Paid'],
+    pending: ['b-write', 'Pending'],
     overdue: ['b-rejected', 'Overdue'],
-    draft:   ['b-neutral',  'Draft'],
+    draft: ['b-neutral', 'Draft'],
   };
   const [cls, label] = map[status] ?? ['b-neutral', status];
   return (
     <span className={cn('badge', cls)}>
-      <span className="dot" />{label}
+      <span className="dot" />
+      {label}
     </span>
   );
 }
 
-export function UserAvatar({ name, size = 'sm' }: { name?: string | null; size?: 'sm' | 'md' }) {
-  const initial = (name ?? '?').replace(/[^A-Za-z]/g, '').slice(0, 1).toUpperCase() || '?';
+export function UserAvatar({
+  name,
+  size = 'sm',
+}: {
+  name?: string | null;
+  size?: 'sm' | 'md';
+}) {
+  const initial =
+    (name ?? '?')
+      .replace(/[^A-Za-z]/g, '')
+      .slice(0, 1)
+      .toUpperCase() || '?';
   return (
-    <Avatar className={size === 'sm' ? 'h-6 w-6 text-[10px]' : 'h-7.5 w-7.5 text-xs'}>
+    <Avatar
+      className={size === 'sm' ? 'h-6 w-6 text-[10px]' : 'h-7.5 w-7.5 text-xs'}
+    >
       <AvatarFallback className="bg-(--accent-soft) text-(--accent-text) font-semibold">
         {initial}
       </AvatarFallback>
@@ -68,9 +82,17 @@ export function UserAvatar({ name, size = 'sm' }: { name?: string | null; size?:
 // Keep legacy name exported for backward compat
 export { UserAvatar as Avatar };
 
-export function Sidebar({ role, page, setPage }: { role: string; page: string; setPage: (p: string) => void }) {
+export function Sidebar({
+  role,
+  page,
+  setPage,
+}: {
+  role: string;
+  page: string;
+  setPage: (p: string) => void;
+}) {
   const items = NAV[role] ?? [];
-  const roleObj = ROLES.find(r => r.id === role)!;
+  const roleObj = ROLES.find((r) => r.id === role)!;
   return (
     <aside className="sidebar">
       <div className="brand">
@@ -85,21 +107,27 @@ export function Sidebar({ role, page, setPage }: { role: string; page: string; s
         </div>
       </div>
       <div className="nav-label">Workspace</div>
-      {items.map(item => (
+      {items.map((item) => (
         <div
           key={item.id}
           className={cn('nav-item', page === item.id && 'active')}
           onClick={() => setPage(item.id)}
         >
-          <span className="nav-icon"><Icon name={item.icon} /></span>
+          <span className="nav-icon">
+            <Icon name={item.icon} />
+          </span>
           <span>{item.label}</span>
-          {item.count != null && <span className="nav-count">{item.count}</span>}
+          {item.count != null && (
+            <span className="nav-count">{item.count}</span>
+          )}
         </div>
       ))}
       <div style={{ flex: 1 }} />
       <Separator className="my-2 bg-border" />
       <div className="nav-item" style={{ color: 'var(--text-muted)' }}>
-        <span className="nav-icon"><Icon name="settings" /></span>
+        <span className="nav-icon">
+          <Icon name="settings" />
+        </span>
         <span>Settings</span>
       </div>
     </aside>
@@ -111,9 +139,18 @@ export function Topbar({ crumbs }: { crumbs: string[] }) {
     <div className="topbar">
       <div className="crumbs">
         {crumbs.map((c, i) => (
-          <span key={i} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-            {i > 0 && <span className="crumb-sep"><Icon name="chev" size={12} /></span>}
-            <span className={i === crumbs.length - 1 ? 'crumb-last' : ''}>{c}</span>
+          <span
+            key={i}
+            style={{ display: 'flex', alignItems: 'center', gap: 6 }}
+          >
+            {i > 0 && (
+              <span className="crumb-sep">
+                <Icon name="chev" size={12} />
+              </span>
+            )}
+            <span className={i === crumbs.length - 1 ? 'crumb-last' : ''}>
+              {c}
+            </span>
           </span>
         ))}
       </div>
@@ -123,11 +160,17 @@ export function Topbar({ crumbs }: { crumbs: string[] }) {
         <kbd>⌘K</kbd>
       </div>
       <div className="topbar-actions">
-        <Button variant="ghost" size="icon" className="h-8 w-8 text-(--text-muted)">
+        <Button
+          variant="ghost"
+          size="icon"
+          className="h-8 w-8 text-(--text-muted)"
+        >
           <Icon name="bell" />
         </Button>
         <Avatar className="h-7.5 w-7.5 text-xs">
-          <AvatarFallback className="bg-(--accent-soft) text-(--accent-text) font-semibold">U</AvatarFallback>
+          <AvatarFallback className="bg-(--accent-soft) text-(--accent-text) font-semibold">
+            U
+          </AvatarFallback>
         </Avatar>
       </div>
     </div>
@@ -175,19 +218,24 @@ export function Stat({
 }
 
 export function Stepper({ currentStage }: { currentStage: string }) {
-  const idx = STAGES.findIndex(s => s.id === currentStage);
+  const idx = STAGES.findIndex((s) => s.id === currentStage);
   return (
     <div className="stepper">
       {STAGES.map((s, i) => {
         const cls = i < idx ? 'done' : i === idx ? 'active' : '';
         return (
-          <span key={s.id} style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+          <span
+            key={s.id}
+            style={{ display: 'flex', alignItems: 'center', gap: 4 }}
+          >
             <div className={cn('step', cls)}>
               <span className="step-num">{i < idx ? '✓' : i + 1}</span>
               <span>{s.label}</span>
             </div>
             {i < STAGES.length - 1 && (
-              <span className="step-arrow"><Icon name="chev" size={12} /></span>
+              <span className="step-arrow">
+                <Icon name="chev" size={12} />
+              </span>
             )}
           </span>
         );
