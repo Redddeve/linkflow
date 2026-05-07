@@ -309,7 +309,7 @@ export async function listManagers(): Promise<{ id: string; first_name: string; 
     .from('users')
     .select('id, first_name, last_name')
     .eq('role', 'Manager' as UserRole)
-    .eq('status', 'ACTIVE')
+    .in('status', ['ACTIVE', 'PENDING'])
     .order('first_name');
   return data ?? [];
 }

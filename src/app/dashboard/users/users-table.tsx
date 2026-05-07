@@ -47,9 +47,9 @@ function userInitials(u: UserRow) {
   return (u.email[0] ?? '?').toUpperCase();
 }
 
-function statusVariant(status: UserRow['status']): 'default' | 'secondary' | 'destructive' {
+function statusVariant(status: UserRow['status']): 'default' | 'warning' | 'destructive' {
   if (status === 'ACTIVE') return 'default';
-  if (status === 'PENDING') return 'secondary';
+  if (status === 'PENDING') return 'warning';
   return 'destructive';
 }
 
