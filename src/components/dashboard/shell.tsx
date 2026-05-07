@@ -15,7 +15,6 @@ import {
 } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
-import { Separator } from '@/components/ui/separator';
 import {
   Tooltip,
   TooltipContent,
@@ -39,114 +38,34 @@ interface NavItem {
 
 const NAV_ITEMS: Record<UserRole, NavItem[]> = {
   Client: [
-    {
-      href: '/dashboard',
-      label: 'Dashboard',
-      icon: <LayoutDashboard className="nav-icon" />,
-    },
-    {
-      href: '/dashboard/catalog',
-      label: 'Catalog',
-      icon: <Globe className="nav-icon" />,
-    },
-    {
-      href: '/dashboard/cart',
-      label: 'Cart',
-      icon: <ShoppingCart className="nav-icon" />,
-    },
-    {
-      href: '/dashboard/orders',
-      label: 'Orders',
-      icon: <FileText className="nav-icon" />,
-    },
-    {
-      href: '/dashboard/invoices',
-      label: 'Invoices',
-      icon: <Receipt className="nav-icon" />,
-    },
+    { href: '/dashboard', label: 'Dashboard', icon: <LayoutDashboard className="nav-icon" /> },
+    { href: '/dashboard/catalog', label: 'Catalog', icon: <Globe className="nav-icon" /> },
+    { href: '/dashboard/cart', label: 'Cart', icon: <ShoppingCart className="nav-icon" /> },
+    { href: '/dashboard/orders', label: 'Orders', icon: <FileText className="nav-icon" /> },
+    { href: '/dashboard/invoices', label: 'Invoices', icon: <Receipt className="nav-icon" /> },
   ],
   Manager: [
-    {
-      href: '/dashboard',
-      label: 'Dashboard',
-      icon: <LayoutDashboard className="nav-icon" />,
-    },
-    {
-      href: '/dashboard/orders',
-      label: 'Orders',
-      icon: <FileText className="nav-icon" />,
-    },
-    {
-      href: '/dashboard/sites',
-      label: 'Sites',
-      icon: <Globe className="nav-icon" />,
-    },
-    {
-      href: '/dashboard/invoices',
-      label: 'Invoices',
-      icon: <Receipt className="nav-icon" />,
-    },
+    { href: '/dashboard', label: 'Dashboard', icon: <LayoutDashboard className="nav-icon" /> },
+    { href: '/dashboard/orders', label: 'Orders', icon: <FileText className="nav-icon" /> },
+    { href: '/dashboard/sites', label: 'Sites', icon: <Globe className="nav-icon" /> },
+    { href: '/dashboard/invoices', label: 'Invoices', icon: <Receipt className="nav-icon" /> },
   ],
   Copywriter: [
-    {
-      href: '/dashboard',
-      label: 'Dashboard',
-      icon: <LayoutDashboard className="nav-icon" />,
-    },
-    {
-      href: '/dashboard/orders',
-      label: 'My Orders',
-      icon: <FileText className="nav-icon" />,
-    },
+    { href: '/dashboard', label: 'Dashboard', icon: <LayoutDashboard className="nav-icon" /> },
+    { href: '/dashboard/orders', label: 'My Orders', icon: <FileText className="nav-icon" /> },
   ],
   Sourcer: [
-    {
-      href: '/dashboard',
-      label: 'Dashboard',
-      icon: <LayoutDashboard className="nav-icon" />,
-    },
-    {
-      href: '/dashboard/sites',
-      label: 'My Sites',
-      icon: <Globe className="nav-icon" />,
-    },
-    {
-      href: '/dashboard/commissions',
-      label: 'Commissions',
-      icon: <BadgeDollarSign className="nav-icon" />,
-    },
+    { href: '/dashboard', label: 'Dashboard', icon: <LayoutDashboard className="nav-icon" /> },
+    { href: '/dashboard/sites', label: 'My Sites', icon: <Globe className="nav-icon" /> },
+    { href: '/dashboard/commissions', label: 'Commissions', icon: <BadgeDollarSign className="nav-icon" /> },
   ],
   Admin: [
-    {
-      href: '/dashboard',
-      label: 'Dashboard',
-      icon: <LayoutDashboard className="nav-icon" />,
-    },
-    {
-      href: '/dashboard/users',
-      label: 'Users',
-      icon: <Users className="nav-icon" />,
-    },
-    {
-      href: '/dashboard/sites',
-      label: 'Sites',
-      icon: <Globe className="nav-icon" />,
-    },
-    {
-      href: '/dashboard/orders',
-      label: 'Orders',
-      icon: <FileText className="nav-icon" />,
-    },
-    {
-      href: '/dashboard/invoices',
-      label: 'Invoices',
-      icon: <Receipt className="nav-icon" />,
-    },
-    {
-      href: '/dashboard/commissions',
-      label: 'Commissions',
-      icon: <BadgeDollarSign className="nav-icon" />,
-    },
+    { href: '/dashboard', label: 'Dashboard', icon: <LayoutDashboard className="nav-icon" /> },
+    { href: '/dashboard/users', label: 'Users', icon: <Users className="nav-icon" /> },
+    { href: '/dashboard/sites', label: 'Sites', icon: <Globe className="nav-icon" /> },
+    { href: '/dashboard/orders', label: 'Orders', icon: <FileText className="nav-icon" /> },
+    { href: '/dashboard/invoices', label: 'Invoices', icon: <Receipt className="nav-icon" /> },
+    { href: '/dashboard/commissions', label: 'Commissions', icon: <BadgeDollarSign className="nav-icon" /> },
   ],
 };
 
@@ -174,7 +93,7 @@ export function DashboardShell({
 }) {
   const pathname = usePathname();
   const router = useRouter();
-  const navItems = NAV_ITEMS[user.role] ?? [];
+  const navItems = (user.role ? NAV_ITEMS[user.role] : null) ?? [];
 
   const handleSignOut = async () => {
     const supabase = createClient();
@@ -187,45 +106,48 @@ export function DashboardShell({
       <div className="app">
         {/* Sidebar */}
         <aside className="sidebar">
+          {/* Brand */}
           <div className="brand">
             <div className="brand-mark">L</div>
             <span>LinkFlow</span>
           </div>
 
-          <div className="role-pill">
-            <div className="avatar">{userInitials(user)}</div>
-            <div className="meta">
-              <div className="name">{displayName(user)}</div>
-              <div className="role">{user.role}</div>
-            </div>
-          </div>
-
+          {/* Nav */}
           <div className="nav-label">Workspace</div>
+          <nav className="flex flex-col gap-0.5 flex-1 pb-2">
+            {navItems.map((item) => (
+              <Link
+                key={item.href}
+                href={item.href}
+                className={`nav-item ${pathname === item.href ? 'active' : ''}`}
+              >
+                {item.icon}
+                <span>{item.label}</span>
+              </Link>
+            ))}
+          </nav>
 
-          {navItems.map((item) => (
-            <Link
-              key={item.href}
-              href={item.href}
-              className={`nav-item ${pathname === item.href ? 'active' : ''}`}
-            >
-              {item.icon}
-              <span>{item.label}</span>
-            </Link>
-          ))}
-
-          <div style={{ flex: 1 }} />
-          <Separator className="my-2" />
-
-          <Tooltip>
-            <TooltipTrigger
-              className="nav-item w-full text-left"
+          {/* Bottom: user info + sign out */}
+          <div className="sidebar-footer">
+            <div className="user-row">
+              <Avatar className="h-8 w-8 shrink-0">
+                <AvatarFallback className="text-[11px] font-semibold">
+                  {userInitials(user)}
+                </AvatarFallback>
+              </Avatar>
+              <div className="user-meta min-w-0">
+                <div className="user-name">{displayName(user)}</div>
+                <div className="user-email">{user.email}</div>
+              </div>
+            </div>
+            <button
               onClick={handleSignOut}
+              className="nav-item w-full mt-0.5 text-left"
             >
               <LogOut className="nav-icon" />
               <span>Sign out</span>
-            </TooltipTrigger>
-            <TooltipContent side="right">Sign out of LinkFlow</TooltipContent>
-          </Tooltip>
+            </button>
+          </div>
         </aside>
 
         {/* Main area */}
@@ -236,49 +158,34 @@ export function DashboardShell({
 
             <Tooltip>
               <TooltipTrigger
-                className="relative flex h-8 w-8 items-center justify-center rounded-md hover:bg-muted"
+                className="relative flex h-8 w-8 items-center justify-center rounded-md transition-colors hover:bg-muted"
                 aria-label="Notifications"
               >
-                <Bell className="h-4 w-4" />
+                <Bell className="h-4 w-4 text-muted-foreground" />
               </TooltipTrigger>
               <TooltipContent>Notifications</TooltipContent>
             </Tooltip>
 
             <DropdownMenu>
               <DropdownMenuTrigger
-                className="flex h-8 w-8 items-center justify-center rounded-full outline-none"
+                className="flex h-8 w-8 items-center justify-center rounded-full outline-none ring-offset-background focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
                 aria-label="User menu"
               >
-                <Avatar className="h-7 w-7 text-xs">
-                  <AvatarFallback
-                    className="font-semibold text-[11px]"
-                    style={{
-                      background: 'var(--accent-soft)',
-                      color: 'var(--accent-text)',
-                    }}
-                  >
+                <Avatar className="h-7 w-7">
+                  <AvatarFallback className="text-[11px] font-semibold">
                     {userInitials(user)}
                   </AvatarFallback>
                 </Avatar>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-52">
-                <div className="px-2 py-1.5 text-sm font-medium">
-                  {displayName(user)}
-                </div>
-                <div
-                  className="px-2 pb-1.5 text-xs"
-                  style={{ color: 'var(--text-muted)' }}
-                >
-                  {user.email}
-                </div>
-                <div
-                  className="px-2 pb-2 text-xs"
-                  style={{ color: 'var(--text-faint)' }}
-                >
-                  {user.role}
+              <DropdownMenuContent align="end" className="w-56">
+                <div className="px-2 py-2">
+                  <div className="text-sm font-medium truncate">{displayName(user)}</div>
+                  <div className="text-xs text-muted-foreground truncate mt-0.5">{user.email}</div>
+                  <div className="text-xs mt-0.5" style={{ color: 'var(--text-faint)' }}>{user.role}</div>
                 </div>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem onClick={handleSignOut}>
+                  <LogOut className="h-4 w-4" />
                   Sign out
                 </DropdownMenuItem>
               </DropdownMenuContent>

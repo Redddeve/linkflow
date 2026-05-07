@@ -5,7 +5,7 @@ import Icon from './Icon';
 import { PageHeader, Stat, StageBadge, InvoiceBadge, UserAvatar, Stepper } from './chrome';
 import { SEED_ORDERS, SEED_SITES, SEED_INVOICES, STAGES } from '@/lib/data';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -13,7 +13,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { cn } from '@/lib/utils';
 
-export function ManagerHome({ setPage, openOrder }: { setPage: (p: string) => void; openOrder: (id: string) => void }) {
+export function ManagerHome({ openOrder }: { setPage: (p: string) => void; openOrder: (id: string) => void }) {
   const cols = STAGES.map(st => ({ ...st, orders: SEED_ORDERS.filter(o => o.stage === st.id) }));
   return (
     <div className="page">

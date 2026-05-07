@@ -1,11 +1,12 @@
 import { createClient } from '@/lib/supabase/server';
+import type { Json } from '@/types/database.types';
 
 interface AuditParams {
   entityType: 'site' | 'order' | 'user' | 'invoice' | 'commission';
   entityId: string;
   action: string;
-  before?: Record<string, unknown>;
-  after?: Record<string, unknown>;
+  before?: Json;
+  after?: Json;
 }
 
 export async function recordAudit(params: AuditParams): Promise<void> {
@@ -18,8 +19,8 @@ export async function recordAudit(params: AuditParams): Promise<void> {
     p_entity_type: params.entityType,
     p_entity_id: params.entityId,
     p_action: params.action,
-    p_before: (params.before ?? null) as never,
-    p_after: (params.after ?? null) as never,
+    p_before: params.before ?? null,
+    p_after: params.after ?? null,
   });
 
   if (error) {

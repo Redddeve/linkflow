@@ -8,7 +8,18 @@
       "Bash(npx shadcn@canary init --yes)",
       "PowerShell(Set-Location d:\\\\Projects\\\\linkflow; $env:TERM = \"dumb\"; echo \"`n`n`n`n`n\" | npx shadcn@canary init --yes 2>&1)",
       "PowerShell(Set-Location d:\\\\Projects\\\\linkflow; $env:TERM = \"dumb\"; \"`n`n`n`n`n`n`n`n`n`n\" | npx shadcn@canary init --yes 2>&1)",
-      "mcp__supabase__apply_migration"
+      "mcp__supabase__apply_migration",
+      "Bash(node -e \"require\\('zod'\\); console.log\\('zod installed:', require\\('./node_modules/zod/package.json'\\).version\\)\")",
+      "Bash(npx tsc *)",
+      "mcp__supabase__get_logs",
+      "mcp__supabase__get_project_url",
+      "Bash(Get-ChildItem -Recurse -Path \"d:\\\\Projects\\\\linkflow\\\\src\\\\app\\\\dashboard\" -Directory)",
+      "mcp__supabase__list_migrations"
+    ],
+    "deny": [
+      "Read(.env*)",
+      "Write(.env*)",
+      "Edit(.env*)"
     ]
   },
   "enableAllProjectMcpServers": true,
