@@ -3,7 +3,7 @@ import { createClient } from '@/lib/supabase/server';
 import { listManagers } from './actions';
 import { UserFilters } from './filters';
 import { UsersTable } from './users-table';
-import { InviteUserDialog } from './invite/invite-form';
+import { InviteUserForm } from './invite/invite-form';
 import type { UserRole } from '@/lib/auth';
 
 interface PageProps {
@@ -18,19 +18,28 @@ export default async function UsersPage({ searchParams }: PageProps) {
   let query = supabase.from('users').select('*').order('first_name');
 
   if (role) query = query.eq('role', role as UserRole);
-  if (status) query = query.eq('status', status as 'PENDING' | 'ACTIVE' | 'DISABLED');
-  if (q) query = query.or(`first_name.ilike.%${q}%,last_name.ilike.%${q}%,email.ilike.%${q}%`);
+  if (status)
+    query = query.eq('status', status as 'PENDING' | 'ACTIVE' | 'DISABLED');
+  if (q)
+    query = query.or(
+      `first_name.ilike.%${q}%,last_name.ilike.%${q}%,email.ilike.%${q}%`,
+    );
 
-  const [{ data: users }, managers] = await Promise.all([query, listManagers()]);
+  const [{ data: users }, managers] = await Promise.all([
+    query,
+    listManagers(),
+  ]);
 
   return (
     <div className="page">
       <div className="page-header">
         <div>
           <h1 className="page-title">Users</h1>
-          <p className="page-subtitle">{users?.length ?? 0} user{users?.length !== 1 ? 's' : ''}</p>
+          <p className="page-subtitle">
+            {users?.length ?? 0} user{users?.length !== 1 ? 's' : ''}
+          </p>
         </div>
-        <InviteUserDialog managers={managers} />
+        <InviteUserForm managers={managers} />
       </div>
 
       <div className="mb-4">
