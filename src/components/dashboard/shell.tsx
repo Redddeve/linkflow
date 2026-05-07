@@ -174,7 +174,7 @@ export function DashboardShell({
 }) {
   const pathname = usePathname();
   const router = useRouter();
-  const navItems = NAV_ITEMS[user.role] ?? [];
+  const navItems = (user.role ? NAV_ITEMS[user.role] : null) ?? [];
 
   const handleSignOut = async () => {
     const supabase = createClient();

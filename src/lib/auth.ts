@@ -40,7 +40,7 @@ export async function requireUser(): Promise<UserRow> {
 
 export async function requireRole(roles: UserRole[]): Promise<UserRow> {
   const user = await requireUser();
-  if (!roles.includes(user.role)) {
+  if (!user.role || !roles.includes(user.role)) {
     throw new Error(`FORBIDDEN: requires role ${roles.join(' or ')}`);
   }
   return user;

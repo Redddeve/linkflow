@@ -12,9 +12,18 @@
       "Bash(node -e \"require\\('zod'\\); console.log\\('zod installed:', require\\('./node_modules/zod/package.json'\\).version\\)\")",
       "Bash(npx tsc *)",
       "mcp__supabase__get_logs",
-      "mcp__supabase__get_project_url"
+      "mcp__supabase__get_project_url",
+      "Bash(Get-ChildItem -Recurse -Path \"d:\\\\Projects\\\\linkflow\\\\src\\\\app\\\\dashboard\" -Directory)",
+      "mcp__supabase__list_migrations"
+    ],
+    "deny": [
+      "Read(.env*)",
+      "Write(.env*)",
+      "Edit(.env*)"
     ]
   },
   "enableAllProjectMcpServers": true,
-  "enabledMcpjsonServers": ["supabase"]
+  "enabledMcpjsonServers": [
+    "supabase"
+  ]
 }
