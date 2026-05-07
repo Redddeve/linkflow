@@ -15,8 +15,8 @@ interface PageProps {
 
 function statusVariant(
   status: string,
-): 'default' | 'warning' | 'destructive' {
-  if (status === 'ACTIVE') return 'default';
+): 'success' | 'warning' | 'destructive' {
+  if (status === 'ACTIVE') return 'success';
   if (status === 'PENDING') return 'warning';
   return 'destructive';
 }
