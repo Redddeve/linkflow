@@ -6,7 +6,13 @@ import { useForm, useWatch } from 'react-hook-form';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import {
   Dialog,
   DialogContent,
@@ -22,7 +28,7 @@ interface Props {
   managers: { id: string; first_name: string; last_name: string }[];
 }
 
-export function InviteUserDialog({ managers }: Props) {
+export function InviteUserForm({ managers }: Props) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
 
@@ -47,20 +53,30 @@ export function InviteUserDialog({ managers }: Props) {
       reset();
       router.push(`/dashboard/users/${userId}`);
     } catch (e: unknown) {
-      setError('root', { message: e instanceof Error ? e.message : 'An error occurred' });
+      setError('root', {
+        message: e instanceof Error ? e.message : 'An error occurred',
+      });
     }
   }
 
   return (
-    <Dialog open={open} onOpenChange={(o) => { setOpen(o); if (!o) reset(); }}>
-      <DialogTrigger render={<Button />}>
-        Invite User
-      </DialogTrigger>
+    <Dialog
+      open={open}
+      onOpenChange={(o) => {
+        setOpen(o);
+        if (!o) reset();
+      }}
+    >
+      <DialogTrigger render={<Button />}>Invite User</DialogTrigger>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle>Invite User</DialogTitle>
         </DialogHeader>
-        <form id="invite-user-form" onSubmit={handleSubmit(onSubmit)} className="grid gap-4">
+        <form
+          id="invite-user-form"
+          onSubmit={handleSubmit(onSubmit)}
+          className="grid gap-4"
+        >
           <div className="grid gap-2">
             <Label htmlFor="invite-email">Email</Label>
             <Input
@@ -69,7 +85,9 @@ export function InviteUserDialog({ managers }: Props) {
               placeholder="user@example.com"
               {...register('email', { required: 'Email is required' })}
             />
-            {errors.email && <p className="text-sm text-destructive">{errors.email.message}</p>}
+            {errors.email && (
+              <p className="text-sm text-destructive">{errors.email.message}</p>
+            )}
           </div>
 
           <div className="grid grid-cols-2 gap-4">
@@ -77,17 +95,29 @@ export function InviteUserDialog({ managers }: Props) {
               <Label htmlFor="invite-first_name">First name</Label>
               <Input
                 id="invite-first_name"
-                {...register('first_name', { required: 'First name is required' })}
+                {...register('first_name', {
+                  required: 'First name is required',
+                })}
               />
-              {errors.first_name && <p className="text-sm text-destructive">{errors.first_name.message}</p>}
+              {errors.first_name && (
+                <p className="text-sm text-destructive">
+                  {errors.first_name.message}
+                </p>
+              )}
             </div>
             <div className="grid gap-2">
               <Label htmlFor="invite-last_name">Last name</Label>
               <Input
                 id="invite-last_name"
-                {...register('last_name', { required: 'Last name is required' })}
+                {...register('last_name', {
+                  required: 'Last name is required',
+                })}
               />
-              {errors.last_name && <p className="text-sm text-destructive">{errors.last_name.message}</p>}
+              {errors.last_name && (
+                <p className="text-sm text-destructive">
+                  {errors.last_name.message}
+                </p>
+              )}
             </div>
           </div>
 
@@ -95,7 +125,9 @@ export function InviteUserDialog({ managers }: Props) {
             <Label htmlFor="invite-role">Role</Label>
             <Select
               value={selectedRole ?? 'Client'}
-              onValueChange={(v) => setValue('role', v as InviteUserInput['role'])}
+              onValueChange={(v) =>
+                setValue('role', v as InviteUserInput['role'])
+              }
             >
               <SelectTrigger id="invite-role">
                 <SelectValue />
@@ -113,7 +145,11 @@ export function InviteUserDialog({ managers }: Props) {
           {selectedRole === 'Client' && (
             <div className="grid gap-2">
               <Label htmlFor="invite-manager_id">Manager</Label>
-              <Select onValueChange={(v: string | null) => setValue('manager_id', v ?? null)}>
+              <Select
+                onValueChange={(v: string | null) =>
+                  setValue('manager_id', v ?? null)
+                }
+              >
                 <SelectTrigger id="invite-manager_id">
                   <SelectValue placeholder="Assign a manager (optional)" />
                 </SelectTrigger>
@@ -128,10 +164,20 @@ export function InviteUserDialog({ managers }: Props) {
             </div>
           )}
 
-          {errors.root && <p className="text-sm text-destructive">{errors.root.message}</p>}
+          {errors.root && (
+            <p className="text-sm text-destructive">{errors.root.message}</p>
+          )}
         </form>
         <DialogFooter>
-          <Button variant="outline" onClick={() => { setOpen(false); reset(); }}>Cancel</Button>
+          <Button
+            variant="outline"
+            onClick={() => {
+              setOpen(false);
+              reset();
+            }}
+          >
+            Cancel
+          </Button>
           <Button type="submit" form="invite-user-form" disabled={isSubmitting}>
             {isSubmitting ? 'Sending invite…' : 'Send Invite'}
           </Button>
