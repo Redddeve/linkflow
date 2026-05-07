@@ -14,7 +14,8 @@
       "mcp__supabase__get_logs",
       "mcp__supabase__get_project_url",
       "Bash(Get-ChildItem -Recurse -Path \"d:\\\\Projects\\\\linkflow\\\\src\\\\app\\\\dashboard\" -Directory)",
-      "mcp__supabase__list_migrations"
+      "mcp__supabase__list_migrations",
+      "Bash(npx shadcn@latest add command popover --yes)"
     ],
     "deny": [
       "Read(.env*)",
