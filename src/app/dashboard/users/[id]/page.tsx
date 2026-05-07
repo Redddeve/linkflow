@@ -5,16 +5,17 @@ import { requireRole } from '@/lib/auth';
 import { createClient } from '@/lib/supabase/server';
 import { listManagers } from '../actions';
 import { Badge } from '@/components/ui/badge';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Separator } from '@/components/ui/separator';
-import { EditUserForm } from './edit-form';
+import { Card, CardContent } from '@/components/ui/card';
+import { EditUserDialog } from './edit-form';
 import { StatusActions } from './status-actions';
 
 interface PageProps {
   params: Promise<{ id: string }>;
 }
 
-function statusVariant(status: string): 'default' | 'secondary' | 'destructive' {
+function statusVariant(
+  status: string,
+): 'default' | 'secondary' | 'destructive' {
   if (status === 'ACTIVE') return 'default';
   if (status === 'PENDING') return 'secondary';
   return 'destructive';
@@ -37,7 +38,7 @@ export default async function UserDetailPage({ params }: PageProps) {
 
   return (
     <div className="page">
-      <div className="mb-4">
+      <div className="mb-6">
         <Link
           href="/dashboard/users"
           className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground"
@@ -54,54 +55,68 @@ export default async function UserDetailPage({ params }: PageProps) {
           </h1>
           <p className="page-subtitle">{user.email}</p>
         </div>
-        <div className="flex items-center gap-3">
-          <Badge variant={statusVariant(user.status)}>
-            {user.status === 'ACTIVE' ? 'Active' : user.status === 'PENDING' ? 'Pending' : 'Disabled'}
-          </Badge>
+        <div className="flex items-center gap-2">
+          <EditUserDialog user={user} managers={managers} />
           <StatusActions user={user} currentUserId={currentUser.id} />
         </div>
       </div>
 
-      <div className="grid gap-6 lg:grid-cols-2">
-        <Card>
-          <CardHeader>
-            <CardTitle>Profile</CardTitle>
-          </CardHeader>
-          <CardContent className="grid gap-4 text-sm">
-            <div className="flex justify-between">
-              <span className="text-muted-foreground">Role</span>
-              <Badge variant="outline">{user.role ?? '—'}</Badge>
+      <Card>
+        <CardContent className="pt-6">
+          <dl>
+            <div className="flex items-center justify-start py-1.5 first:pt-0 last:pb-0">
+              <dt className="text-muted-foreground w-32 shrink-0">
+                First Name
+              </dt>
+              <dd className="font-medium">{user.first_name ?? '—'}</dd>
+            </div>
+            <div className="flex items-center justify-start py-1.5">
+              <dt className="text-muted-foreground w-32 shrink-0">Last Name</dt>
+              <dd className="font-medium">{user.last_name ?? '—'}</dd>
+            </div>
+            <div className="flex items-center justify-start py-1.5">
+              <dt className="text-muted-foreground w-32 shrink-0">Email</dt>
+              <dd className="font-medium">{user.email}</dd>
+            </div>
+            <div className="flex items-center justify-start py-1.5">
+              <dt className="text-muted-foreground w-32 shrink-0">Role</dt>
+              <dd className="font-medium">{user.role ?? '—'}</dd>
+            </div>
+            <div className="flex items-center justify-start py-1.5">
+              <dt className="text-muted-foreground w-32 shrink-0">Status</dt>
+              <dd>
+                <Badge variant={statusVariant(user.status)}>
+                  {user.status === 'ACTIVE'
+                    ? 'Active'
+                    : user.status === 'PENDING'
+                      ? 'Pending'
+                      : 'Disabled'}
+                </Badge>
+              </dd>
             </div>
             {user.invited_at && (
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">Invited</span>
-                <span>{new Date(user.invited_at).toLocaleDateString()}</span>
+              <div className="flex items-center justify-start py-1.5">
+                <dt className="text-muted-foreground w-32 shrink-0">Created</dt>
+                <dd className="font-medium">
+                  {new Date(user.invited_at).toLocaleDateString('en-US', {
+                    year: 'numeric',
+                    month: 'long',
+                    day: 'numeric',
+                  })}
+                </dd>
               </div>
             )}
             {user.disabled_reason && (
-              <div className="flex flex-col gap-1">
-                <span className="text-muted-foreground">Disabled reason</span>
-                <span className="text-destructive">{user.disabled_reason}</span>
+              <div className="flex items-start justify-start py-1.5 last:pb-0">
+                <dt className="text-muted-foreground w-32 shrink-0">
+                  Disabled reason
+                </dt>
+                <dd className="text-destructive">{user.disabled_reason}</dd>
               </div>
             )}
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle>Edit</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <EditUserForm user={user} managers={managers} />
-          </CardContent>
-        </Card>
-      </div>
-
-      <Separator className="my-6" />
-
-      <p className="text-sm text-muted-foreground">
-        Activity timeline will be available in a future update.
-      </p>
+          </dl>
+        </CardContent>
+      </Card>
     </div>
   );
 }

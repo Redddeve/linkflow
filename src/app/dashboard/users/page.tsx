@@ -1,9 +1,9 @@
-import Link from 'next/link';
 import { requireRole } from '@/lib/auth';
 import { createClient } from '@/lib/supabase/server';
-import { buttonVariants } from '@/components/ui/button';
+import { listManagers } from './actions';
 import { UserFilters } from './filters';
 import { UsersTable } from './users-table';
+import { InviteUserDialog } from './invite/invite-form';
 import type { UserRole } from '@/lib/auth';
 
 interface PageProps {
@@ -21,7 +21,7 @@ export default async function UsersPage({ searchParams }: PageProps) {
   if (status) query = query.eq('status', status as 'PENDING' | 'ACTIVE' | 'DISABLED');
   if (q) query = query.or(`first_name.ilike.%${q}%,last_name.ilike.%${q}%,email.ilike.%${q}%`);
 
-  const { data: users } = await query;
+  const [{ data: users }, managers] = await Promise.all([query, listManagers()]);
 
   return (
     <div className="page">
@@ -30,9 +30,7 @@ export default async function UsersPage({ searchParams }: PageProps) {
           <h1 className="page-title">Users</h1>
           <p className="page-subtitle">{users?.length ?? 0} user{users?.length !== 1 ? 's' : ''}</p>
         </div>
-        <Link href="/dashboard/users/invite" className={buttonVariants()}>
-          Invite User
-        </Link>
+        <InviteUserDialog managers={managers} />
       </div>
 
       <div className="mb-4">
