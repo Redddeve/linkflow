@@ -30,6 +30,8 @@ interface SiteFormProps {
   siteId?: string;
   categories: Category[];
   actorRole: UserRole;
+  onSuccess?: () => void;
+  onCancel?: () => void;
   defaultValues?: {
     domain?: string;
     category_id?: string | null;
@@ -54,7 +56,7 @@ const COUNTRIES = Constants.public.Enums.country;
 const LANGUAGES = Constants.public.Enums.language;
 const LINK_TYPES = Constants.public.Enums.link_type;
 
-export function SiteForm({ mode, siteId, categories, actorRole, defaultValues }: SiteFormProps) {
+export function SiteForm({ mode, siteId, categories, actorRole, onSuccess, onCancel, defaultValues }: SiteFormProps) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [error, setError] = useState('');
@@ -118,7 +120,11 @@ export function SiteForm({ mode, siteId, categories, actorRole, defaultValues }:
           router.push(`/dashboard/sites/${newId}`);
         } else if (siteId) {
           await editSite(siteId, payload);
-          router.push(`/dashboard/sites/${siteId}`);
+          if (onSuccess) {
+            onSuccess();
+          } else {
+            router.push(`/dashboard/sites/${siteId}`);
+          }
         }
       } catch (err: unknown) {
         setError(err instanceof Error ? err.message : 'An error occurred');
@@ -333,7 +339,7 @@ export function SiteForm({ mode, siteId, categories, actorRole, defaultValues }:
         <Button type="submit" disabled={isPending}>
           {isPending ? (mode === 'create' ? 'Adding…' : 'Saving…') : mode === 'create' ? 'Add site' : 'Save changes'}
         </Button>
-        <Button type="button" variant="outline" onClick={() => router.back()}>
+        <Button type="button" variant="outline" onClick={() => onCancel ? onCancel() : router.back()}>
           Cancel
         </Button>
       </div>

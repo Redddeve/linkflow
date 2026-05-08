@@ -1,10 +1,9 @@
-import Link from 'next/link';
 import { notFound } from 'next/navigation';
-import { buttonVariants } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { requireRole } from '@/lib/auth';
 import { createClient } from '@/lib/supabase/server';
 import { StatusActions } from './status-actions';
+import { EditSiteDialog } from './edit-dialog';
 import type { Database } from '@/types/database.types';
 
 interface PageProps {
@@ -41,6 +40,10 @@ export default async function SiteDetailPage({ params }: PageProps) {
     actor.role === 'Manager' ||
     actor.role === 'Admin';
 
+  const { data: categories } = canEdit
+    ? await supabase.from('categories').select('id, name').order('name')
+    : { data: [] };
+
   const isAdmin = actor.role === 'Admin';
   const showSourcerFields = actor.role === 'Admin' || actor.role === 'Manager';
 
@@ -60,7 +63,29 @@ export default async function SiteDetailPage({ params }: PageProps) {
         </div>
         <div className="flex gap-2 shrink-0">
           {canEdit && (
-            <Link href={`/dashboard/sites/${id}/edit`} className={buttonVariants({ variant: 'outline', size: 'sm' })}>Edit</Link>
+            <EditSiteDialog
+              siteId={id}
+              actorRole={actor.role!}
+              categories={categories ?? []}
+              defaultValues={{
+                domain: site.domain,
+                category_id: site.category_id,
+                description: site.description,
+                contact_info: site.contact_info,
+                requirements: site.requirements,
+                countries: site.countries,
+                languages: site.languages,
+                dr: site.dr,
+                organic_traffic_count: site.organic_traffic_count,
+                organic_keywords_count: site.organic_keywords_count,
+                price_cents: site.price_cents,
+                link_type: site.link_type,
+                keywords_relevance: site.keywords_relevance,
+                top_countries: site.top_countries,
+                sourcer_notes: site.sourcer_notes,
+                sourcer_payout_cents: site.sourcer_payout_cents,
+              }}
+            />
           )}
         </div>
       </div>

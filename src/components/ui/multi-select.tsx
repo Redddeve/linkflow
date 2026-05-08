@@ -62,14 +62,16 @@ export function MultiSelect({
             value.map((v) => (
               <Badge key={v} variant="secondary" className="text-xs">
                 {v}
-                <button
-                  type="button"
+                <span
+                  role="button"
+                  tabIndex={0}
                   onClick={(e) => remove(v, e)}
-                  className="ml-1 rounded-full outline-none hover:text-foreground"
+                  onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onChange(value.filter((x) => x !== v)); } }}
+                  className="ml-1 rounded-full outline-none hover:text-foreground cursor-pointer"
                   aria-label={`Remove ${v}`}
                 >
                   <X className="h-3 w-3" />
-                </button>
+                </span>
               </Badge>
             ))
           )}
