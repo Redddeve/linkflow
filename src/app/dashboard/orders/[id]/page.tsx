@@ -8,6 +8,10 @@ import { OrderStatusBadge } from '../components/order-status-badge';
 import { CancelOrderDialog } from '../components/cancel-order-dialog';
 import { EditPublishDateDialog } from '../components/edit-publish-date-dialog';
 import { AssignCopywriterDialog } from '../components/assign-copywriter-dialog';
+import { ApproveOrderDialog } from '../components/approve-order-dialog';
+import { RejectOrderDialog } from '../components/reject-order-dialog';
+import { CommentsTimeline } from '../components/comments-timeline';
+import { AddCommentForm } from '../components/add-comment-form';
 import { listCopywriters } from '../actions';
 
 interface PageProps {
@@ -36,10 +40,25 @@ export default async function OrderDetailPage({ params }: PageProps) {
   const isClient = actor.role === 'Client';
   const isCopywriter = actor.role === 'Copywriter';
 
-  // Fetch related user names as separate queries to avoid multi-FK ambiguity
-  const userIds = [order.copywriter_id, order.manager_id, order.created_by_id].filter(Boolean) as string[];
-  const { data: relatedUsers } = userIds.length
-    ? await supabase.from('users').select('id, first_name, last_name').in('id', userIds)
+  // Fetch comments
+  const { data: comments } = await supabase
+    .from('comments')
+    .select('id, text, created_at, created_by_id')
+    .eq('order_id', id)
+    .order('created_at');
+
+  // Collect all user IDs needed (order actors + comment authors)
+  const commentAuthorIds = (comments ?? []).map((c) => c.created_by_id);
+  const userIds = [
+    order.copywriter_id,
+    order.manager_id,
+    order.created_by_id,
+    ...commentAuthorIds,
+  ].filter(Boolean) as string[];
+
+  const uniqueIds = [...new Set(userIds)];
+  const { data: relatedUsers } = uniqueIds.length
+    ? await supabase.from('users').select('id, first_name, last_name').in('id', uniqueIds)
     : { data: [] };
 
   const userMap = Object.fromEntries((relatedUsers ?? []).map((u) => [u.id, u]));
@@ -55,6 +74,12 @@ export default async function OrderDetailPage({ params }: PageProps) {
   const canAssign = isManagerOrAdmin && order.status === 'New';
   const canReassign = isManagerOrAdmin && (order.status === 'In Progress' || order.status === 'Needs changes');
   const canEditContent = isCopywriter && order.copywriter_id === actor.id && (order.status === 'In Progress' || order.status === 'Needs changes');
+  const canApprove = isClient && order.status === 'Content Sent' && order.created_by_id === actor.id;
+  const canReject = canApprove;
+  const canPublish = isManagerOrAdmin && order.status === 'Content Approved';
+  const canComment = isManagerOrAdmin
+    || (isClient && order.created_by_id === actor.id)
+    || (isCopywriter && order.copywriter_id === actor.id);
 
   return (
     <div className="space-y-6 max-w-3xl">
@@ -76,6 +101,8 @@ export default async function OrderDetailPage({ params }: PageProps) {
           )}
           {canEditDate && <EditPublishDateDialog orderId={id} currentDate={order.publish_date} />}
           {canCancel && <CancelOrderDialog orderId={id} />}
+          {canApprove && <ApproveOrderDialog orderId={id} />}
+          {canReject && <RejectOrderDialog orderId={id} />}
           {canAssign && (
             <AssignCopywriterDialog orderId={id} copywriters={copywriters} />
           )}
@@ -86,6 +113,11 @@ export default async function OrderDetailPage({ params }: PageProps) {
               isReassign
               currentCopywriterId={order.copywriter_id}
             />
+          )}
+          {canPublish && (
+            <Link href={`/dashboard/orders/${id}/publish`} className={buttonVariants()}>
+              Publish
+            </Link>
           )}
         </div>
       </div>
@@ -143,10 +175,37 @@ export default async function OrderDetailPage({ params }: PageProps) {
             <dd className="font-medium">{new Date(order.sent_at).toLocaleDateString('en-CA')}</dd>
           </div>
         )}
+        {order.approved_at && (
+          <div>
+            <dt className="text-muted-foreground">Approved</dt>
+            <dd className="font-medium">{new Date(order.approved_at).toLocaleDateString('en-CA')}</dd>
+          </div>
+        )}
+        {order.published_at && (
+          <div>
+            <dt className="text-muted-foreground">Published</dt>
+            <dd className="font-medium">{new Date(order.published_at).toLocaleDateString('en-CA')}</dd>
+          </div>
+        )}
         {order.canceled_at && (
           <div>
             <dt className="text-muted-foreground">Canceled</dt>
             <dd className="font-medium">{new Date(order.canceled_at).toLocaleDateString('en-CA')}</dd>
+          </div>
+        )}
+        {order.published_url && (
+          <div className="col-span-2">
+            <dt className="text-muted-foreground">Published URL</dt>
+            <dd className="font-medium">
+              <a
+                href={order.published_url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="underline underline-offset-2 break-all"
+              >
+                {order.published_url}
+              </a>
+            </dd>
           </div>
         )}
       </dl>
@@ -181,6 +240,14 @@ export default async function OrderDetailPage({ params }: PageProps) {
           </div>
         </>
       )}
+
+      <Separator />
+
+      <div className="space-y-4">
+        <h2 className="text-sm font-semibold">Comments</h2>
+        <CommentsTimeline comments={comments ?? []} userMap={userMap} />
+        {canComment && <AddCommentForm orderId={id} />}
+      </div>
     </div>
   );
 }

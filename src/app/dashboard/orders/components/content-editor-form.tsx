@@ -21,7 +21,7 @@ export function ContentEditorForm({ orderId, initialBody, status }: Props) {
   const [isSubmitting, startSubmit] = useTransition();
 
   const charCount = body.length;
-  const canSubmit = charCount >= 50 && status === 'In Progress';
+  const canSubmit = charCount >= 50 && (status === 'In Progress' || status === 'Needs changes');
 
   function handleSave() {
     setSaveError(null);

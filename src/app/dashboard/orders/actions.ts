@@ -12,11 +12,19 @@ import {
   assignCopywriterSchema,
   saveOrderContentSchema,
   submitOrderContentSchema,
+  approveOrderSchema,
+  rejectOrderSchema,
+  addCommentSchema,
+  publishOrderSchema,
   type EditOrderPublishDateInput,
   type CancelOrderInput,
   type AssignCopywriterInput,
   type SaveOrderContentInput,
   type SubmitOrderContentInput,
+  type ApproveOrderInput,
+  type RejectOrderInput,
+  type AddCommentInput,
+  type PublishOrderInput,
 } from '@/lib/schemas/orders';
 import type { Database } from '@/types/database.types';
 
@@ -29,7 +37,10 @@ const TRANSITION_GUARDS = {
   assign: ['New'] as OrderStatus[],
   reassign: ['In Progress', 'Needs changes'] as OrderStatus[],
   saveContent: ['In Progress', 'Needs changes'] as OrderStatus[],
-  submitContent: ['In Progress'] as OrderStatus[],
+  submitContent: ['In Progress', 'Needs changes'] as OrderStatus[],
+  approve: ['Content Sent'] as OrderStatus[],
+  reject: ['Content Sent'] as OrderStatus[],
+  publish: ['Content Approved'] as OrderStatus[],
 } as const;
 
 function mapForbidden(e: unknown): never {
@@ -344,7 +355,7 @@ export async function submitOrderContent(input: SubmitOrderContentInput): Promis
     .from('orders')
     .update({ status: 'Content Sent', sent_at: new Date().toISOString() })
     .eq('id', orderId)
-    .eq('status', 'In Progress');
+    .in('status', ['In Progress', 'Needs changes']);
 
   if (updateError) throw new Error(updateError.message);
 
@@ -382,4 +393,230 @@ export async function listCopywriters(): Promise<{ id: string; first_name: strin
     .eq('status', 'ACTIVE')
     .order('first_name');
   return data ?? [];
+}
+
+export async function approveOrder(input: ApproveOrderInput): Promise<void> {
+  const actor = await requireRole(['Client']).catch(mapForbidden);
+
+  const parsed = approveOrderSchema.safeParse(input);
+  if (!parsed.success) throw new AppError('VALIDATION', parsed.error.issues[0].message);
+
+  const { orderId } = parsed.data;
+
+  const supabase = await createClient();
+  const { data: order, error } = await supabase
+    .from('orders')
+    .select('id, status, created_by_id, manager_id, copywriter_id')
+    .eq('id', orderId)
+    .single();
+
+  if (error || !order) throw new AppError('NOT_FOUND', 'Order not found');
+  if (order.created_by_id !== actor.id) throw new AppError('FORBIDDEN', 'You do not own this order');
+  if (!TRANSITION_GUARDS.approve.includes(order.status)) {
+    throw new AppError('VALIDATION', `Cannot approve an order with status "${order.status}"`);
+  }
+
+  const { error: updateError } = await supabase
+    .from('orders')
+    .update({ status: 'Content Approved', approved_at: new Date().toISOString() })
+    .eq('id', orderId)
+    .eq('status', 'Content Sent');
+
+  if (updateError) throw new Error(updateError.message);
+
+  await recordAudit({
+    entityType: 'order',
+    entityId: orderId,
+    action: 'order.approved',
+    before: { status: order.status },
+    after: { status: 'Content Approved' },
+  });
+
+  const notifications: Promise<void>[] = [];
+  if (order.manager_id) {
+    notifications.push(notify({ recipientId: order.manager_id, type: 'order.content_approved', payload: { orderId } }));
+  } else {
+    const { data: managers } = await supabase.from('users').select('id').eq('role', 'Manager').eq('status', 'ACTIVE');
+    (managers ?? []).forEach((m) =>
+      notifications.push(notify({ recipientId: m.id, type: 'order.content_approved', payload: { orderId } })),
+    );
+  }
+  if (order.copywriter_id) {
+    notifications.push(notify({ recipientId: order.copywriter_id, type: 'order.content_approved', payload: { orderId } }));
+  }
+  await Promise.all(notifications);
+
+  revalidatePath('/dashboard/orders');
+  revalidatePath(`/dashboard/orders/${orderId}`);
+}
+
+export async function rejectOrder(input: RejectOrderInput): Promise<void> {
+  const actor = await requireRole(['Client']).catch(mapForbidden);
+
+  const parsed = rejectOrderSchema.safeParse(input);
+  if (!parsed.success) throw new AppError('VALIDATION', parsed.error.issues[0].message);
+
+  const { orderId, comment } = parsed.data;
+
+  const supabase = await createClient();
+  const { data: order, error } = await supabase
+    .from('orders')
+    .select('id, status, created_by_id, manager_id, copywriter_id')
+    .eq('id', orderId)
+    .single();
+
+  if (error || !order) throw new AppError('NOT_FOUND', 'Order not found');
+  if (order.created_by_id !== actor.id) throw new AppError('FORBIDDEN', 'You do not own this order');
+  if (!TRANSITION_GUARDS.reject.includes(order.status)) {
+    throw new AppError('VALIDATION', `Cannot reject an order with status "${order.status}"`);
+  }
+
+  // Insert comment row first
+  const { error: commentError } = await supabase
+    .from('comments')
+    .insert({ order_id: orderId, created_by_id: actor.id, text: comment });
+
+  if (commentError) throw new Error(commentError.message);
+
+  const { error: updateError } = await supabase
+    .from('orders')
+    .update({ status: 'Needs changes' })
+    .eq('id', orderId)
+    .eq('status', 'Content Sent');
+
+  if (updateError) throw new Error(updateError.message);
+
+  await recordAudit({
+    entityType: 'order',
+    entityId: orderId,
+    action: 'order.rejected',
+    before: { status: order.status },
+    after: { status: 'Needs changes' },
+  });
+
+  const notifications: Promise<void>[] = [];
+  if (order.copywriter_id) {
+    notifications.push(notify({ recipientId: order.copywriter_id, type: 'order.needs_changes', payload: { orderId } }));
+  }
+  if (order.manager_id) {
+    notifications.push(notify({ recipientId: order.manager_id, type: 'order.needs_changes', payload: { orderId } }));
+  }
+  await Promise.all(notifications);
+
+  revalidatePath('/dashboard/orders');
+  revalidatePath(`/dashboard/orders/${orderId}`);
+}
+
+export async function addComment(input: AddCommentInput): Promise<void> {
+  const actor = await requireRole(['Client', 'Copywriter', 'Manager', 'Admin']).catch(mapForbidden);
+
+  const parsed = addCommentSchema.safeParse(input);
+  if (!parsed.success) throw new AppError('VALIDATION', parsed.error.issues[0].message);
+
+  const { orderId, text } = parsed.data;
+
+  const supabase = await createClient();
+  const { data: order, error } = await supabase
+    .from('orders')
+    .select('id, status, created_by_id, manager_id, copywriter_id')
+    .eq('id', orderId)
+    .single();
+
+  if (error || !order) throw new AppError('NOT_FOUND', 'Order not found');
+
+  // Enforce viewer-level access per role
+  if (actor.role === 'Client' && order.created_by_id !== actor.id) {
+    throw new AppError('FORBIDDEN', 'You do not have access to this order');
+  }
+  if (actor.role === 'Copywriter' && order.copywriter_id !== actor.id) {
+    throw new AppError('FORBIDDEN', 'You are not assigned to this order');
+  }
+
+  const { error: commentError } = await supabase
+    .from('comments')
+    .insert({ order_id: orderId, created_by_id: actor.id, text });
+
+  if (commentError) throw new Error(commentError.message);
+
+  await recordAudit({
+    entityType: 'order',
+    entityId: orderId,
+    action: 'order.comment_added',
+    after: { actor_id: actor.id },
+  });
+
+  // Notify everyone on the order except the actor
+  const recipientIds = new Set<string>();
+  if (order.created_by_id && order.created_by_id !== actor.id) recipientIds.add(order.created_by_id);
+  if (order.copywriter_id && order.copywriter_id !== actor.id) recipientIds.add(order.copywriter_id);
+  if (order.manager_id && order.manager_id !== actor.id) recipientIds.add(order.manager_id);
+
+  await Promise.all(
+    [...recipientIds].map((id) =>
+      notify({ recipientId: id, type: 'order.comment_added', payload: { orderId } }),
+    ),
+  );
+
+  revalidatePath(`/dashboard/orders/${orderId}`);
+}
+
+export async function publishOrder(input: PublishOrderInput): Promise<void> {
+  const actor = await requireRole(['Manager', 'Admin']).catch(mapForbidden);
+
+  const parsed = publishOrderSchema.safeParse(input);
+  if (!parsed.success) throw new AppError('VALIDATION', parsed.error.issues[0].message);
+
+  const { orderId, published_url, publish_date } = parsed.data;
+
+  const supabase = await createClient();
+  const { data: order, error } = await supabase
+    .from('orders')
+    .select('id, status, created_by_id, manager_id, copywriter_id')
+    .eq('id', orderId)
+    .single();
+
+  if (error || !order) throw new AppError('NOT_FOUND', 'Order not found');
+  if (!TRANSITION_GUARDS.publish.includes(order.status)) {
+    throw new AppError('VALIDATION', `Cannot publish an order with status "${order.status}"`);
+  }
+
+  const now = new Date();
+  const billingMonth = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split('T')[0];
+  const publishDateStr = publish_date.toISOString().split('T')[0];
+
+  const { error: updateError } = await supabase
+    .from('orders')
+    .update({
+      status: 'Published',
+      published_at: now.toISOString(),
+      published_by_id: actor.id,
+      published_url,
+      publish_date: publishDateStr,
+      billing_month: billingMonth,
+    })
+    .eq('id', orderId)
+    .eq('status', 'Content Approved');
+
+  if (updateError) throw new Error(updateError.message);
+
+  await recordAudit({
+    entityType: 'order',
+    entityId: orderId,
+    action: 'order.published',
+    before: { status: order.status },
+    after: { status: 'Published', published_url, billing_month: billingMonth },
+  });
+
+  const notifications: Promise<void>[] = [
+    notify({ recipientId: order.created_by_id, type: 'order.published', payload: { orderId, published_url } }),
+  ];
+  if (order.copywriter_id) {
+    notifications.push(
+      notify({ recipientId: order.copywriter_id, type: 'order.published', payload: { orderId } }),
+    );
+  }
+  await Promise.all(notifications);
+
+  revalidatePath('/dashboard/orders');
+  revalidatePath(`/dashboard/orders/${orderId}`);
 }

@@ -368,14 +368,15 @@ describe('submitOrderContent()', () => {
     await expect(submitOrderContent({ orderId: ORD_1 })).rejects.toThrow('not assigned');
   });
 
-  it('throws VALIDATION when status is not In Progress', async () => {
+  it('succeeds when status is Needs changes (widened guard in M5)', async () => {
     mockRequireRole.mockResolvedValueOnce(makeUser({ id: CW_1, role: 'Copywriter' }));
-    const chain = makeChain({
+    const selectChain = makeChain({
       data: { id: ORD_1, status: 'Needs changes', copywriter_id: CW_1, content_body: 'A'.repeat(60), manager_id: null, created_by_id: CLIENT_1 },
       error: null,
     });
-    mockFrom.mockReturnValue(chain);
+    const updateChain = makeChain({ data: null, error: null });
+    mockFrom.mockReturnValueOnce(selectChain).mockReturnValue(updateChain);
 
-    await expect(submitOrderContent({ orderId: ORD_1 })).rejects.toThrow('Needs changes');
+    await expect(submitOrderContent({ orderId: ORD_1 })).resolves.toBeUndefined();
   });
 });
