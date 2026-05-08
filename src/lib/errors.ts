@@ -3,7 +3,8 @@ export type ErrorCode =
   | 'NOT_FOUND'
   | 'EMAIL_EXISTS'
   | 'VALIDATION'
-  | 'CONFLICT';
+  | 'CONFLICT'
+  | 'INVITE_FAILED';
 
 export class AppError extends Error {
   constructor(

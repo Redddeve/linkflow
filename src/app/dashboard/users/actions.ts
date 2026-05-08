@@ -63,7 +63,8 @@ export async function inviteUser(input: InviteUserInput): Promise<{ userId: stri
   });
 
   if (authError || !authData.user) {
-    throw new Error(authError?.message ?? 'Failed to send invitation');
+    console.error('[inviteUser] Auth error:', authError);
+    throw new AppError('INVITE_FAILED', authError?.message ?? 'Failed to send invitation');
   }
 
   const userId = authData.user.id;
