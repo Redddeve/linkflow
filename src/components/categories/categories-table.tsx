@@ -28,7 +28,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { editCategory, deleteCategory } from './actions';
+import { editCategory, deleteCategory } from '@/app/dashboard/categories/actions';
 
 interface Category {
   id: string;
@@ -138,7 +138,6 @@ export function CategoriesTable({ categories }: Props) {
         </TableBody>
       </Table>
 
-      {/* Edit dialog */}
       <Dialog
         open={!!editTarget}
         onOpenChange={(o) => {
@@ -175,7 +174,6 @@ export function CategoriesTable({ categories }: Props) {
         </DialogContent>
       </Dialog>
 
-      {/* Archive confirm dialog */}
       <Dialog
         open={!!deleteTarget}
         onOpenChange={(o) => {

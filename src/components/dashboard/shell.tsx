@@ -10,9 +10,9 @@ import {
   FileText,
   Receipt,
   BadgeDollarSign,
-  Tag,
   Bell,
   LogOut,
+  Tag,
 } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
@@ -39,35 +39,119 @@ interface NavItem {
 
 const NAV_ITEMS: Record<UserRole, NavItem[]> = {
   Client: [
-    { href: '/dashboard', label: 'Dashboard', icon: <LayoutDashboard className="nav-icon" /> },
-    { href: '/dashboard/catalog', label: 'Catalog', icon: <Globe className="nav-icon" /> },
-    { href: '/dashboard/cart', label: 'Cart', icon: <ShoppingCart className="nav-icon" /> },
-    { href: '/dashboard/orders', label: 'Orders', icon: <FileText className="nav-icon" /> },
-    { href: '/dashboard/invoices', label: 'Invoices', icon: <Receipt className="nav-icon" /> },
+    {
+      href: '/dashboard',
+      label: 'Dashboard',
+      icon: <LayoutDashboard className="nav-icon" />,
+    },
+    {
+      href: '/dashboard/catalog',
+      label: 'Catalog',
+      icon: <Globe className="nav-icon" />,
+    },
+    {
+      href: '/dashboard/cart',
+      label: 'Cart',
+      icon: <ShoppingCart className="nav-icon" />,
+    },
+    {
+      href: '/dashboard/orders',
+      label: 'Orders',
+      icon: <FileText className="nav-icon" />,
+    },
+    {
+      href: '/dashboard/invoices',
+      label: 'Invoices',
+      icon: <Receipt className="nav-icon" />,
+    },
   ],
   Manager: [
-    { href: '/dashboard', label: 'Dashboard', icon: <LayoutDashboard className="nav-icon" /> },
-    { href: '/dashboard/orders', label: 'Orders', icon: <FileText className="nav-icon" /> },
-    { href: '/dashboard/sites', label: 'Sites', icon: <Globe className="nav-icon" /> },
-    { href: '/dashboard/invoices', label: 'Invoices', icon: <Receipt className="nav-icon" /> },
+    {
+      href: '/dashboard',
+      label: 'Dashboard',
+      icon: <LayoutDashboard className="nav-icon" />,
+    },
+    {
+      href: '/dashboard/orders',
+      label: 'Orders',
+      icon: <FileText className="nav-icon" />,
+    },
+    {
+      href: '/dashboard/sites',
+      label: 'Sites',
+      icon: <Globe className="nav-icon" />,
+    },
+    {
+      href: '/dashboard/invoices',
+      label: 'Invoices',
+      icon: <Receipt className="nav-icon" />,
+    },
   ],
   Copywriter: [
-    { href: '/dashboard', label: 'Dashboard', icon: <LayoutDashboard className="nav-icon" /> },
-    { href: '/dashboard/orders', label: 'My Orders', icon: <FileText className="nav-icon" /> },
+    {
+      href: '/dashboard',
+      label: 'Dashboard',
+      icon: <LayoutDashboard className="nav-icon" />,
+    },
+    {
+      href: '/dashboard/orders',
+      label: 'My Orders',
+      icon: <FileText className="nav-icon" />,
+    },
   ],
   Sourcer: [
-    { href: '/dashboard', label: 'Dashboard', icon: <LayoutDashboard className="nav-icon" /> },
-    { href: '/dashboard/sites', label: 'My Sites', icon: <Globe className="nav-icon" /> },
-    { href: '/dashboard/commissions', label: 'Commissions', icon: <BadgeDollarSign className="nav-icon" /> },
+    {
+      href: '/dashboard',
+      label: 'Dashboard',
+      icon: <LayoutDashboard className="nav-icon" />,
+    },
+    {
+      href: '/dashboard/sites',
+      label: 'My Sites',
+      icon: <Globe className="nav-icon" />,
+    },
+    {
+      href: '/dashboard/commissions',
+      label: 'Commissions',
+      icon: <BadgeDollarSign className="nav-icon" />,
+    },
   ],
   Admin: [
-    { href: '/dashboard', label: 'Dashboard', icon: <LayoutDashboard className="nav-icon" /> },
-    { href: '/dashboard/users', label: 'Users', icon: <Users className="nav-icon" /> },
-    { href: '/dashboard/sites', label: 'Sites', icon: <Globe className="nav-icon" /> },
-    { href: '/dashboard/categories', label: 'Categories', icon: <Tag className="nav-icon" /> },
-    { href: '/dashboard/orders', label: 'Orders', icon: <FileText className="nav-icon" /> },
-    { href: '/dashboard/invoices', label: 'Invoices', icon: <Receipt className="nav-icon" /> },
-    { href: '/dashboard/commissions', label: 'Commissions', icon: <BadgeDollarSign className="nav-icon" /> },
+    {
+      href: '/dashboard',
+      label: 'Dashboard',
+      icon: <LayoutDashboard className="nav-icon" />,
+    },
+    {
+      href: '/dashboard/users',
+      label: 'Users',
+      icon: <Users className="nav-icon" />,
+    },
+    {
+      href: '/dashboard/sites',
+      label: 'Sites',
+      icon: <Globe className="nav-icon" />,
+    },
+    {
+      href: '/dashboard/categories',
+      label: 'Categories',
+      icon: <Tag className="nav-icon" />,
+    },
+    {
+      href: '/dashboard/orders',
+      label: 'Orders',
+      icon: <FileText className="nav-icon" />,
+    },
+    {
+      href: '/dashboard/invoices',
+      label: 'Invoices',
+      icon: <Receipt className="nav-icon" />,
+    },
+    {
+      href: '/dashboard/commissions',
+      label: 'Commissions',
+      icon: <BadgeDollarSign className="nav-icon" />,
+    },
   ],
 };
 
@@ -181,9 +265,18 @@ export function DashboardShell({
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-56">
                 <div className="px-2 py-2">
-                  <div className="text-sm font-medium truncate">{displayName(user)}</div>
-                  <div className="text-xs text-muted-foreground truncate mt-0.5">{user.email}</div>
-                  <div className="text-xs mt-0.5" style={{ color: 'var(--text-faint)' }}>{user.role}</div>
+                  <div className="text-sm font-medium truncate">
+                    {displayName(user)}
+                  </div>
+                  <div className="text-xs text-muted-foreground truncate mt-0.5">
+                    {user.email}
+                  </div>
+                  <div
+                    className="text-xs mt-0.5"
+                    style={{ color: 'var(--text-faint)' }}
+                  >
+                    {user.role}
+                  </div>
                 </div>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem onClick={handleSignOut}>

@@ -1,8 +1,8 @@
 import { notFound } from 'next/navigation';
 import { requireRole } from '@/lib/auth';
 import { createClient } from '@/lib/supabase/server';
-import { CreateCategoryForm } from './create-form';
-import { CategoriesTable } from './categories-table';
+import { CreateCategoryForm } from '@/components/categories/create-form';
+import { CategoriesTable } from '@/components/categories/categories-table';
 
 export const metadata = { title: 'Categories' };
 

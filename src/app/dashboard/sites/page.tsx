@@ -3,8 +3,8 @@ import { notFound } from 'next/navigation';
 import { buttonVariants } from '@/components/ui/button';
 import { requireRole } from '@/lib/auth';
 import { createClient } from '@/lib/supabase/server';
-import { SitesFilters } from './filters';
-import { SitesTable } from './sites-table';
+import { SitesFilters } from '@/components/sites/sites-filters';
+import { SitesTable } from '@/components/sites/sites-table';
 
 interface PageProps {
   searchParams: Promise<Record<string, string | string[] | undefined>>;

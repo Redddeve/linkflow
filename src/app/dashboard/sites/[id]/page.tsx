@@ -2,8 +2,8 @@ import { notFound } from 'next/navigation';
 import { Badge } from '@/components/ui/badge';
 import { requireRole } from '@/lib/auth';
 import { createClient } from '@/lib/supabase/server';
-import { StatusActions } from './status-actions';
-import { EditSiteDialog } from './edit-dialog';
+import { StatusActions } from '@/components/sites/status-actions';
+import { EditSiteDialog } from '@/components/sites/edit-dialog';
 import type { Database } from '@/types/database.types';
 
 interface PageProps {

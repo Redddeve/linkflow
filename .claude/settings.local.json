@@ -15,7 +15,10 @@
       "mcp__supabase__get_project_url",
       "Bash(Get-ChildItem -Recurse -Path \"d:\\\\Projects\\\\linkflow\\\\src\\\\app\\\\dashboard\" -Directory)",
       "mcp__supabase__list_migrations",
-      "Bash(npx shadcn@latest add command popover --yes)"
+      "Bash(npx shadcn@latest add command popover --yes)",
+      "Bash(Get-ChildItem \"d:\\\\Projects\\\\linkflow\" -Name)",
+      "Bash(npm test *)",
+      "Bash(npx shadcn@latest add calendar --yes)"
     ],
     "deny": [
       "Read(.env*)",

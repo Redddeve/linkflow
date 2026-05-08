@@ -21,7 +21,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog';
-import { editUser } from '../actions';
+import { editUser } from '@/app/dashboard/users/actions';
 import type { UserRow } from '@/lib/auth';
 import type { EditUserInput } from '@/lib/schemas/users';
 
@@ -208,7 +208,6 @@ export function EditUserDialog({ user, managers }: Props) {
         </DialogContent>
       </Dialog>
 
-      {/* Confirm role change — nested dialog, opens on top */}
       <Dialog open={!!confirmDeps} onOpenChange={handleConfirmDialogChange}>
         <DialogContent>
           <DialogHeader>

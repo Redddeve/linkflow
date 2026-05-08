@@ -12,7 +12,7 @@ import {
 } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { setSiteStatus } from '../actions';
+import { setSiteStatus } from '@/app/dashboard/sites/actions';
 import { VALID_TRANSITIONS, type SiteStatus } from '@/lib/schemas/sites';
 
 interface Props {

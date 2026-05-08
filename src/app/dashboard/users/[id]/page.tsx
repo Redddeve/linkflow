@@ -6,8 +6,8 @@ import { createClient } from '@/lib/supabase/server';
 import { listManagers } from '../actions';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
-import { EditUserDialog } from './edit-form';
-import { StatusActions } from './status-actions';
+import { EditUserDialog } from '@/components/users/edit-dialog';
+import { StatusActions } from '@/components/users/status-actions';
 
 interface PageProps {
   params: Promise<{ id: string }>;

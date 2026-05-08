@@ -14,7 +14,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { MultiSelect } from '@/components/ui/multi-select';
-import { createSite, editSite } from '../actions';
+import { createSite, editSite } from '@/app/dashboard/sites/actions';
 import type { Database } from '@/types/database.types';
 import { Constants } from '@/types/database.types';
 
@@ -148,7 +148,6 @@ export function SiteForm({ mode, siteId, categories, actorRole, onSuccess, onCan
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-8 max-w-2xl">
-      {/* Core */}
       <section className="space-y-4">
         <h2 className="text-lg font-medium">Core details</h2>
         <div className="grid gap-1.5">
@@ -194,7 +193,6 @@ export function SiteForm({ mode, siteId, categories, actorRole, onSuccess, onCan
         </div>
       </section>
 
-      {/* SEO Metrics */}
       <section className="space-y-4">
         <h2 className="text-lg font-medium">SEO metrics</h2>
         <div className="grid grid-cols-3 gap-4">
@@ -217,7 +215,6 @@ export function SiteForm({ mode, siteId, categories, actorRole, onSuccess, onCan
         </div>
       </section>
 
-      {/* Placement details */}
       <section className="space-y-4">
         <h2 className="text-lg font-medium">Placement details</h2>
         <div className="grid grid-cols-2 gap-4">
@@ -281,7 +278,6 @@ export function SiteForm({ mode, siteId, categories, actorRole, onSuccess, onCan
         </div>
       </section>
 
-      {/* Sourcer notes (Sourcer/Manager/Admin only) */}
       {showSourcerFields && (
         <section className="space-y-4">
           <h2 className="text-lg font-medium">Sourcer details</h2>

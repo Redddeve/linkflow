@@ -1,9 +1,9 @@
 import { requireRole } from '@/lib/auth';
 import { createClient } from '@/lib/supabase/server';
 import { listManagers } from './actions';
-import { UserFilters } from './filters';
-import { UsersTable } from './users-table';
-import { InviteUserForm } from './invite/invite-form';
+import { UserFilters } from '@/components/users/user-filters';
+import { UsersTable } from '@/components/users/users-table';
+import { InviteUserForm } from '@/components/users/invite-form';
 import type { UserRole } from '@/lib/auth';
 
 interface PageProps {

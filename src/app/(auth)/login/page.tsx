@@ -19,11 +19,11 @@ import { loginWithPassword } from './actions';
 type UserRole = (typeof Constants.public.Enums.user_role)[number];
 
 const ROLE_DEMO_EMAILS: Record<UserRole, string> = {
-  Admin: 'dmitry.popko+admin@archysoft.com',
-  Manager: 'dmitry.popko+manager@archysoft.com',
-  Copywriter: 'dmitry.popko+copywriter@archysoft.com',
-  Sourcer: 'dmitry.popko+sourcer@archysoft.com',
-  Client: 'dmitry.popko+client@archysoft.com',
+  Admin: 'dmitry.popko@archysoft.com',
+  Manager: 'dmitry.popko+manager1@archysoft.com',
+  Copywriter: 'dmitry.popko+copywriter1@archysoft.com',
+  Sourcer: 'dmitry.popko+sourcer1@archysoft.com',
+  Client: 'dmitry.popko+client1@archysoft.com',
 };
 
 const ROLE_DEMO_PASSWORD = 'demo123456';

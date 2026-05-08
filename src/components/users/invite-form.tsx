@@ -21,7 +21,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog';
-import { inviteUser } from '../actions';
+import { inviteUser } from '@/app/dashboard/users/actions';
 import type { InviteUserInput } from '@/lib/schemas/users';
 
 interface Props {

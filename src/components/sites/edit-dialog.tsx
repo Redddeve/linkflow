@@ -10,7 +10,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog';
-import { SiteForm } from '../new/site-form';
+import { SiteForm } from './site-form';
 import type { Database } from '@/types/database.types';
 
 type UserRole = Database['public']['Enums']['user_role'];

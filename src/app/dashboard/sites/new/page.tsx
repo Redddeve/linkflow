@@ -1,7 +1,7 @@
 import { notFound } from 'next/navigation';
 import { requireRole } from '@/lib/auth';
 import { createClient } from '@/lib/supabase/server';
-import { SiteForm } from './site-form';
+import { SiteForm } from '@/components/sites/site-form';
 
 export const metadata = { title: 'Add site' };
 

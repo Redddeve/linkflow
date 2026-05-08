@@ -13,7 +13,7 @@ import {
 } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { disableUser, activateUser, type BlockingOrder } from '../actions';
+import { disableUser, activateUser, type BlockingOrder } from '@/app/dashboard/users/actions';
 import type { UserRow } from '@/lib/auth';
 
 interface Props {
@@ -87,30 +87,18 @@ export function StatusActions({ user, currentUserId }: Props) {
     if (!o) setShowActivate(false);
   }
 
-  function handleOpenDisable() {
-    setShowDisable(true);
-  }
-
-  function handleOpenActivate() {
-    setShowActivate(true);
-  }
-
-  function handleCancelActivate() {
-    setShowActivate(false);
-  }
-
   const isSelf = user.id === currentUserId;
 
   return (
     <>
       <div className="flex gap-2">
         {user.status !== 'DISABLED' && !isSelf && (
-          <Button variant="destructive" size="sm" onClick={handleOpenDisable}>
+          <Button variant="destructive" size="sm" onClick={() => setShowDisable(true)}>
             Disable
           </Button>
         )}
         {user.status === 'DISABLED' && (
-          <Button size="sm" onClick={handleOpenActivate}>
+          <Button size="sm" onClick={() => setShowActivate(true)}>
             Activate
           </Button>
         )}
@@ -180,7 +168,7 @@ export function StatusActions({ user, currentUserId }: Props) {
             Their account will be set to Active. Previously archived sites will not be automatically restored.
           </p>
           <DialogFooter>
-            <Button variant="outline" onClick={handleCancelActivate}>Cancel</Button>
+            <Button variant="outline" onClick={() => setShowActivate(false)}>Cancel</Button>
             <Button disabled={isPending} onClick={handleActivate}>
               {isPending ? 'Activating…' : 'Activate'}
             </Button>
