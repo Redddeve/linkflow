@@ -9,20 +9,13 @@ import {
   createSiteSchema,
   editSiteSchema,
   setSiteStatusSchema,
+  VALID_TRANSITIONS,
   type CreateSiteInput,
   type EditSiteInput,
   type SiteStatusAction,
+  type SiteStatus,
 } from '@/lib/schemas/sites';
-import type { Database, TablesUpdate } from '@/types/database.types';
-
-type SiteStatus = Database['public']['Enums']['site_status'];
-
-export const VALID_TRANSITIONS: Record<SiteStatusAction, SiteStatus[]> = {
-  APPROVE: ['Pending'],
-  NEEDS_CHANGES: ['Pending'],
-  ARCHIVE: ['Active'],
-  REACTIVATE: ['Archived'],
-};
+import type { TablesUpdate } from '@/types/database.types';
 
 const ACTION_RESULT_STATUS: Record<SiteStatusAction, SiteStatus> = {
   APPROVE: 'Active',

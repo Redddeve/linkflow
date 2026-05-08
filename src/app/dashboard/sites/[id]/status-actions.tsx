@@ -12,10 +12,8 @@ import {
 } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { setSiteStatus, VALID_TRANSITIONS } from '../actions';
-import type { Database } from '@/types/database.types';
-
-type SiteStatus = Database['public']['Enums']['site_status'];
+import { setSiteStatus } from '../actions';
+import { VALID_TRANSITIONS, type SiteStatus } from '@/lib/schemas/sites';
 
 interface Props {
   siteId: string;
@@ -45,9 +43,9 @@ export function StatusActions({ siteId, currentStatus }: Props) {
   const [changeNote, setChangeNote] = useState('');
   const [changeNoteError, setChangeNoteError] = useState('');
 
-  const availableActions = (Object.keys(VALID_TRANSITIONS) as (keyof typeof VALID_TRANSITIONS)[]).filter(
-    (action) => VALID_TRANSITIONS[action].includes(currentStatus),
-  );
+  const availableActions = (
+    Object.keys(VALID_TRANSITIONS) as (keyof typeof VALID_TRANSITIONS)[]
+  ).filter((action) => VALID_TRANSITIONS[action].includes(currentStatus));
 
   async function handleAction(action: string) {
     if (action === 'NEEDS_CHANGES') {
@@ -57,7 +55,10 @@ export function StatusActions({ siteId, currentStatus }: Props) {
     setError('');
     startTransition(async () => {
       try {
-        await setSiteStatus(siteId, action as Parameters<typeof setSiteStatus>[1]);
+        await setSiteStatus(
+          siteId,
+          action as Parameters<typeof setSiteStatus>[1],
+        );
         router.refresh();
       } catch (e: unknown) {
         setError(e instanceof Error ? e.message : 'An error occurred');
@@ -78,9 +79,29 @@ export function StatusActions({ siteId, currentStatus }: Props) {
         setChangeNote('');
         router.refresh();
       } catch (e: unknown) {
-        setChangeNoteError(e instanceof Error ? e.message : 'An error occurred');
+        setChangeNoteError(
+          e instanceof Error ? e.message : 'An error occurred',
+        );
       }
     });
+  }
+
+  function handleNeedsChangesDialogChange(open: boolean) {
+    if (!open) {
+      setNeedsChangesOpen(false);
+      setChangeNote('');
+      setChangeNoteError('');
+    }
+  }
+
+  function handleChangeNoteChange(e: React.ChangeEvent<HTMLTextAreaElement>) {
+    setChangeNote(e.target.value);
+  }
+
+  function handleNeedsChangesCancel() {
+    setNeedsChangesOpen(false);
+    setChangeNote('');
+    setChangeNoteError('');
   }
 
   if (availableActions.length === 0) return null;
@@ -102,8 +123,7 @@ export function StatusActions({ siteId, currentStatus }: Props) {
         {error && <p className="text-sm text-destructive w-full">{error}</p>}
       </div>
 
-      {/* Needs changes dialog */}
-      <Dialog open={needsChangesOpen} onOpenChange={(o) => { if (!o) { setNeedsChangesOpen(false); setChangeNote(''); setChangeNoteError(''); } }}>
+      <Dialog open={needsChangesOpen} onOpenChange={handleNeedsChangesDialogChange}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Request changes</DialogTitle>
@@ -114,15 +134,15 @@ export function StatusActions({ siteId, currentStatus }: Props) {
               id="change-note"
               rows={4}
               value={changeNote}
-              onChange={(e) => setChangeNote(e.target.value)}
+              onChange={handleChangeNoteChange}
               placeholder="Describe the required changes (min 10 characters)…"
             />
-            {changeNoteError && <p className="text-sm text-destructive">{changeNoteError}</p>}
+            {changeNoteError && (
+              <p className="text-sm text-destructive">{changeNoteError}</p>
+            )}
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => { setNeedsChangesOpen(false); setChangeNote(''); setChangeNoteError(''); }}>
-              Cancel
-            </Button>
+            <Button variant="outline" onClick={handleNeedsChangesCancel}>Cancel</Button>
             <Button disabled={isPending} onClick={handleNeedsChanges}>
               {isPending ? 'Sending…' : 'Send'}
             </Button>

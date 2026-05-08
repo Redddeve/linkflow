@@ -1,7 +1,7 @@
 'use client';
 
 import { useRouter, useSearchParams, usePathname } from 'next/navigation';
-import { useCallback, useRef, useState } from 'react';
+import { useRef, useState } from 'react';
 import { Input } from '@/components/ui/input';
 import {
   Select,
@@ -18,24 +18,33 @@ export function UserFilters() {
   const [searchQuery, setSearchQuery] = useState(searchParams.get('q') ?? '');
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const update = useCallback(
-    (key: string, value: string) => {
-      const params = new URLSearchParams(searchParams.toString());
-      if (value) {
-        params.set(key, value);
-      } else {
-        params.delete(key);
-      }
-      params.delete('page');
-      router.replace(`${pathname}?${params.toString()}`);
-    },
-    [router, pathname, searchParams],
-  );
+  function update(key: string, value: string) {
+    const params = new URLSearchParams(searchParams.toString());
+    if (value) {
+      params.set(key, value);
+    } else {
+      params.delete(key);
+    }
+    params.delete('page');
+    router.replace(`${pathname}?${params.toString()}`);
+  }
 
   function handleSearch(val: string) {
     setSearchQuery(val);
     if (debounceRef.current) clearTimeout(debounceRef.current);
     debounceRef.current = setTimeout(() => update('q', val), 300);
+  }
+
+  function handleSearchChange(e: React.ChangeEvent<HTMLInputElement>) {
+    handleSearch(e.target.value);
+  }
+
+  function handleRoleChange(v: string | null) {
+    update('role', !v || v === 'All' ? '' : v);
+  }
+
+  function handleStatusChange(v: string | null) {
+    update('status', !v || v === 'All' ? '' : v);
   }
 
   return (
@@ -49,7 +58,7 @@ export function UserFilters() {
           type="search"
           placeholder="Search by name or email…"
           value={searchQuery}
-          onChange={(e) => handleSearch(e.target.value)}
+          onChange={handleSearchChange}
           className="w-64"
         />
       </div>
@@ -60,7 +69,7 @@ export function UserFilters() {
         </label>
         <Select
           value={searchParams.get('role') ?? 'All'}
-          onValueChange={(v) => update('role', !v || v === 'All' ? '' : v)}
+          onValueChange={handleRoleChange}
         >
           <SelectTrigger id="role-filter" className="w-40 h-9">
             <SelectValue placeholder="All roles" />
@@ -82,7 +91,7 @@ export function UserFilters() {
         </label>
         <Select
           value={searchParams.get('status') ?? 'All'}
-          onValueChange={(v) => update('status', !v || v === 'All' ? '' : v)}
+          onValueChange={handleStatusChange}
         >
           <SelectTrigger id="status-filter" className="w-40">
             <SelectValue placeholder="All statuses" />

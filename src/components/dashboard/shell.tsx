@@ -10,6 +10,7 @@ import {
   FileText,
   Receipt,
   BadgeDollarSign,
+  Tag,
   Bell,
   LogOut,
 } from 'lucide-react';
@@ -63,6 +64,7 @@ const NAV_ITEMS: Record<UserRole, NavItem[]> = {
     { href: '/dashboard', label: 'Dashboard', icon: <LayoutDashboard className="nav-icon" /> },
     { href: '/dashboard/users', label: 'Users', icon: <Users className="nav-icon" /> },
     { href: '/dashboard/sites', label: 'Sites', icon: <Globe className="nav-icon" /> },
+    { href: '/dashboard/categories', label: 'Categories', icon: <Tag className="nav-icon" /> },
     { href: '/dashboard/orders', label: 'Orders', icon: <FileText className="nav-icon" /> },
     { href: '/dashboard/invoices', label: 'Invoices', icon: <Receipt className="nav-icon" /> },
     { href: '/dashboard/commissions', label: 'Commissions', icon: <BadgeDollarSign className="nav-icon" /> },

@@ -6,7 +6,13 @@ import { useForm, useWatch } from 'react-hook-form';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import {
   Dialog,
   DialogContent,
@@ -28,7 +34,10 @@ export function EditUserDialog({ user, managers }: Props) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [isPending, startTransition] = useTransition();
-  const [confirmDeps, setConfirmDeps] = useState<{ activeOrders: number; activeSites: number } | null>(null);
+  const [confirmDeps, setConfirmDeps] = useState<{
+    activeOrders: number;
+    activeSites: number;
+  } | null>(null);
   const [pendingPatch, setPendingPatch] = useState<EditUserInput | null>(null);
 
   const {
@@ -50,10 +59,41 @@ export function EditUserDialog({ user, managers }: Props) {
   const selectedRole = useWatch({ control, name: 'role' });
   const managerId = useWatch({ control, name: 'manager_id' });
 
+  function handleRoleChange(v: string | null) {
+    if (v) setValue('role', v as EditUserInput['role']);
+  }
+
+  function handleManagerChange(v: string | null) {
+    setValue('manager_id', v || null);
+  }
+
+  function handleCancel() {
+    setOpen(false);
+  }
+
+  function handleConfirmDialogChange(o: boolean) {
+    if (!o) {
+      setConfirmDeps(null);
+      setPendingPatch(null);
+    }
+  }
+
+  function handleCancelConfirm() {
+    setConfirmDeps(null);
+    setPendingPatch(null);
+  }
+
+  function handleConfirm() {
+    if (pendingPatch) submit(pendingPatch, true);
+    setConfirmDeps(null);
+  }
+
   async function submit(data: EditUserInput, confirmed = false) {
     startTransition(async () => {
       try {
-        const result = await editUser(user.id, data, { confirmRoleChange: confirmed });
+        const result = await editUser(user.id, data, {
+          confirmRoleChange: confirmed,
+        });
         if ('requiresConfirm' in result && result.requiresConfirm) {
           setPendingPatch(data);
           setConfirmDeps(result.requiresConfirm);
@@ -62,7 +102,9 @@ export function EditUserDialog({ user, managers }: Props) {
           router.refresh();
         }
       } catch (e: unknown) {
-        setError('root', { message: e instanceof Error ? e.message : 'An error occurred' });
+        setError('root', {
+          message: e instanceof Error ? e.message : 'An error occurred',
+        });
       }
     });
   }
@@ -75,19 +117,39 @@ export function EditUserDialog({ user, managers }: Props) {
         </DialogTrigger>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle>Edit {user.first_name} {user.last_name}</DialogTitle>
+            <DialogTitle>
+              Edit {user.first_name} {user.last_name}
+            </DialogTitle>
           </DialogHeader>
-          <form id="edit-user-form" onSubmit={handleSubmit((data) => submit(data))} className="grid gap-4">
+          <form
+            id="edit-user-form"
+            onSubmit={handleSubmit((data) => submit(data))}
+            className="grid gap-4"
+          >
             <div className="grid grid-cols-2 gap-4">
               <div className="grid gap-2">
                 <Label htmlFor="first_name">First name</Label>
-                <Input id="first_name" {...register('first_name', { required: 'Required' })} />
-                {errors.first_name && <p className="text-sm text-destructive">{errors.first_name.message}</p>}
+                <Input
+                  id="first_name"
+                  {...register('first_name', { required: 'Required' })}
+                />
+                {errors.first_name && (
+                  <p className="text-sm text-destructive">
+                    {errors.first_name.message}
+                  </p>
+                )}
               </div>
               <div className="grid gap-2">
                 <Label htmlFor="last_name">Last name</Label>
-                <Input id="last_name" {...register('last_name', { required: 'Required' })} />
-                {errors.last_name && <p className="text-sm text-destructive">{errors.last_name.message}</p>}
+                <Input
+                  id="last_name"
+                  {...register('last_name', { required: 'Required' })}
+                />
+                {errors.last_name && (
+                  <p className="text-sm text-destructive">
+                    {errors.last_name.message}
+                  </p>
+                )}
               </div>
             </div>
 
@@ -95,7 +157,7 @@ export function EditUserDialog({ user, managers }: Props) {
               <Label htmlFor="edit-role">Role</Label>
               <Select
                 value={selectedRole ?? ''}
-                onValueChange={(v) => setValue('role', v as EditUserInput['role'])}
+                onValueChange={handleRoleChange}
               >
                 <SelectTrigger id="edit-role">
                   <SelectValue placeholder="Select role" />
@@ -115,7 +177,7 @@ export function EditUserDialog({ user, managers }: Props) {
                 <Label htmlFor="edit-manager">Manager</Label>
                 <Select
                   value={managerId ?? ''}
-                  onValueChange={(v) => setValue('manager_id', v || null)}
+                  onValueChange={handleManagerChange}
                 >
                   <SelectTrigger id="edit-manager">
                     <SelectValue placeholder="Assign manager" />
@@ -131,10 +193,14 @@ export function EditUserDialog({ user, managers }: Props) {
               </div>
             )}
 
-            {errors.root && <p className="text-sm text-destructive">{errors.root.message}</p>}
+            {errors.root && (
+              <p className="text-sm text-destructive">{errors.root.message}</p>
+            )}
           </form>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setOpen(false)}>Cancel</Button>
+            <Button variant="outline" onClick={handleCancel}>
+              Cancel
+            </Button>
             <Button type="submit" form="edit-user-form" disabled={isPending}>
               {isPending ? 'Saving…' : 'Save changes'}
             </Button>
@@ -143,7 +209,7 @@ export function EditUserDialog({ user, managers }: Props) {
       </Dialog>
 
       {/* Confirm role change — nested dialog, opens on top */}
-      <Dialog open={!!confirmDeps} onOpenChange={(o) => { if (!o) { setConfirmDeps(null); setPendingPatch(null); } }}>
+      <Dialog open={!!confirmDeps} onOpenChange={handleConfirmDialogChange}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Confirm role change</DialogTitle>
@@ -151,24 +217,26 @@ export function EditUserDialog({ user, managers }: Props) {
           <p className="text-sm text-muted-foreground">
             This user has active dependencies:
             {confirmDeps && confirmDeps.activeOrders > 0 && (
-              <span className="block mt-1">• {confirmDeps.activeOrders} active order{confirmDeps.activeOrders !== 1 ? 's' : ''}</span>
+              <span className="block mt-1">
+                • {confirmDeps.activeOrders} active order
+                {confirmDeps.activeOrders !== 1 ? 's' : ''}
+              </span>
             )}
             {confirmDeps && confirmDeps.activeSites > 0 && (
-              <span className="block">• {confirmDeps.activeSites} active site{confirmDeps.activeSites !== 1 ? 's' : ''}</span>
+              <span className="block">
+                • {confirmDeps.activeSites} active site
+                {confirmDeps.activeSites !== 1 ? 's' : ''}
+              </span>
             )}
           </p>
-          <p className="text-sm">Are you sure you want to change their role anyway?</p>
+          <p className="text-sm">
+            Are you sure you want to change their role anyway?
+          </p>
           <DialogFooter>
-            <Button variant="outline" onClick={() => { setConfirmDeps(null); setPendingPatch(null); }}>
+            <Button variant="outline" onClick={handleCancelConfirm}>
               Cancel
             </Button>
-            <Button
-              disabled={isPending}
-              onClick={() => {
-                if (pendingPatch) submit(pendingPatch, true);
-                setConfirmDeps(null);
-              }}
-            >
+            <Button disabled={isPending} onClick={handleConfirm}>
               {isPending ? 'Saving…' : 'Confirm'}
             </Button>
           </DialogFooter>

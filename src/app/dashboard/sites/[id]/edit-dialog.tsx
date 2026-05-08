@@ -31,6 +31,10 @@ export function EditSiteDialog({ siteId, actorRole, categories, defaultValues }:
     router.refresh();
   }
 
+  function handleCancel() {
+    setOpen(false);
+  }
+
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger render={<Button variant="outline" size="sm" />}>
@@ -46,7 +50,7 @@ export function EditSiteDialog({ siteId, actorRole, categories, defaultValues }:
           categories={categories}
           actorRole={actorRole}
           onSuccess={handleSuccess}
-          onCancel={() => setOpen(false)}
+          onCancel={handleCancel}
           defaultValues={defaultValues}
         />
       </DialogContent>

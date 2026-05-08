@@ -62,7 +62,7 @@ export default async function SitesPage({ searchParams }: PageProps) {
         )}
       </div>
       <SitesFilters categories={categories ?? []} />
-      <SitesTable sites={(sites ?? []) as Parameters<typeof SitesTable>[0]['sites']} actorRole={actor.role!} />
+      <SitesTable sites={(sites ?? []) as Parameters<typeof SitesTable>[0]['sites']} />
     </div>
   );
 }

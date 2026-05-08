@@ -98,7 +98,7 @@ export async function editCategory(id: string, input: EditCategoryInput): Promis
   });
 }
 
-export async function archiveCategory(id: string): Promise<void> {
+export async function deleteCategory(id: string): Promise<void> {
   await requireRole(['Admin']).catch(mapForbidden);
 
   const supabase = await createClient();
@@ -111,18 +111,18 @@ export async function archiveCategory(id: string): Promise<void> {
 
   if (fetchError || !current) throw new AppError('NOT_FOUND', 'Category not found');
 
-  const { error: updateError } = await supabase
+  const { error: deleteError } = await supabase
     .from('categories')
-    .update({ archived_at: new Date().toISOString() } as never)
+    .delete()
     .eq('id', id);
 
-  if (updateError) throw new Error(updateError.message);
+  if (deleteError) throw new Error(deleteError.message);
 
   await recordAudit({
     entityType: 'site',
     entityId: id,
-    action: 'category.archive',
+    action: 'category.delete',
     before: { name: current.name },
-    after: { archived: true },
+    after: null,
   });
 }

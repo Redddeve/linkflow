@@ -1,7 +1,6 @@
 'use client';
 
 import { useRouter, useSearchParams, usePathname } from 'next/navigation';
-import { useCallback } from 'react';
 import { Input } from '@/components/ui/input';
 import {
   Select,
@@ -25,19 +24,32 @@ export function SitesFilters({ categories }: Props) {
   const pathname = usePathname();
   const searchParams = useSearchParams();
 
-  const update = useCallback(
-    (key: string, value: string) => {
-      const params = new URLSearchParams(searchParams.toString());
-      if (value) {
-        params.set(key, value);
-      } else {
-        params.delete(key);
-      }
-      params.delete('page');
-      router.replace(`${pathname}?${params.toString()}`);
-    },
-    [router, pathname, searchParams],
-  );
+  function update(key: string, value: string) {
+    const params = new URLSearchParams(searchParams.toString());
+    if (value) {
+      params.set(key, value);
+    } else {
+      params.delete(key);
+    }
+    params.delete('page');
+    router.replace(`${pathname}?${params.toString()}`);
+  }
+
+  function handleStatusChange(v: string | null) {
+    update('status', !v || v === 'All' ? '' : v);
+  }
+
+  function handleCategoryChange(v: string | null) {
+    update('category', !v || v === 'All' ? '' : v);
+  }
+
+  function handlePriceMinBlur(e: React.FocusEvent<HTMLInputElement>) {
+    update('price_min', e.target.value);
+  }
+
+  function handlePriceMaxBlur(e: React.FocusEvent<HTMLInputElement>) {
+    update('price_max', e.target.value);
+  }
 
   return (
     <div role="search" className="flex flex-wrap gap-3">
@@ -45,7 +57,7 @@ export function SitesFilters({ categories }: Props) {
         <label htmlFor="status-filter" className="sr-only">Filter by status</label>
         <Select
           value={searchParams.get('status') ?? 'All'}
-          onValueChange={(v) => update('status', !v || v === 'All' ? '' : v)}
+          onValueChange={handleStatusChange}
         >
           <SelectTrigger id="status-filter" className="w-44 h-9">
             <SelectValue placeholder="All statuses" />
@@ -64,7 +76,7 @@ export function SitesFilters({ categories }: Props) {
         <label htmlFor="category-filter" className="sr-only">Filter by category</label>
         <Select
           value={searchParams.get('category') ?? 'All'}
-          onValueChange={(v) => update('category', !v || v === 'All' ? '' : v)}
+          onValueChange={handleCategoryChange}
         >
           <SelectTrigger id="category-filter" className="w-44 h-9">
             <SelectValue placeholder="All categories" />
@@ -87,7 +99,7 @@ export function SitesFilters({ categories }: Props) {
           placeholder="Min $ price"
           className="w-32 h-9"
           defaultValue={searchParams.get('price_min') ?? ''}
-          onBlur={(e) => update('price_min', e.target.value)}
+          onBlur={handlePriceMinBlur}
         />
       </div>
 
@@ -100,7 +112,7 @@ export function SitesFilters({ categories }: Props) {
           placeholder="Max $ price"
           className="w-32 h-9"
           defaultValue={searchParams.get('price_max') ?? ''}
-          onBlur={(e) => update('price_max', e.target.value)}
+          onBlur={handlePriceMaxBlur}
         />
       </div>
     </div>

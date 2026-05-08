@@ -13,7 +13,6 @@ import {
 import type { Database } from '@/types/database.types';
 
 type SiteStatus = Database['public']['Enums']['site_status'];
-type UserRole = Database['public']['Enums']['user_role'];
 
 interface SiteRow {
   id: string;
@@ -28,7 +27,6 @@ interface SiteRow {
 
 interface Props {
   sites: SiteRow[];
-  actorRole: UserRole;
 }
 
 function statusVariant(status: SiteStatus): 'success' | 'warning' | 'destructive' | 'outline' {
@@ -38,9 +36,7 @@ function statusVariant(status: SiteStatus): 'success' | 'warning' | 'destructive
   return 'outline';
 }
 
-export function SitesTable({ sites, actorRole }: Props) {
-  void actorRole;
-
+export function SitesTable({ sites }: Props) {
   return (
     <Table>
       <TableHeader>

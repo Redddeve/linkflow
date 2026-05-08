@@ -28,7 +28,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { editCategory, archiveCategory } from './actions';
+import { editCategory, deleteCategory } from './actions';
 
 interface Category {
   id: string;
@@ -47,7 +47,7 @@ export function CategoriesTable({ categories }: Props) {
   const [editName, setEditName] = useState('');
   const [editError, setEditError] = useState('');
 
-  const [archiveTarget, setArchiveTarget] = useState<Category | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<Category | null>(null);
 
   function openEdit(cat: Category) {
     setEditTarget(cat);
@@ -76,11 +76,11 @@ export function CategoriesTable({ categories }: Props) {
   }
 
   async function handleArchive() {
-    if (!archiveTarget) return;
+    if (!deleteTarget) return;
     startTransition(async () => {
       try {
-        await archiveCategory(archiveTarget.id);
-        setArchiveTarget(null);
+        await deleteCategory(deleteTarget.id);
+        setDeleteTarget(null);
         router.refresh();
       } catch (e: unknown) {
         console.error(e);
@@ -100,7 +100,10 @@ export function CategoriesTable({ categories }: Props) {
         <TableBody>
           {categories.length === 0 && (
             <TableRow>
-              <TableCell colSpan={2} className="text-center text-muted-foreground py-8">
+              <TableCell
+                colSpan={2}
+                className="text-center text-muted-foreground py-8"
+              >
                 No categories yet.
               </TableCell>
             </TableRow>
@@ -117,11 +120,13 @@ export function CategoriesTable({ categories }: Props) {
                     <MoreHorizontal className="h-4 w-4" />
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end">
-                    <DropdownMenuItem onClick={() => openEdit(cat)}>Rename</DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => openEdit(cat)}>
+                      Rename
+                    </DropdownMenuItem>
                     <DropdownMenuSeparator />
                     <DropdownMenuItem
                       className="text-destructive"
-                      onClick={() => setArchiveTarget(cat)}
+                      onClick={() => setDeleteTarget(cat)}
                     >
                       Archive
                     </DropdownMenuItem>
@@ -134,7 +139,12 @@ export function CategoriesTable({ categories }: Props) {
       </Table>
 
       {/* Edit dialog */}
-      <Dialog open={!!editTarget} onOpenChange={(o) => { if (!o) closeEdit(); }}>
+      <Dialog
+        open={!!editTarget}
+        onOpenChange={(o) => {
+          if (!o) closeEdit();
+        }}
+      >
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Rename category</DialogTitle>
@@ -147,11 +157,18 @@ export function CategoriesTable({ categories }: Props) {
               onChange={(e) => setEditName(e.target.value)}
               maxLength={100}
             />
-            {editError && <p className="text-sm text-destructive">{editError}</p>}
+            {editError && (
+              <p className="text-sm text-destructive">{editError}</p>
+            )}
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={closeEdit}>Cancel</Button>
-            <Button disabled={isPending || editName.trim().length === 0} onClick={handleEdit}>
+            <Button variant="outline" onClick={closeEdit}>
+              Cancel
+            </Button>
+            <Button
+              disabled={isPending || editName.trim().length === 0}
+              onClick={handleEdit}
+            >
               {isPending ? 'Saving…' : 'Save'}
             </Button>
           </DialogFooter>
@@ -159,17 +176,31 @@ export function CategoriesTable({ categories }: Props) {
       </Dialog>
 
       {/* Archive confirm dialog */}
-      <Dialog open={!!archiveTarget} onOpenChange={(o) => { if (!o) setArchiveTarget(null); }}>
+      <Dialog
+        open={!!deleteTarget}
+        onOpenChange={(o) => {
+          if (!o) setDeleteTarget(null);
+        }}
+      >
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Archive &ldquo;{archiveTarget?.name}&rdquo;?</DialogTitle>
+            <DialogTitle>
+              Archive &ldquo;{deleteTarget?.name}&rdquo;?
+            </DialogTitle>
           </DialogHeader>
           <p className="text-sm text-muted-foreground">
-            This category will be hidden from all dropdowns. Sites already assigned to it are unaffected.
+            This category will be hidden from all dropdowns. Sites already
+            assigned to it are unaffected.
           </p>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setArchiveTarget(null)}>Cancel</Button>
-            <Button variant="destructive" disabled={isPending} onClick={handleArchive}>
+            <Button variant="outline" onClick={() => setDeleteTarget(null)}>
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              disabled={isPending}
+              onClick={handleArchive}
+            >
               {isPending ? 'Archiving…' : 'Archive'}
             </Button>
           </DialogFooter>

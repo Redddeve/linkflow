@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { AppError } from '@/lib/errors';
+import { VALID_TRANSITIONS } from '@/lib/schemas/sites';
 
 // ---- mocks ----
 vi.mock('@/lib/audit', () => ({ recordAudit: vi.fn().mockResolvedValue(undefined) }));
@@ -28,7 +29,7 @@ vi.mock('@/lib/supabase/server', () => ({
   createClient: vi.fn(async () => ({ from: mockFrom, auth: { getClaims: vi.fn().mockResolvedValue({ data: { claims: { sub: 'actor-1' } } }) } })),
 }));
 
-const { createSite, editSite, setSiteStatus, VALID_TRANSITIONS } = await import('./actions');
+const { createSite, editSite, setSiteStatus } = await import('./actions');
 
 const adminUser = { id: 'actor-1', role: 'Admin' as const, status: 'ACTIVE' as const, email: 'a@b.com', first_name: 'A', last_name: 'B', manager_id: null, created_by_id: null, invited_at: null, disabled_reason: null, avatar: null };
 const sourcerUser = { ...adminUser, id: 'sourcer-1', role: 'Sourcer' as const };

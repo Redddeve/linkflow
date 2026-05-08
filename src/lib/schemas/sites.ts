@@ -15,7 +15,7 @@ export function normalizeDomain(raw: string): string {
 
 export const createSiteSchema = z.object({
   domain: z.string().min(1, 'Domain is required').transform(normalizeDomain),
-  category_id: z.string().uuid().nullable().optional(),
+  category_id: z.uuid().nullable().optional(),
   description: z.string().max(2000).nullable().optional(),
   contact_info: z.string().max(1000).nullable().optional(),
   requirements: z.string().max(2000).nullable().optional(),
@@ -34,7 +34,7 @@ export const createSiteSchema = z.object({
 
 export const editSiteSchema = z.object({
   domain: z.string().min(1).transform(normalizeDomain).optional(),
-  category_id: z.string().uuid().nullable().optional(),
+  category_id: z.uuid().nullable().optional(),
   description: z.string().max(2000).nullable().optional(),
   contact_info: z.string().max(1000).nullable().optional(),
   requirements: z.string().max(2000).nullable().optional(),
@@ -60,6 +60,15 @@ export const setSiteStatusSchema = z
     (data) => data.action !== 'NEEDS_CHANGES' || (data.change_note?.trim().length ?? 0) >= 10,
     { message: 'Change note must be at least 10 characters', path: ['change_note'] },
   );
+
+export type SiteStatus = 'Pending' | 'Active' | 'Needs changes' | 'Archived';
+
+export const VALID_TRANSITIONS: Record<string, SiteStatus> = {
+  APPROVE: 'Pending',
+  NEEDS_CHANGES: 'Pending',
+  ARCHIVE: 'Active',
+  REACTIVATE: 'Archived',
+};
 
 export type CreateSiteInput = z.input<typeof createSiteSchema>;
 export type EditSiteInput = z.input<typeof editSiteSchema>;

@@ -71,25 +71,52 @@ export function StatusActions({ user, currentUserId }: Props) {
     });
   }
 
+  function handleDisableReasonChange(e: React.ChangeEvent<HTMLTextAreaElement>) {
+    setDisableReason(e.target.value);
+  }
+
+  function handleDisableDialogChange(o: boolean) {
+    if (!o) resetDisable();
+  }
+
+  function handleBlockingOrdersDialogChange(o: boolean) {
+    if (!o) resetDisable();
+  }
+
+  function handleActivateDialogChange(o: boolean) {
+    if (!o) setShowActivate(false);
+  }
+
+  function handleOpenDisable() {
+    setShowDisable(true);
+  }
+
+  function handleOpenActivate() {
+    setShowActivate(true);
+  }
+
+  function handleCancelActivate() {
+    setShowActivate(false);
+  }
+
   const isSelf = user.id === currentUserId;
 
   return (
     <>
       <div className="flex gap-2">
         {user.status !== 'DISABLED' && !isSelf && (
-          <Button variant="destructive" size="sm" onClick={() => setShowDisable(true)}>
+          <Button variant="destructive" size="sm" onClick={handleOpenDisable}>
             Disable
           </Button>
         )}
         {user.status === 'DISABLED' && (
-          <Button size="sm" onClick={() => setShowActivate(true)}>
+          <Button size="sm" onClick={handleOpenActivate}>
             Activate
           </Button>
         )}
       </div>
 
-      {/* Disable dialog */}
-      <Dialog open={showDisable} onOpenChange={(o) => { if (!o) resetDisable(); }}>
+      <Dialog open={showDisable} onOpenChange={handleDisableDialogChange}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Disable {user.first_name} {user.last_name}?</DialogTitle>
@@ -100,7 +127,7 @@ export function StatusActions({ user, currentUserId }: Props) {
               id="status-disable-reason"
               placeholder="Why is this account being disabled…"
               value={disableReason}
-              onChange={(e) => setDisableReason(e.target.value)}
+              onChange={handleDisableReasonChange}
               rows={3}
             />
             {disableError && <p className="text-sm text-destructive">{disableError}</p>}
@@ -118,8 +145,7 @@ export function StatusActions({ user, currentUserId }: Props) {
         </DialogContent>
       </Dialog>
 
-      {/* Blocking orders dialog */}
-      <Dialog open={!!blockingOrders} onOpenChange={(o) => { if (!o) resetDisable(); }}>
+      <Dialog open={!!blockingOrders} onOpenChange={handleBlockingOrdersDialogChange}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Reassign active orders first</DialogTitle>
@@ -145,8 +171,7 @@ export function StatusActions({ user, currentUserId }: Props) {
         </DialogContent>
       </Dialog>
 
-      {/* Activate dialog */}
-      <Dialog open={showActivate} onOpenChange={(o) => { if (!o) setShowActivate(false); }}>
+      <Dialog open={showActivate} onOpenChange={handleActivateDialogChange}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Activate {user.first_name} {user.last_name}?</DialogTitle>
@@ -155,7 +180,7 @@ export function StatusActions({ user, currentUserId }: Props) {
             Their account will be set to Active. Previously archived sites will not be automatically restored.
           </p>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setShowActivate(false)}>Cancel</Button>
+            <Button variant="outline" onClick={handleCancelActivate}>Cancel</Button>
             <Button disabled={isPending} onClick={handleActivate}>
               {isPending ? 'Activating…' : 'Activate'}
             </Button>
