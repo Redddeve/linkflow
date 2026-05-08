@@ -1,28 +1,23 @@
-# UI Coding Standards
+# UI Standards
 
 ## Component Library
 
-All UI must be built exclusively with [shadcn/ui](https://ui.shadcn.com/) components.
+Use **shadcn/ui** exclusively — no other libraries (MUI, Chakra, etc.).
 
-- **Do not create custom components.** If a UI element is needed, find the appropriate shadcn component and install it via `npx shadcn@latest add <component>`.
-- **Do not use raw HTML elements** for UI primitives (buttons, inputs, dialogs, etc.) — always reach for the shadcn equivalent.
-- **Do not install or use any other component library** (e.g. MUI, Chakra, Headless UI).
-
-All installed components live in `src/components/ui/`. Do not modify these files unless absolutely necessary — shadcn components are meant to be used as-is or composed together.
-
-Prefer shadcn `Button`, `Badge`, `Card`, `Dialog`, `Tabs`, `Input`, `Select`, `Textarea`, `Tooltip`, `Avatar`, `DropdownMenu`, `Separator` over the legacy CSS classes (`.btn`, `.badge`, `.card`, etc.). Existing components using legacy classes do not need to be retroactively converted unless you are editing them.
+- Install missing components: `npx shadcn@latest add <component>`
+- Components live in `src/components/ui/` — don't modify them
+- No raw HTML primitives (buttons, inputs, dialogs) — use shadcn equivalents
+- Prefer `Button`, `Badge`, `Card`, `Dialog`, `Tabs`, `Input`, `Select`, `Textarea`, `Tooltip`, `Avatar`, `DropdownMenu`, `Separator`
 
 ## Edit Forms
 
-All edit forms must open in a **`Dialog`**, regardless of complexity. Never navigate to a separate `/edit` page.
+All edit forms open in a **`Dialog`** — never navigate to a `/edit` page.
 
-- The dialog trigger is a `<Button variant="outline" size="sm">` on the detail page, wired via `<DialogTrigger>`.
-- The form component accepts `onSuccess` and `onCancel` callbacks. On success: call `onSuccess()` which closes the dialog and calls `router.refresh()`. On cancel: call `onCancel()` which closes the dialog.
-- For long forms use `<DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-y-auto">` to keep the dialog scrollable.
-- The server page fetches all data (entity + any lookup lists) and passes it as props to the dialog component.
-- The dialog component is a `'use client'` file that owns the `open` state and renders the form.
+- Trigger: `<Button variant="outline" size="sm">` via `<DialogTrigger>`
+- Form accepts `onSuccess` / `onCancel` callbacks; on success call both then `router.refresh()`
+- Long forms: `<DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-y-auto">`
+- Server page fetches all data and passes as props; dialog component is `'use client'` and owns `open` state
 
-Pattern (edit dialog file):
 ```tsx
 'use client';
 export function EditXDialog({ id, defaultValues, ...lookups }) {
@@ -33,7 +28,7 @@ export function EditXDialog({ id, defaultValues, ...lookups }) {
       <DialogTrigger render={<Button variant="outline" size="sm" />}>Edit</DialogTrigger>
       <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader><DialogTitle>Edit …</DialogTitle></DialogHeader>
-        <XForm ... onSuccess={() => { setOpen(false); router.refresh(); }} onCancel={() => setOpen(false)} />
+        <XForm onSuccess={() => { setOpen(false); router.refresh(); }} onCancel={() => setOpen(false)} />
       </DialogContent>
     </Dialog>
   );

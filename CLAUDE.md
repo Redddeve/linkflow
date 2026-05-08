@@ -1,72 +1,49 @@
 # CLAUDE.md
 
-We're building the app described in @PLAN.MD. Read that file for general architectural tasks or to double-check the exact database structure, tech stack or application architecture.
+We're building the app described in @PLAN.MD. Read that for architecture, DB structure, and tech stack.
 
-Keep your replies concise and focus on conveying the key information. No unnecessary fluff, no long code snippets.
-
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+Keep replies concise. No unnecessary fluff.
 
 ## Docs
 
-Before writing any code, always check the `docs/` directory for a relevant standards document and follow it. Current docs:
+Before writing any code, always check `docs/` for standards:
 
-- `docs/routing.md` — Routing standards (route structure, protected /dashboard routes, middleware)
+- `docs/routing.md` — Route structure, protection, auth helpers
 - `docs/ui.md` — UI standards (component library, styling, layout patterns)
-- `docs/validation.md` — Form validation standards (react-hook-form, Zod server-side validation, error display)
-
-## Skills
-
-Use your skills when working on related tasks.
+- `docs/validation.md` — react-hook-form, Zod, error display
 
 ## Commands
 
 ```bash
-npm run dev      # Start dev server (Turbopack, http://localhost:3000)
-npm run build    # Production build (also uses Turbopack by default)
-npm run start    # Start
-npm run lint     # Run ESLint (note: build no longer runs lint automatically)
-npm run test    # Vitest run
+npm run dev      # Dev server (Turbopack, http://localhost:3000)
+npm run build    # Production build
+npm run lint     # ESLint
+npm run test     # Vitest
 ```
 
-Import alias `@/*` maps to `./src/*`.
+Import alias `@/*` → `./src/*`.
 
 ## Architecture
 
-Next.js 16.2 App Router project with TypeScript, Tailwind CSS v4, and React 19.2.
+Next.js 16.2 App Router · TypeScript · Tailwind CSS v4 · React 19.2
 
-- `src/app/` — App Router: `layout.tsx` (root layout), `page.tsx` (home), `globals.css` (Tailwind v4 via `@import "tailwindcss"`)
+- `src/app/` — layouts, pages, `globals.css`
 - `public/` — static assets served from root path
-- `next.config.ts` — typed Next.js config
-- `eslint.config.mjs` — ESLint flat config (required; legacy `.eslintrc` format is deprecated)
+- `next.config.ts` — typed config (no `webpack` key — breaks Turbopack)
+- `eslint.config.mjs` — flat config only
 
 ## Next.js 16 Breaking Changes
 
-Before writing any code, read the relevant guide in `node_modules/next/dist/docs/`. Key breaking changes from v15:
+**Async APIs** — `cookies()`, `headers()`, `params`, `searchParams` must be `await`ed.
 
-**Async Request APIs** — `cookies()`, `headers()`, `draftMode()`, `params`, and `searchParams` are now async-only. Always `await` them:
+**Proxy** — `middleware.ts` → `proxy.ts`; export `proxy` not `middleware`; no edge runtime.
 
-```tsx
-export default async function Page({ params }: PageProps<'/blog/[slug]'>) {
-  const { slug } = await params;
-}
-```
+**Removed** — `next lint` (use `eslint`), `serverRuntimeConfig`/`publicRuntimeConfig` (use `process.env`).
 
-Run `npx next typegen` to generate `PageProps`, `LayoutProps`, and `RouteContext` helpers.
+**Cache** — `revalidateTag('key', 'max')`; use `updateTag` in Server Actions for immediate updates; drop `unstable_` prefix from `cacheLife`/`cacheTag`.
 
-**`middleware` renamed to `proxy`** — Rename `middleware.ts` → `proxy.ts` and the named export `middleware` → `proxy`. The edge runtime is not supported in `proxy`.
+**PPR** — replaced by `cacheComponents: true` in `next.config.ts`.
 
-**`next lint` removed** — Use `eslint` directly (already reflected in `package.json` scripts). Do not add `eslint: {}` to `next.config.ts`.
+**Parallel routes** — every `@slot` needs an explicit `default.js`.
 
-**`serverRuntimeConfig` / `publicRuntimeConfig` removed** — Use `process.env` directly in Server Components; prefix client-accessible vars with `NEXT_PUBLIC_`.
-
-**`revalidateTag` requires second argument** — `revalidateTag('key', 'max')`. For immediate updates use `updateTag` in Server Actions instead.
-
-**`cacheLife` / `cacheTag`** — Stable; drop the `unstable_` prefix.
-
-**PPR / `experimental.dynamicIO`** — Replaced by top-level `cacheComponents: true` in `next.config.ts`.
-
-**Parallel routes** — All `@slot` directories now require an explicit `default.js`; builds fail without one.
-
-**Turbopack is the default bundler** — Custom `webpack` config in `next.config.ts` will cause builds to fail. Use `turbopack` config at the top level (not under `experimental`).
-
-**`next/legacy/image` deprecated** — Use `next/image`. Local images with query strings require `images.localPatterns.search` config. `images.domains` deprecated; use `images.remotePatterns`.
+**Images** — use `next/image`; `images.domains` → `images.remotePatterns`.

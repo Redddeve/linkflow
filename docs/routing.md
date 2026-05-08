@@ -1,48 +1,34 @@
 # Routing Standards
 
-## Route Structure
+## Structure
 
-All application routes must be nested under `/dashboard`.
+- `/` — public, shows sign-in CTA; authenticated users are redirected to `/dashboard`
+- `/dashboard/**` — all authenticated app functionality; no top-level routes outside this
+- `/auth/*` — public auth routes
 
-- The home page (`/`) is public — shows a sign-in CTA; authenticated users are redirected to `/dashboard` by the Server Component.
-- All authenticated app functionality lives under `/dashboard` and its sub-routes (e.g. `/dashboard/orders`, `/dashboard/settings`).
-- Do not create top-level app routes outside of `/dashboard`.
+## Protection
 
-## Route Protection
-
-All `/dashboard` routes are protected — only authenticated users may access them.
-
-Route protection is enforced via the **Next.js 16 proxy** (`src/proxy.ts`), not in individual page components.
+`/dashboard` routes are protected by `src/proxy.ts` — **do not** add auth guards in page/layout components.
 
 ```ts
 // src/proxy.ts
 export default async function proxy(request: NextRequest) {
   return await updateSession(request);
 }
-
 export const config = {
-  matcher: [
-    '/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
-  ],
+  matcher: ['/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)'],
 };
 ```
 
-- Do not add auth guards or redirect logic inside page or layout components — the proxy handles this.
-- Any new route added under `/dashboard` is automatically protected by the matcher — no extra work needed.
-- Public routes (e.g. `/`, `/auth/*`) are **not** in the matcher and are never intercepted.
+Any route under `/dashboard` is automatically protected — no extra work needed.
 
-## Auth helpers
-
-Use the helpers in `src/lib/auth.ts` inside Server Components and Server Actions:
+## Auth Helpers (`src/lib/auth.ts`)
 
 ```ts
 import { getCurrentUser, requireUser, requireRole } from '@/lib/auth';
 
-// In layouts / pages — redirects to /login if unauthenticated
-const user = await requireUser();
-
-// In server actions — throws FORBIDDEN if wrong role
-const user = await requireRole(['Admin', 'Manager']);
+const user = await requireUser();              // redirects to /login if unauthenticated
+const user = await requireRole(['Admin']);     // throws FORBIDDEN if wrong role
 ```
 
-Never call `supabase.auth.getUser()` directly in page components — use `getCurrentUser()` which combines `getClaims()` (JWT decode, no network) with a single `public.users` query.
+Never call `supabase.auth.getUser()` directly — use `getCurrentUser()` (JWT decode + single `public.users` query).
