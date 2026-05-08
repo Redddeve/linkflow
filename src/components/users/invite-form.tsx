@@ -21,7 +21,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog';
-import { inviteUser } from '../actions';
+import { inviteUser } from '@/app/dashboard/users/actions';
 import type { InviteUserInput } from '@/lib/schemas/users';
 
 interface Props {
@@ -59,14 +59,29 @@ export function InviteUserForm({ managers }: Props) {
     }
   }
 
+  function handleOpenChange(o: boolean) {
+    setOpen(o);
+    if (!o) reset();
+  }
+
+  function handleRoleChange(v: string | null) {
+    if (v) setValue('role', v as InviteUserInput['role']);
+  }
+
+  function handleManagerChange(name: string | null) {
+    const manager = managers.find(
+      (m) => `${m.first_name} ${m.last_name}` === name,
+    );
+    setValue('manager_id', manager?.id ?? null);
+  }
+
+  function handleCancel() {
+    setOpen(false);
+    reset();
+  }
+
   return (
-    <Dialog
-      open={open}
-      onOpenChange={(o) => {
-        setOpen(o);
-        if (!o) reset();
-      }}
-    >
+    <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogTrigger render={<Button />}>Invite User</DialogTrigger>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
@@ -125,9 +140,7 @@ export function InviteUserForm({ managers }: Props) {
             <Label htmlFor="invite-role">Role</Label>
             <Select
               value={selectedRole ?? 'Client'}
-              onValueChange={(v) =>
-                setValue('role', v as InviteUserInput['role'])
-              }
+              onValueChange={handleRoleChange}
             >
               <SelectTrigger id="invite-role">
                 <SelectValue />
@@ -145,17 +158,16 @@ export function InviteUserForm({ managers }: Props) {
           {selectedRole === 'Client' && (
             <div className="grid gap-2">
               <Label htmlFor="invite-manager_id">Manager</Label>
-              <Select
-                onValueChange={(v: string | null) =>
-                  setValue('manager_id', v ?? null)
-                }
-              >
+              <Select onValueChange={handleManagerChange}>
                 <SelectTrigger id="invite-manager_id">
                   <SelectValue placeholder="Assign a manager (optional)" />
                 </SelectTrigger>
                 <SelectContent>
                   {managers.map((m) => (
-                    <SelectItem key={m.id} value={m.id}>
+                    <SelectItem
+                      key={m.id}
+                      value={`${m.first_name} ${m.last_name}`}
+                    >
                       {m.first_name} {m.last_name}
                     </SelectItem>
                   ))}
@@ -169,13 +181,7 @@ export function InviteUserForm({ managers }: Props) {
           )}
         </form>
         <DialogFooter>
-          <Button
-            variant="outline"
-            onClick={() => {
-              setOpen(false);
-              reset();
-            }}
-          >
+          <Button variant="outline" onClick={handleCancel}>
             Cancel
           </Button>
           <Button type="submit" form="invite-user-form" disabled={isSubmitting}>

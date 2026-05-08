@@ -38,7 +38,7 @@ import {
   resendInvite,
   type DisableResult,
   type BlockingOrder,
-} from './actions';
+} from '@/app/dashboard/users/actions';
 
 function userInitials(u: UserRow) {
   const f = u.first_name?.trim() ?? '';
@@ -68,16 +68,12 @@ export function UsersTable({ users, currentUserId }: Props) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
 
-  // Disable dialog state
   const [disableTarget, setDisableTarget] = useState<UserRow | null>(null);
   const [disableReason, setDisableReason] = useState('');
   const [disableError, setDisableError] = useState('');
   const [blockingOrders, setBlockingOrders] = useState<BlockingOrder[] | null>(null);
 
-  // Activate dialog state
   const [activateTarget, setActivateTarget] = useState<UserRow | null>(null);
-
-  // Resend invite state
   const [resendTarget, setResendTarget] = useState<UserRow | null>(null);
 
   function resetDisable() {
@@ -221,7 +217,6 @@ export function UsersTable({ users, currentUserId }: Props) {
         </TableBody>
       </Table>
 
-      {/* Disable dialog */}
       <Dialog open={!!disableTarget && !blockingOrders} onOpenChange={(o) => { if (!o) resetDisable(); }}>
         <DialogContent>
           <DialogHeader>
@@ -251,7 +246,6 @@ export function UsersTable({ users, currentUserId }: Props) {
         </DialogContent>
       </Dialog>
 
-      {/* Blocking orders dialog */}
       <Dialog open={!!blockingOrders} onOpenChange={(o) => { if (!o) resetDisable(); }}>
         <DialogContent>
           <DialogHeader>
@@ -278,7 +272,6 @@ export function UsersTable({ users, currentUserId }: Props) {
         </DialogContent>
       </Dialog>
 
-      {/* Activate dialog */}
       <Dialog open={!!activateTarget} onOpenChange={(o) => { if (!o) setActivateTarget(null); }}>
         <DialogContent>
           <DialogHeader>
@@ -297,7 +290,6 @@ export function UsersTable({ users, currentUserId }: Props) {
         </DialogContent>
       </Dialog>
 
-      {/* Resend invite dialog */}
       <Dialog open={!!resendTarget} onOpenChange={(o) => { if (!o) setResendTarget(null); }}>
         <DialogContent>
           <DialogHeader>

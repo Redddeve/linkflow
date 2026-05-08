@@ -3,7 +3,7 @@ import { ChevronLeft } from 'lucide-react';
 import { requireRole } from '@/lib/auth';
 import { listManagers } from '../actions';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { InviteUserForm } from './invite-form';
+import { InviteUserForm } from '@/components/users/invite-form';
 
 export default async function InviteUserPage() {
   await requireRole(['Admin']);
