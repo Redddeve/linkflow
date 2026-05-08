@@ -111,6 +111,14 @@ export async function deleteCategory(id: string): Promise<void> {
 
   if (fetchError || !current) throw new AppError('NOT_FOUND', 'Category not found');
 
+  const { count } = await supabase
+    .from('sites')
+    .select('id', { count: 'exact', head: true })
+    .eq('category_id', id);
+
+  if (count && count > 0)
+    throw new AppError('CONFLICT', `Cannot delete: ${count} site${count === 1 ? '' : 's'} use this category`);
+
   const { error: deleteError } = await supabase
     .from('categories')
     .delete()

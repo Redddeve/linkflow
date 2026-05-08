@@ -28,7 +28,10 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { editCategory, deleteCategory } from '@/app/dashboard/categories/actions';
+import {
+  editCategory,
+  deleteCategory,
+} from '@/app/dashboard/categories/actions';
 
 interface Category {
   id: string;
@@ -37,9 +40,10 @@ interface Category {
 
 interface Props {
   categories: Category[];
+  siteCountMap: Record<string, number>;
 }
 
-export function CategoriesTable({ categories }: Props) {
+export function CategoriesTable({ categories, siteCountMap }: Props) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
 
@@ -183,23 +187,28 @@ export function CategoriesTable({ categories }: Props) {
         <DialogContent>
           <DialogHeader>
             <DialogTitle>
-              Archive &ldquo;{deleteTarget?.name}&rdquo;?
+              Delete &ldquo;{deleteTarget?.name}&rdquo;?
             </DialogTitle>
           </DialogHeader>
-          <p className="text-sm text-muted-foreground">
-            This category will be hidden from all dropdowns. Sites already
-            assigned to it are unaffected.
-          </p>
+          {deleteTarget && (siteCountMap[deleteTarget.id] ?? 0) > 0 ? (
+            <p className="text-sm text-destructive">
+              Cannot delete: {siteCountMap[deleteTarget.id]} site{siteCountMap[deleteTarget.id] === 1 ? '' : 's'} are assigned to this category. Reassign them first.
+            </p>
+          ) : (
+            <p className="text-sm text-muted-foreground">
+              This category will be permanently deleted.
+            </p>
+          )}
           <DialogFooter>
             <Button variant="outline" onClick={() => setDeleteTarget(null)}>
               Cancel
             </Button>
             <Button
               variant="destructive"
-              disabled={isPending}
+              disabled={isPending || (deleteTarget ? (siteCountMap[deleteTarget.id] ?? 0) > 0 : false)}
               onClick={handleArchive}
             >
-              {isPending ? 'Archiving…' : 'Archive'}
+              {isPending ? 'Deleting…' : 'Delete'}
             </Button>
           </DialogFooter>
         </DialogContent>
