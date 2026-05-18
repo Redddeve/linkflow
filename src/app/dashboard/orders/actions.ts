@@ -6,6 +6,7 @@ import { requireRole } from '@/lib/auth';
 import { recordAudit } from '@/lib/audit';
 import { notify } from '@/lib/notify';
 import { AppError } from '@/lib/errors';
+import { firstOfMonth } from '@/lib/billing';
 import {
   editOrderPublishDateSchema,
   cancelOrderSchema,
@@ -581,7 +582,10 @@ export async function publishOrder(input: PublishOrderInput): Promise<void> {
   }
 
   const now = new Date();
-  const billingMonth = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split('T')[0];
+  // billing_month is derived from publish_date (the business event the client
+  // chose) rather than `now`, so an order published at 22:00 ET on April 30
+  // bills as April, not May (it would roll into May under naive UTC `now`).
+  const billingMonth = firstOfMonth(publish_date);
   const publishDateStr = publish_date.toISOString().split('T')[0];
 
   const { error: updateError } = await supabase

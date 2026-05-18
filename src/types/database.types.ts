@@ -265,6 +265,7 @@ export type Database = {
           client_id: string;
           created_at: string;
           id: string;
+          last_overdue_notified_at: string | null;
           marked_as_paid_at: string | null;
           marked_as_paid_by_id: string | null;
           sent_at: string | null;
@@ -277,6 +278,7 @@ export type Database = {
           client_id: string;
           created_at?: string;
           id?: string;
+          last_overdue_notified_at?: string | null;
           marked_as_paid_at?: string | null;
           marked_as_paid_by_id?: string | null;
           sent_at?: string | null;
@@ -289,6 +291,7 @@ export type Database = {
           client_id?: string;
           created_at?: string;
           id?: string;
+          last_overdue_notified_at?: string | null;
           marked_as_paid_at?: string | null;
           marked_as_paid_by_id?: string | null;
           sent_at?: string | null;
@@ -747,6 +750,14 @@ export type Database = {
       disable_sourcer: {
         Args: { p_user_id: string; p_reason: string };
         Returns: undefined;
+      };
+      reassign_order_billing_months: {
+        Args: { p_changes: Json };
+        Returns: Json;
+      };
+      generate_invoices_for_month: {
+        Args: { p_billing_month: string };
+        Returns: Json;
       };
     };
     Enums: {
