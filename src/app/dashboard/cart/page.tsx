@@ -7,6 +7,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { buttonVariants } from '@/components/ui/button';
 import { CartRow } from '@/components/cart/cart-row';
 import { CheckoutButton } from '@/components/cart/checkout-button';
+import { PageHeader } from '@/components/ui/page-header';
 
 export const metadata = { title: 'Cart' };
 
@@ -59,18 +60,17 @@ export default async function CartPage() {
   const total = items.reduce((sum, i) => sum + (i.sites.price_cents ?? 0), 0);
 
   return (
-    <div className="space-y-6 max-w-3xl">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-semibold">Cart</h1>
-          <p className="text-sm text-muted-foreground">
-            {items.length} item{items.length !== 1 ? 's' : ''}
-          </p>
-        </div>
-        <Link href="/dashboard/catalog" className={buttonVariants({ variant: 'outline', size: 'sm' })}>
-          Browse catalog
-        </Link>
-      </div>
+    <div className="max-w-3xl">
+      <PageHeader
+        title="Cart"
+        description={`${items.length} item${items.length !== 1 ? 's' : ''}`}
+        actions={
+          <Link href="/dashboard/catalog" className={buttonVariants({ variant: 'outline' })}>
+            Browse catalog
+          </Link>
+        }
+      />
+      <div className="space-y-4">
 
       {items.length === 0 ? (
         <p className="text-muted-foreground">Your cart is empty.</p>
@@ -112,6 +112,7 @@ export default async function CartPage() {
           </CardContent>
         </Card>
       )}
+      </div>
     </div>
   );
 }

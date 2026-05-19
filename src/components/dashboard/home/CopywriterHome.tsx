@@ -3,6 +3,7 @@ import { createClient } from '@/lib/supabase/server';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { StatCard } from './stat-card';
+import { DashboardHeader, SectionHeading } from './dashboard-header';
 import type { UserRow } from '@/lib/auth';
 import type { Database } from '@/types/database.types';
 
@@ -43,12 +44,7 @@ export async function CopywriterHome({ user }: { user: UserRow }) {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-semibold">Dashboard</h1>
-        <p className="text-sm text-muted-foreground">
-          Welcome back, {user.first_name || user.email}
-        </p>
-      </div>
+      <DashboardHeader user={user} />
 
       <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
         <StatCard
@@ -71,28 +67,31 @@ export async function CopywriterHome({ user }: { user: UserRow }) {
 
       <Card>
         <CardContent className="p-0">
-          <div className="flex items-center justify-between p-4">
-            <div>
-              <div className="text-sm font-medium">Upcoming work</div>
-              <div className="text-xs text-muted-foreground">
-                Next 5 by publish date · In Progress / Needs changes
-              </div>
-            </div>
+          <div className="px-4 py-3.5">
+            <SectionHeading
+              title="Upcoming work"
+              description="Next 5 by publish date · In Progress / Needs changes"
+            />
           </div>
           {upcoming.length === 0 ? (
-            <div className="p-4 pt-0 text-sm text-muted-foreground">Nothing to write right now.</div>
+            <div className="px-4 pb-4 text-sm text-muted-foreground">
+              Nothing to write right now.
+            </div>
           ) : (
-            <ul className="divide-y border-t">
+            <ul className="divide-y border-t border-border">
               {upcoming.map((o) => (
-                <li key={o.id} className="px-4 py-3 flex items-center justify-between">
+                <li
+                  key={o.id}
+                  className="flex items-center justify-between gap-3 px-4 py-3 transition-colors hover:bg-muted/60"
+                >
                   <Link
                     href={`/dashboard/orders/${o.id}`}
-                    className="text-sm font-medium hover:underline"
+                    className="text-sm font-medium hover:text-primary"
                   >
                     {o.site_domain}
                   </Link>
                   <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                    {o.publish_date && <span>{o.publish_date}</span>}
+                    {o.publish_date && <span className="tabular-nums">{o.publish_date}</span>}
                     <Badge variant="outline">{o.status}</Badge>
                   </div>
                 </li>

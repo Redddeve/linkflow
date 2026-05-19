@@ -40,7 +40,8 @@ export function MultiSelect({
     }
   }
 
-  function remove(option: string, e: React.MouseEvent) {
+  function remove(option: string, e: React.MouseEvent | React.PointerEvent) {
+    e.preventDefault();
     e.stopPropagation();
     onChange(value.filter((v) => v !== option));
   }
@@ -48,6 +49,7 @@ export function MultiSelect({
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger
+        type="button"
         aria-expanded={open}
         className={cn(
           buttonVariants({ variant: 'outline' }),
@@ -62,11 +64,22 @@ export function MultiSelect({
             value.map((v) => (
               <Badge key={v} variant="secondary" className="text-xs">
                 {v}
+                {/* Real <button type="button"> + pointerDown stop, so clicking
+                    the X never bubbles to the popover trigger or submits the
+                    enclosing form (which was scrolling the page to top). */}
                 <span
                   role="button"
                   tabIndex={0}
+                  onPointerDown={(e) => e.stopPropagation()}
+                  onMouseDown={(e) => e.preventDefault()}
                   onClick={(e) => remove(v, e)}
-                  onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onChange(value.filter((x) => x !== v)); } }}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      onChange(value.filter((x) => x !== v));
+                    }
+                  }}
                   className="ml-1 rounded-full outline-none hover:text-foreground cursor-pointer"
                   aria-label={`Remove ${v}`}
                 >
@@ -78,9 +91,16 @@ export function MultiSelect({
         </span>
         <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
       </PopoverTrigger>
-      <PopoverContent className="w-(--anchor-width) p-0" align="start">
+      <PopoverContent
+        className="w-(--anchor-width) p-0"
+        align="start"
+        /* Prevent base-ui from auto-focusing the input on open — focus would
+           trigger a window scrollIntoView, jumping the page to the top of the
+           form. We'll let the user click the input or use keyboard to focus. */
+        initialFocus={false}
+      >
         <Command>
-          <CommandInput placeholder="Search…" />
+          <CommandInput placeholder="Search…" autoFocus={false} />
           <CommandList>
             <CommandEmpty>No results.</CommandEmpty>
             <CommandGroup>

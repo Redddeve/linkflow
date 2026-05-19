@@ -5,6 +5,7 @@ import { buttonVariants } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { countByStatus } from '@/lib/dashboard/counts';
 import { StatCard } from './stat-card';
+import { DashboardHeader } from './dashboard-header';
 import type { UserRow } from '@/lib/auth';
 
 const CLIENT_ACTIVE_STATUSES = ['New', 'In Progress', 'Needs changes', 'Content Sent'] as const;
@@ -67,12 +68,7 @@ export async function ClientHome({ user }: { user: UserRow }) {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-semibold">Dashboard</h1>
-        <p className="text-sm text-muted-foreground">
-          Welcome back, {user.first_name || user.email}
-        </p>
-      </div>
+      <DashboardHeader user={user} />
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         <StatCard label="New" value={counts['New']} href="/dashboard/orders?status=New" />
@@ -96,16 +92,16 @@ export async function ClientHome({ user }: { user: UserRow }) {
 
       <div className="grid gap-3 md:grid-cols-2">
         <Card>
-          <CardContent className="p-4 space-y-3">
-            <div className="flex items-start justify-between gap-3">
-              <div>
-                <div className="text-xs text-muted-foreground uppercase tracking-wide">Cart</div>
-                <div className="text-2xl font-semibold tabular-nums mt-1">
-                  {cartCount} item{cartCount !== 1 ? 's' : ''}
-                </div>
-                <div className="text-sm text-muted-foreground mt-1">
-                  {cartCount > 0 ? formatCurrency(cartTotalCents) : 'Cart is empty'}
-                </div>
+          <CardContent className="space-y-3 p-4">
+            <div>
+              <div className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+                Cart
+              </div>
+              <div className="mt-1 text-2xl font-semibold tabular-nums">
+                {cartCount} item{cartCount !== 1 ? 's' : ''}
+              </div>
+              <div className="mt-1 text-sm text-muted-foreground">
+                {cartCount > 0 ? formatCurrency(cartTotalCents) : 'Cart is empty'}
               </div>
             </div>
             <Separator />
@@ -127,31 +123,31 @@ export async function ClientHome({ user }: { user: UserRow }) {
         </Card>
 
         <Card>
-          <CardContent className="p-4 space-y-3">
+          <CardContent className="space-y-3 p-4">
             <div>
-              <div className="text-xs text-muted-foreground uppercase tracking-wide">
+              <div className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
                 Latest invoice
               </div>
               {latestInvoice ? (
                 <>
-                  <div className="text-2xl font-semibold tabular-nums mt-1">
+                  <div className="mt-1 text-2xl font-semibold tabular-nums">
                     {formatCurrency(latestInvoice.total_price_cents)}
                   </div>
-                  <div className="text-sm text-muted-foreground mt-1">
+                  <div className="mt-1 text-sm text-muted-foreground">
                     {formatBillingMonth(latestInvoice.billing_month)} · {latestInvoice.status}
                   </div>
                 </>
               ) : (
-                <div className="text-sm text-muted-foreground mt-1">No invoices yet</div>
+                <div className="mt-1 text-sm text-muted-foreground">No invoices yet</div>
               )}
             </div>
             <Separator />
             <div className="flex items-center justify-between">
               <div>
-                <div className="text-xs text-muted-foreground uppercase tracking-wide">
+                <div className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
                   Outstanding
                 </div>
-                <div className="text-lg font-semibold tabular-nums mt-1">
+                <div className="mt-1 text-lg font-semibold tabular-nums">
                   {formatCurrency(outstandingCents)}
                 </div>
               </div>

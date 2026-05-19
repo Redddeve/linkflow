@@ -2,6 +2,7 @@ import { createClient } from '@/lib/supabase/server';
 import { Card, CardContent } from '@/components/ui/card';
 import Link from 'next/link';
 import { StatCard } from './stat-card';
+import { DashboardHeader } from './dashboard-header';
 import type { UserRow } from '@/lib/auth';
 
 function formatCurrency(cents: number) {
@@ -40,12 +41,7 @@ export async function AdminHome({ user }: { user: UserRow }) {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-semibold">Dashboard</h1>
-        <p className="text-sm text-muted-foreground">
-          Welcome back, {user.first_name || user.email}
-        </p>
-      </div>
+      <DashboardHeader user={user} />
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         <StatCard
@@ -72,23 +68,23 @@ export async function AdminHome({ user }: { user: UserRow }) {
       </div>
 
       <Card>
-        <CardContent className="p-4 flex items-center justify-between">
+        <CardContent className="flex items-center justify-between p-4">
           <div>
-            <div className="text-xs text-muted-foreground uppercase tracking-wide">
+            <div className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
               Payable commissions
             </div>
-            <div className="text-2xl font-semibold tabular-nums mt-1 text-emerald-600">
+            <div className="mt-1 text-2xl font-semibold tabular-nums text-(--st-live-fg)">
               {formatCurrency(payableTotalCents)}
             </div>
-            <div className="text-sm text-muted-foreground mt-1">
+            <div className="mt-1 text-sm text-muted-foreground">
               Total ready to pay out
             </div>
           </div>
           <Link
             href="/dashboard/commissions?status=PAYABLE"
-            className="text-sm text-primary hover:underline"
+            className="text-sm font-medium text-primary hover:underline"
           >
-            Review
+            Review →
           </Link>
         </CardContent>
       </Card>

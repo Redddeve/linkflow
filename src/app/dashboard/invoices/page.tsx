@@ -4,6 +4,7 @@ import { createClient } from '@/lib/supabase/server';
 import { InvoiceFilters } from './components/invoice-filters';
 import { InvoicesTable } from './components/invoices-table';
 import { GenerateInvoicesDialog } from './components/generate-invoices-dialog';
+import { PageHeader } from '@/components/ui/page-header';
 import type { Database } from '@/types/database.types';
 
 interface PageProps {
@@ -87,20 +88,16 @@ export default async function InvoicesPage({ searchParams }: PageProps) {
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-start justify-between">
-        <div>
-          <h1 className="text-2xl font-semibold">Invoices</h1>
-          <p className="text-sm text-muted-foreground">
-            {isClient ? 'Your invoices' : 'All client invoices'}
-          </p>
-        </div>
-        {actor.role === 'Admin' && <GenerateInvoicesDialog />}
+    <div>
+      <PageHeader
+        title="Invoices"
+        description={isClient ? 'Your invoices' : 'All client invoices'}
+        actions={actor.role === 'Admin' ? <GenerateInvoicesDialog /> : undefined}
+      />
+      <div className="space-y-4">
+        <InvoiceFilters clients={clients} showClientFilter={isManagerOrAdmin} />
+        <InvoicesTable invoices={invoices} showClient={isManagerOrAdmin} />
       </div>
-
-      <InvoiceFilters clients={clients} showClientFilter={isManagerOrAdmin} />
-
-      <InvoicesTable invoices={invoices} showClient={isManagerOrAdmin} />
     </div>
   );
 }

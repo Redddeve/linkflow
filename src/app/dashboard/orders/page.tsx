@@ -1,9 +1,11 @@
+import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { requireUser } from '@/lib/auth';
 import { createClient } from '@/lib/supabase/server';
 import { OrderFilters } from './components/order-filters';
 import { OrdersTable } from './components/orders-table';
 import { OrdersKanban } from './components/orders-kanban';
+import { PageHeader } from '@/components/ui/page-header';
 import type { Database } from '@/types/database.types';
 
 interface PageProps {
@@ -88,52 +90,60 @@ export default async function OrdersPage({ searchParams }: PageProps) {
   const checkedOut = params.checked_out ? Number(params.checked_out) : null;
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-semibold">Orders</h1>
-          <p className="text-sm text-muted-foreground">
-            {isClient ? 'Your orders' : isCopywriter ? 'Your assigned orders' : 'All orders'}
-          </p>
-        </div>
-        {isManagerOrAdmin && (
-          <div className="flex gap-2">
-            <a
-              href="?view=list"
-              className={`text-sm px-3 py-1.5 rounded-md border transition-colors ${view === 'list' ? 'bg-primary text-primary-foreground border-primary' : 'border-border hover:bg-muted'}`}
-            >
-              List
-            </a>
-            <a
-              href="?view=kanban"
-              className={`text-sm px-3 py-1.5 rounded-md border transition-colors ${view === 'kanban' ? 'bg-primary text-primary-foreground border-primary' : 'border-border hover:bg-muted'}`}
-            >
-              Kanban
-            </a>
-          </div>
-        )}
-      </div>
-
-      {checkedOut !== null && (
-        <p className="text-sm text-green-600 font-medium">
-          {checkedOut} order{checkedOut !== 1 ? 's' : ''} created successfully.
-        </p>
-      )}
-
-      <OrderFilters
-        copywriters={copywriters}
-        showCopywriterFilter={isManagerOrAdmin}
+    <div>
+      <PageHeader
+        title="Orders"
+        description={isClient ? 'Your orders' : isCopywriter ? 'Your assigned orders' : 'All orders'}
+        actions={
+          isManagerOrAdmin && (
+            <div className="inline-flex rounded-lg border border-border bg-card p-0.5 shadow-xs">
+              <Link
+                href="?view=list"
+                className={`rounded-md px-3 py-1 text-sm font-medium transition-colors ${
+                  view !== 'kanban'
+                    ? 'bg-primary text-primary-foreground shadow-xs'
+                    : 'text-muted-foreground hover:text-foreground'
+                }`}
+              >
+                List
+              </Link>
+              <Link
+                href="?view=kanban"
+                className={`rounded-md px-3 py-1 text-sm font-medium transition-colors ${
+                  view === 'kanban'
+                    ? 'bg-primary text-primary-foreground shadow-xs'
+                    : 'text-muted-foreground hover:text-foreground'
+                }`}
+              >
+                Kanban
+              </Link>
+            </div>
+          )
+        }
       />
 
-      {showKanban ? (
-        <OrdersKanban orders={orders} />
-      ) : (
-        <OrdersTable
-          orders={orders}
-          showCopywriter={isManagerOrAdmin}
-          showManager={actor.role === 'Admin'}
-        />
+      {checkedOut !== null && (
+        <div className="mb-4 rounded-lg border border-(--st-live-fg)/20 bg-(--st-live-bg) px-3 py-2 text-sm font-medium text-(--st-live-fg)">
+          {checkedOut} order{checkedOut !== 1 ? 's' : ''} created successfully.
+        </div>
       )}
+
+      <div className="space-y-4">
+        <OrderFilters
+          copywriters={copywriters}
+          showCopywriterFilter={isManagerOrAdmin}
+        />
+
+        {showKanban ? (
+          <OrdersKanban orders={orders} />
+        ) : (
+          <OrdersTable
+            orders={orders}
+            showCopywriter={isManagerOrAdmin}
+            showManager={actor.role === 'Admin'}
+          />
+        )}
+      </div>
     </div>
   );
 }

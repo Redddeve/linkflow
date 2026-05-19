@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { buttonVariants } from '@/components/ui/button';
+import { PageHeader } from '@/components/ui/page-header';
 import { requireRole } from '@/lib/auth';
 import { createClient } from '@/lib/supabase/server';
 import { SitesFilters } from '@/components/sites/sites-filters';
@@ -47,22 +48,22 @@ export default async function SitesPage({ searchParams }: PageProps) {
   const canCreate = ['Sourcer', 'Manager', 'Admin'].includes(actor.role ?? '');
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-semibold">
-            {actor.role === 'Sourcer' ? 'My Sites' : 'Sites'}
-          </h1>
-          <p className="text-sm text-muted-foreground">
-            {actor.role === 'Sourcer' ? 'Sites you have submitted' : 'All sites in the platform'}
-          </p>
-        </div>
-        {canCreate && (
-          <Link href="/dashboard/sites/new" className={buttonVariants()}>Add site</Link>
-        )}
+    <div>
+      <PageHeader
+        title={actor.role === 'Sourcer' ? 'My Sites' : 'Sites'}
+        description={actor.role === 'Sourcer' ? 'Sites you have submitted' : 'All sites in the platform'}
+        actions={
+          canCreate && (
+            <Link href="/dashboard/sites/new" className={buttonVariants()}>
+              Add site
+            </Link>
+          )
+        }
+      />
+      <div className="space-y-4">
+        <SitesFilters categories={categories ?? []} />
+        <SitesTable sites={(sites ?? []) as Parameters<typeof SitesTable>[0]['sites']} />
       </div>
-      <SitesFilters categories={categories ?? []} />
-      <SitesTable sites={(sites ?? []) as Parameters<typeof SitesTable>[0]['sites']} />
     </div>
   );
 }

@@ -1,6 +1,7 @@
 import { createClient } from '@/lib/supabase/server';
 import { sumByStatus } from '@/lib/dashboard/counts';
 import { StatCard } from './stat-card';
+import { DashboardHeader, SectionHeading } from './dashboard-header';
 import type { UserRow } from '@/lib/auth';
 
 const COMMISSION_STATUSES = ['ACCRUED', 'PAYABLE', 'PAID', 'REVERSED'] as const;
@@ -47,15 +48,10 @@ export async function SourcerHome({ user }: { user: UserRow }) {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-semibold">Dashboard</h1>
-        <p className="text-sm text-muted-foreground">
-          Welcome back, {user.first_name || user.email}
-        </p>
-      </div>
+      <DashboardHeader user={user} />
 
       <div>
-        <div className="text-sm font-medium mb-2">My sites</div>
+        <SectionHeading title="My sites" />
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
           <StatCard
             label="Pending"
@@ -84,7 +80,7 @@ export async function SourcerHome({ user }: { user: UserRow }) {
       </div>
 
       <div>
-        <div className="text-sm font-medium mb-2">Commissions</div>
+        <SectionHeading title="Commissions" />
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
           {COMMISSION_STATUSES.map((s) => (
             <StatCard

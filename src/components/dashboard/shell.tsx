@@ -249,10 +249,10 @@ export function DashboardShell({
 
             <Tooltip>
               <TooltipTrigger
-                className="relative flex h-8 w-8 items-center justify-center rounded-md transition-colors hover:bg-muted"
+                className="relative flex h-8 w-8 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
                 aria-label="Notifications"
               >
-                <Bell className="h-4 w-4 text-muted-foreground" />
+                <Bell className="h-4 w-4" />
               </TooltipTrigger>
               <TooltipContent>Notifications</TooltipContent>
             </Tooltip>
@@ -262,24 +262,19 @@ export function DashboardShell({
                 className="flex h-8 w-8 items-center justify-center rounded-full outline-none ring-offset-background focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
                 aria-label="User menu"
               >
-                <Avatar className="h-7 w-7">
-                  <AvatarFallback className="text-[11px] font-semibold">
+                <Avatar className="h-7 w-7 ring-2 ring-primary-soft">
+                  <AvatarFallback className="bg-primary-soft text-[11px] font-semibold text-primary-text">
                     {userInitials(user)}
                   </AvatarFallback>
                 </Avatar>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-56">
                 <div className="px-2 py-2">
-                  <div className="text-sm font-medium truncate">
-                    {displayName(user)}
-                  </div>
-                  <div className="text-xs text-muted-foreground truncate mt-0.5">
+                  <div className="truncate text-sm font-medium">{displayName(user)}</div>
+                  <div className="mt-0.5 truncate text-xs text-muted-foreground">
                     {user.email}
                   </div>
-                  <div
-                    className="text-xs mt-0.5"
-                    style={{ color: 'var(--text-faint)' }}
-                  >
+                  <div className="mt-1 inline-flex items-center rounded-full bg-primary-soft px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wider text-primary-text">
                     {user.role}
                   </div>
                 </div>
@@ -292,7 +287,7 @@ export function DashboardShell({
             </DropdownMenu>
           </div>
 
-          {children}
+          <main className="px-6 py-6 md:px-8 md:py-8">{children}</main>
         </div>
       </div>
     </TooltipProvider>

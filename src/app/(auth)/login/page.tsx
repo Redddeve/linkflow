@@ -29,7 +29,7 @@ const ROLE_DEMO_EMAILS: Record<UserRole, string> = {
 const ROLE_DEMO_PASSWORD = 'demo123456';
 
 const ROLE_COLORS: Record<UserRole, string> = {
-  Admin: 'var(--accent)',
+  Admin: 'var(--primary)',
   Manager: 'var(--st-assign-fg)',
   Copywriter: 'var(--st-write-fg)',
   Sourcer: 'var(--st-pub-fg)',
@@ -72,23 +72,22 @@ export default function LoginForm() {
   }
 
   return (
-    <div className="flex min-h-svh w-full items-center justify-center p-6 md:p-10">
+    <div
+      className="flex min-h-svh w-full items-center justify-center p-6 md:p-10"
+      style={{
+        background:
+          'radial-gradient(1200px 500px at 50% -10%, color-mix(in srgb, var(--primary) 10%, transparent), transparent 60%), var(--bg)',
+      }}
+    >
       <div className="w-full max-w-sm">
         <div className="flex flex-col gap-6">
-          <Card>
+          <Card className="shadow-sm">
             <CardHeader>
-              <div className="flex items-center gap-3 mb-1">
-                <div
-                  className="flex h-8 w-8 items-center justify-center rounded-lg font-mono text-sm font-bold text-white"
-                  style={{ background: 'var(--accent)' }}
-                >
-                  L
-                </div>
-                <CardTitle className="text-xl">LinkFlow</CardTitle>
+              <div className="mb-1 flex items-center gap-3">
+                <div className="brand-mark">L</div>
+                <CardTitle className="text-xl tracking-tight">LinkFlow</CardTitle>
               </div>
-              <CardDescription>
-                Sign in to your account to continue
-              </CardDescription>
+              <CardDescription>Sign in to your account to continue</CardDescription>
             </CardHeader>
             <CardContent className="flex flex-col gap-5">
               {/* Role quick-select */}

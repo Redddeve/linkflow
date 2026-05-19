@@ -4,6 +4,7 @@ import { listManagers } from './actions';
 import { UserFilters } from '@/components/users/user-filters';
 import { UsersTable } from '@/components/users/users-table';
 import { InviteUserForm } from '@/components/users/invite-form';
+import { PageHeader } from '@/components/ui/page-header';
 import type { UserRole } from '@/lib/auth';
 
 interface PageProps {
@@ -31,22 +32,16 @@ export default async function UsersPage({ searchParams }: PageProps) {
   ]);
 
   return (
-    <div className="page">
-      <div className="page-header">
-        <div>
-          <h1 className="page-title">Users</h1>
-          <p className="page-subtitle">
-            {users?.length ?? 0} user{users?.length !== 1 ? 's' : ''}
-          </p>
-        </div>
-        <InviteUserForm managers={managers} />
-      </div>
-
-      <div className="mb-4">
+    <div>
+      <PageHeader
+        title="Users"
+        description={`${users?.length ?? 0} user${users?.length !== 1 ? 's' : ''}`}
+        actions={<InviteUserForm managers={managers} />}
+      />
+      <div className="space-y-4">
         <UserFilters />
+        <UsersTable users={users ?? []} currentUserId={currentUser.id} />
       </div>
-
-      <UsersTable users={users ?? []} currentUserId={currentUser.id} />
     </div>
   );
 }

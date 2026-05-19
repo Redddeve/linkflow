@@ -4,6 +4,7 @@ import { createClient } from '@/lib/supabase/server';
 import { CommissionFilters } from './components/commission-filters';
 import { CommissionsTable } from './components/commissions-table';
 import { RunPromotionButton } from './components/run-promotion-button';
+import { PageHeader } from '@/components/ui/page-header';
 import type { Database } from '@/types/database.types';
 
 interface PageProps {
@@ -92,35 +93,37 @@ export default async function CommissionsPage({ searchParams }: PageProps) {
   );
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-start justify-between">
-        <div>
-          <h1 className="text-2xl font-semibold">Commissions</h1>
-          <p className="text-sm text-muted-foreground">
-            {isSourcer ? 'Your commissions' : 'All commissions'}
-          </p>
-        </div>
-        {isAdmin && <RunPromotionButton />}
-      </div>
+    <div>
+      <PageHeader
+        title="Commissions"
+        description={isSourcer ? 'Your commissions' : 'All commissions'}
+        actions={isAdmin ? <RunPromotionButton /> : undefined}
+      />
 
-      <div className="grid grid-cols-4 gap-3">
+      <div className="mb-6 grid grid-cols-2 gap-3 md:grid-cols-4">
         {(['ACCRUED', 'PAYABLE', 'PAID', 'REVERSED'] as CommissionStatus[]).map((s) => (
-          <div key={s} className="rounded-md border p-4">
-            <div className="text-xs text-muted-foreground uppercase tracking-wide">{s}</div>
-            <div className="text-2xl font-semibold tabular-nums mt-1">
+          <div
+            key={s}
+            className="rounded-xl border border-border bg-card p-4 shadow-xs"
+          >
+            <div className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+              {s}
+            </div>
+            <div className="mt-1 text-2xl font-semibold tabular-nums">
               ${((totals[s] ?? 0) / 100).toFixed(2)}
             </div>
           </div>
         ))}
       </div>
 
-      <CommissionFilters />
-
-      <CommissionsTable
-        commissions={commissions}
-        showSourcer={!isSourcer}
-        canMarkPaid={isAdmin}
-      />
+      <div className="space-y-4">
+        <CommissionFilters />
+        <CommissionsTable
+          commissions={commissions}
+          showSourcer={!isSourcer}
+          canMarkPaid={isAdmin}
+        />
+      </div>
     </div>
   );
 }

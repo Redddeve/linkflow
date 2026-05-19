@@ -4,6 +4,7 @@ import { createClient } from '@/lib/supabase/server';
 import { fetchActiveCatalog, type CatalogFilters } from '@/lib/queries/catalog';
 import { CatalogFiltersDrawer } from '@/components/catalog/catalog-filters-drawer';
 import { CatalogTable } from '@/components/catalog/catalog-table';
+import { PageHeader } from '@/components/ui/page-header';
 import type { Database } from '@/types/database.types';
 
 interface PageProps {
@@ -38,15 +39,15 @@ export default async function CatalogPage({ searchParams }: PageProps) {
   ]);
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-semibold">Catalog</h1>
-        <p className="text-sm text-muted-foreground">
-          {total} active site{total !== 1 ? 's' : ''} available
-        </p>
+    <div>
+      <PageHeader
+        title="Catalog"
+        description={`${total} active site${total !== 1 ? 's' : ''} available`}
+      />
+      <div className="space-y-4">
+        <CatalogFiltersDrawer categories={categories ?? []} />
+        <CatalogTable sites={sites} />
       </div>
-      <CatalogFiltersDrawer categories={categories ?? []} />
-      <CatalogTable sites={sites} />
     </div>
   );
 }
