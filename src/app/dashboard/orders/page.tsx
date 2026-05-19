@@ -43,6 +43,7 @@ export default async function OrdersPage({ searchParams }: PageProps) {
 
   if (statusFilter) query = query.eq('status', statusFilter);
   if (copywriterFilter && isManagerOrAdmin) query = query.eq('copywriter_id', copywriterFilter);
+  if (params.assignee === 'unassigned' && isManagerOrAdmin) query = query.is('copywriter_id', null);
 
   const { data: ordersRaw } = await query;
   const rawList = ordersRaw ?? [];

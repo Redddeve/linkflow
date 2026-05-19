@@ -41,6 +41,7 @@
 **Scope:** PRD §3 (RBAC), §4 (state machines — encoded as DB enums + check constraints), §5 (full schema), §6.1 (auth completion), §7.3 (security baseline).
 
 **DB changes** (single Supabase migration `0001_init.sql`):
+
 - Enums: `user_status`, `user_role`, `site_status`, `link_type`, `country`, `language`, `order_status`, `invoice_status`, `commission_status`, `notification_channel`.
 - Tables: `users`, `categories`, `sites`, `carts`, `cart_items`, `orders`, `comments`, `invoices`, `commissions`, `audit_log`, `notifications`, `notification_preferences`.
 - Indexes: `sites.domain` unique, `sites.status`, `orders.status`, `orders.copywriter_id`, `orders.created_by_id`, `invoices(client_id, billing_month)` unique, `cart_items(cart_id, site_id)` unique.
@@ -50,11 +51,13 @@
 - Generated TypeScript types via Supabase MCP `generate_typescript_types` saved to `src/lib/database.types.ts`.
 
 **Routes:**
+
 - `/` — public landing; replace [src/app/page.tsx](src/app/page.tsx)'s prototype mount with a sign-in CTA + role-aware redirect for authed users.
 - `/dashboard` — authed shell layout (sidebar + topbar via shadcn primitives); home redirects per role.
 - Rename [src/proxy.ts](src/proxy.ts) export from `middleware` → `proxy`, narrow matcher to `['/dashboard', '/dashboard/(.*)']` per [docs/routing.md](docs/routing.md). Auth pages stay outside the matcher.
 
 **Server actions / API:**
+
 - `src/lib/auth.ts` — `getCurrentUser()`, `requireRole(roles)`, `requireUser()`. Uses `createClient()` from [src/lib/server.ts](src/lib/server.ts) and reads role from the `users` row.
 - `src/lib/audit.ts` — `recordAudit({ entityType, entityId, action, before, after })`.
 - `src/lib/notify.ts` — `notify({ recipientId, type, payload, channel })` (in-app only in M0; email wired in M8).
@@ -63,12 +66,14 @@
 **Components (shadcn):** all already installed. App shell uses `Avatar`, `DropdownMenu`, `Separator`, `Button`, `Tooltip`.
 
 **Deliverables:**
+
 - Migration applied; types generated.
 - `/dashboard` reachable only for authenticated users; sign-in redirects there post-login.
 - `getCurrentUser()` returns the typed `User` row including role.
 - `recordAudit()` and `notify()` round-trip a row in dev.
 
 **Verification:**
+
 - Sign in via [src/app/auth/login/page.tsx](src/app/auth/login/page.tsx) → land on `/dashboard`.
 - Hit `/dashboard` unauthenticated → redirect to `/auth/login`.
 - Insert a row through Supabase MCP `execute_sql` — confirm RLS blocks the wrong role.
@@ -85,6 +90,7 @@
 **Scope:** PRD §6.4 (UC-U-1..6), §8.5 (screens), plus testing infrastructure.
 
 **Testing setup (one-time, done first in this milestone):**
+
 - Install `vitest`, `@vitest/coverage-v8`, `@testing-library/react`, `@testing-library/user-event`, `jsdom`.
 - `vitest.config.ts` at project root; `npm run test` and `npm run test:watch` scripts.
 - Test directory convention: co-located `*.test.ts(x)` for units; `tests/integration/` for server-action / RLS integration tests against a Supabase local stack.
@@ -93,12 +99,14 @@
 **DB changes:** none (schema lands in M0). Adds RLS policies for `users` admin-only writes.
 
 **Routes:**
+
 - `/dashboard/users` — All Users list + filters (§8.5).
 - `/dashboard/users/[id]` — User Details.
 - `/dashboard/users/invite` — Invitation form.
 - Modal-based confirms for resend, disable, activate.
 
 **Server actions / API:**
+
 - `inviteUser(input)` — calls Supabase Auth admin `inviteUserByEmail`, sets `users.role`, `manager_id`, records audit + notification.
 - `resendInvite(userId)` — Supabase Auth admin re-invite; resets `invited_at`.
 - `editUser(userId, patch)` — admin only; if changing role on user with active orders/sites → confirm flow.
@@ -114,6 +122,7 @@
 **Deliverables:** all UC-U-1..6 acceptance criteria pass.
 
 **Verification:**
+
 - Cannot disable yourself (UI hidden + 403 from server).
 - Disabling a Copywriter who has any `In Progress` / `Needs changes` order returns 409 with the blocking-order list; admin must reassign each first.
 - Disabling a Sourcer: their owned sites become `ARCHIVED` and `sourcer_id = NULL`; client catalog query confirms those sites no longer appear.
@@ -133,6 +142,7 @@
 **DB changes:** none. Add RLS for site visibility per §3.2, category admin-only writes.
 
 **Routes:**
+
 - `/dashboard/sites` — list + filters (§8.6).
 - `/dashboard/sites/[id]` — view.
 - `/dashboard/sites/new` — create (sourcer/manager/admin).
@@ -140,6 +150,7 @@
 - `/dashboard/categories` — admin only.
 
 **Server actions / API:**
+
 - `createSite(input)` — normalize domain to `eTLD+1` (lowercase, no `www`, no scheme, no trailing slash); reject duplicates with PRD §10.1 message.
 - `editSite(id, patch)` — owner edits reset `status = PENDING`; admin edits do not.
 - `setSiteStatus(id, action, note?)` — admin-only; UC-S-5 transitions; require `change_note ≥ 10` on `NEEDS_CHANGES`.
@@ -150,6 +161,7 @@
 **Deliverables:** every site state transition logged, notifications fire to owner, duplicate detection works on `name.com` / `https://www.name.com/` / `Name.com`.
 
 **Verification:**
+
 - Submit `https://www.Foo.com/` — stored as `foo.com`. Submit `foo.com` again → duplicate error, no owner leak.
 - Sourcer edits own site → resets to PENDING.
 - Admin "Needs changes" with empty note → blocked.
@@ -167,10 +179,12 @@
 **DB changes:** none. RLS: clients only see ACTIVE sites in catalog endpoints; Cart restricted to owner.
 
 **Routes:**
+
 - `/dashboard/catalog` — client view of `sites WHERE status = ACTIVE`.
 - `/dashboard/cart` — current client's cart with editable `publish_date`.
 
 **Server actions / API:**
+
 - `addToCart(siteId)` — creates Cart on first add; rejects duplicate `(cart_id, site_id)`.
 - `removeFromCart(cartItemId)`.
 - `updateCartItem(cartItemId, { publish_date })`.
@@ -184,6 +198,7 @@
 **Deliverables:** UC-O-3..6 acceptance criteria pass; cart shows disclaimer for non-ACTIVE site rows and blocks checkout.
 
 **Verification:**
+
 - Add same site twice → second action disabled w/ "Already in cart".
 - Admin archives a site sitting in a cart → row gets disclaimer; checkout blocked until removed.
 - Submit checkout twice with same idempotency key → one set of orders created.
@@ -201,11 +216,13 @@
 **DB changes:** check constraint `content_body IS NOT NULL AND length(content_body) >= 50 WHEN status = 'Content Sent'`.
 
 **Routes:**
+
 - `/dashboard/orders` — role-scoped list + kanban toggle (manager/admin); filtered to assigned for copywriter; client sees own only.
 - `/dashboard/orders/[id]` — role-scoped view.
 - `/dashboard/orders/[id]/edit` — copywriter content editor (assigned + `In Progress`/`Needs changes` only).
 
 **Server actions / API:**
+
 - `editOrder(id, { publish_date })` — client-only, status `New` only (UC-O-9).
 - `cancelOrder(id, reason?)` — `New` only (UC-O-8); excluded from invoicing.
 - `assignCopywriter(orderId, copywriterId)` — `New` → `In Progress`; sets `manager_id` if first action.
@@ -218,6 +235,7 @@
 **Deliverables:** state transitions enforced; copywriter sees only assigned orders; reassignment logged.
 
 **Verification:**
+
 - Copywriter cannot edit unassigned order (server returns 403).
 - Submit < 50 chars → blocked.
 - Cancel an order in `In Progress` → blocked.
@@ -235,10 +253,12 @@
 **DB changes:** none.
 
 **Routes:**
+
 - `/dashboard/orders/[id]` extends with Comments timeline + Approve/Reject controls.
 - `/dashboard/orders/[id]/publish` — manager publish form.
 
 **Server actions / API:**
+
 - `approveOrder(orderId)` — `Content Sent` → `Content Approved`; sets `approved_at`.
 - `rejectOrder(orderId, comment)` — `Content Sent` → `Needs changes`; comment ≥ 20 chars; persists `Comment` row.
 - `addComment(orderId, text)` — generic comment in any phase (per §5.7).
@@ -253,6 +273,7 @@
 **Deliverables:** UC-O-10 + UC-OM-4 ACs pass; verifier blocks private-range URLs.
 
 **Verification:**
+
 - Reject with 19-char comment → blocked.
 - Publish with a localhost URL → verifier rejects.
 - Publish with mismatched anchor → verifier rejects, override path works and is logged with reason.
@@ -270,17 +291,20 @@
 **DB changes:** none. Uniqueness `(client_id, billing_month)` already on `invoices` from M0.
 
 **Routes:**
+
 - `/dashboard/invoices` — admin/manager list + filters.
 - `/dashboard/invoices/[id]` — view.
 - `/dashboard/invoices/[id]/edit-orders` — reassign per-order `billing_month` while invoice is `Draft`.
 
 **Server actions / API:**
+
 - `sendInvoice(invoiceId)` — `Draft` → `Sent`; record `sent_at`, `sent_by_id`.
 - `markInvoicePaid(invoiceId)` — `Sent` → `Paid`; record paid metadata.
 - `reassignOrderBillingMonth(orderId, billingMonth)` — only while parent invoice is `Draft`; FR-INV-5 routes to corrective Draft if target month already `Sent`/`Paid`.
 - `downloadInvoicePdf(invoiceId)` — server-rendered PDF (e.g. `@react-pdf/renderer`, decided at M6 start).
 
 **Jobs:**
+
 - **Monthly invoice generation** (cron `5 0 1 * *` UTC):
   - For each client × prior-calendar-month, find `Published` orders with no `invoice_id`; create one Draft invoice per `(client, billing_month)`; link orders; sum `total_price_cents`.
   - Idempotent — re-runs are no-ops.
@@ -292,6 +316,7 @@
 **Deliverables:** all FR-INV ACs pass.
 
 **Verification:**
+
 - Run generator twice for same period → second run is a no-op.
 - Move an order's `billing_month` into a `Sent` invoice's month → corrective Draft invoice created (FR-INV-5).
 - Send and Mark-as-paid update `sent_at`/`marked_as_paid_at` plus actor IDs.
@@ -309,14 +334,17 @@
 **DB changes:** none.
 
 **Routes:**
+
 - `/dashboard/commissions` — admin queue + sourcer self-view (role-scoped).
 - `/dashboard/sites?owner=me` — already from M2 with sourcer filter.
 
 **Server actions / API:**
+
 - Accrual hook in `publishOrder` from M5 (insert Commission `ACCRUED`, snapshot `sourcer_payout_cents`).
 - `markCommissionsPaid(commissionIds, payoutReference)` — admin only; `PAYABLE` → `PAID`.
 
 **Jobs:**
+
 - **Commission promotion** (nightly):
   - Promote `ACCRUED` → `PAYABLE` after window (default 30 days; configurable).
   - Re-check `published_url` is still live (reuse verifier from M5).
@@ -327,6 +355,7 @@
 **Deliverables:** sourcer dashboard shows Accrued / Payable / Paid totals; admin can batch-mark Paid.
 
 **Verification:**
+
 - Order published 31 days ago + link live → next nightly run flips to `PAYABLE`.
 - Order published, link removed → 3 retries logged, then escalation row visible to admin.
 
@@ -343,10 +372,12 @@
 **DB changes:** seed default `notification_preferences` rows on user creation (M0 trigger updated).
 
 **Routes:**
+
 - `/dashboard/notifications` — center (unread count, mark read, mark all read).
 - `/dashboard/settings/notifications` — per-user preference toggles.
 
 **Server actions / API:**
+
 - `markNotificationRead(id)`, `markAllRead()`.
 - `Mailer` interface (`src/lib/mailer.ts`) with **Brevo** transactional API as the implementation. Templates managed in Brevo dashboard; identifiers stored in `src/lib/email-templates.ts`.
 - Wire `notify()` calls into every event in §6.11 (most call sites already exist from M1–M7; this milestone audits coverage).
@@ -358,6 +389,7 @@
 **Deliverables:** every event in the §6.11 table fires the configured channels; audit timeline matches scoping rules.
 
 **Verification:**
+
 - Toggle off "Content submitted" email pref → next submit produces in-app only.
 - Manager not assigned to an order does not see its audit rows.
 
@@ -372,6 +404,7 @@
 **Scope:** §8.2.
 
 **Routes:**
+
 - `/dashboard` per role:
   - Client: active Orders by status, Orders awaiting review, Cart summary, latest Invoice + outstanding, Browse Catalog CTA.
   - Manager: All Orders filtered to active work; counters Unassigned / In Progress / Needs Changes / Awaiting Publication.
@@ -394,6 +427,7 @@
 **Scope:** §7 (NFRs), §15.
 
 **Tasks:**
+
 - **State machine tests** — unit tests for every transition (Site, User, Order, Invoice) covering valid + invalid (PRD §15).
 - **RBAC tests** — one test per server action × forbidden role ensuring 403 (PRD §3.2 enforcement, §15).
 - **Cron tests** — invoice generation: no-eligible / single / multi / idempotency / late-publish; commission promotion: happy path / link-down retry / escalation.
@@ -416,6 +450,7 @@
 **Goal:** Remove the prototype and stale references.
 
 **Tasks:**
+
 - Delete: [src/components/LinkFlowApp.tsx](src/components/LinkFlowApp.tsx), `ClientScreens.tsx`, `ManagerScreens.tsx`, `OtherRoleScreens.tsx`, `chrome.tsx`, `Icon.tsx`, [src/lib/data.ts](src/lib/data.ts).
 - Delete `src/app/protected/page.tsx` (Supabase template scaffold not needed once dashboards land).
 - Delete the prototype `--accent-h` / tweaks panel CSS from [src/app/globals.css](src/app/globals.css).

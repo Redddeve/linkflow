@@ -1,16 +1,36 @@
-import { requireUser } from '@/lib/auth'
+import { requireUser } from '@/lib/auth';
+import {
+  ClientHome,
+  ManagerHome,
+  CopywriterHome,
+  SourcerHome,
+  AdminHome,
+} from '@/components/dashboard/home';
+
+export const metadata = { title: 'Dashboard' };
 
 export default async function DashboardPage() {
-  const user = await requireUser()
+  const user = await requireUser();
 
-  return (
-    <div className="p-8">
-      <h1 className="text-2xl font-semibold">
-        Welcome, {user.first_name || user.email}
-      </h1>
-      <p className="mt-1" style={{ color: 'var(--text-muted)' }}>
-        You are signed in as <strong>{user.role}</strong>.
-      </p>
-    </div>
-  )
+  switch (user.role) {
+    case 'Client':
+      return <ClientHome user={user} />;
+    case 'Manager':
+      return <ManagerHome user={user} />;
+    case 'Copywriter':
+      return <CopywriterHome user={user} />;
+    case 'Sourcer':
+      return <SourcerHome user={user} />;
+    case 'Admin':
+      return <AdminHome user={user} />;
+    default:
+      return (
+        <div className="p-8">
+          <h1 className="text-2xl font-semibold">Dashboard</h1>
+          <p className="mt-2 text-sm text-muted-foreground">
+            Your account is missing a role. Please contact your administrator.
+          </p>
+        </div>
+      );
+  }
 }
