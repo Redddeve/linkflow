@@ -621,6 +621,36 @@ export async function publishOrder(input: PublishOrderInput): Promise<void> {
   }
   await Promise.all(notifications);
 
+  // Accrue commission if the site has an active sourcer. Best-effort —
+  // failures here must not roll back the publish.
+  try {
+    const { data: commissionId } = await supabase.rpc('accrue_commission_for_order', {
+      p_order_id: orderId,
+    });
+    if (commissionId) {
+      const { data: comm } = await supabase
+        .from('commissions')
+        .select('amount_cents, sourcer_id')
+        .eq('id', commissionId)
+        .single();
+      if (comm) {
+        await recordAudit({
+          entityType: 'commission',
+          entityId: commissionId,
+          action: 'commission.accrued',
+          after: { amount_cents: comm.amount_cents, sourcer_id: comm.sourcer_id, order_id: orderId },
+        });
+        await notify({
+          recipientId: comm.sourcer_id,
+          type: 'commission.accrued',
+          payload: { commissionId, orderId, amount_cents: comm.amount_cents },
+        });
+      }
+    }
+  } catch (e) {
+    console.error('[publishOrder] accrual failed:', (e as Error).message);
+  }
+
   revalidatePath('/dashboard/orders');
   revalidatePath(`/dashboard/orders/${orderId}`);
 }

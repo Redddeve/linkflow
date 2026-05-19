@@ -86,6 +86,11 @@ const NAV_ITEMS: Record<UserRole, NavItem[]> = {
       label: 'Invoices',
       icon: <Receipt className="nav-icon" />,
     },
+    {
+      href: '/dashboard/commissions',
+      label: 'Commissions',
+      icon: <BadgeDollarSign className="nav-icon" />,
+    },
   ],
   Copywriter: [
     {
