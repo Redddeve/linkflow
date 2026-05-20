@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { requireUser } from '@/lib/auth';
+import { createClient } from '@/lib/supabase/server';
 import { fetchOrderById, fetchOrderComments } from '@/lib/data/orders';
 import { fetchUsersByIds } from '@/lib/data/users';
 import { buttonVariants } from '@/components/ui/button';
@@ -30,13 +31,24 @@ export default async function OrderDetailPage({ params }: PageProps) {
 
   if (error || !order) notFound();
 
-  // Access control: clients see only own orders, copywriters only assigned
+  // Access control: clients see only own orders, copywriters only assigned,
+  // sourcers only orders placed on sites they own.
   if (actor.role === 'Client' && order.created_by_id !== actor.id) notFound();
   if (actor.role === 'Copywriter' && order.copywriter_id !== actor.id) notFound();
+  if (actor.role === 'Sourcer') {
+    const supabase = await createClient();
+    const { data: site } = await supabase
+      .from('sites')
+      .select('sourcer_id')
+      .eq('id', order.site_id)
+      .single();
+    if (site?.sourcer_id !== actor.id) notFound();
+  }
 
   const isManagerOrAdmin = actor.role === 'Manager' || actor.role === 'Admin';
   const isClient = actor.role === 'Client';
   const isCopywriter = actor.role === 'Copywriter';
+  const isSourcer = actor.role === 'Sourcer';
 
   // Fetch comments
   const comments = await fetchOrderComments(id);
@@ -127,10 +139,24 @@ export default async function OrderDetailPage({ params }: PageProps) {
           <dt className="text-muted-foreground">Publish date</dt>
           <dd className="font-medium">{order.publish_date}</dd>
         </div>
-        <div>
-          <dt className="text-muted-foreground">Price</dt>
-          <dd className="font-medium">${(order.price_cents / 100).toFixed(2)}</dd>
-        </div>
+        {!isSourcer && (
+          <div>
+            <dt className="text-muted-foreground">Price</dt>
+            <dd className="font-medium">${(order.price_cents / 100).toFixed(2)}</dd>
+          </div>
+        )}
+        {isSourcer && order.sourcer_payout_cents != null && (
+          <div>
+            <dt className="text-muted-foreground">Payout</dt>
+            <dd className="font-medium">
+              ${(order.sourcer_payout_cents / 100).toFixed(2)}
+              {' '}
+              <span className="text-xs text-muted-foreground">
+                ({order.sourcer_paid_at ? `paid ${new Date(order.sourcer_paid_at).toLocaleDateString('en-CA')}` : 'unpaid'})
+              </span>
+            </dd>
+          </div>
+        )}
         <div>
           <dt className="text-muted-foreground">Link type</dt>
           <dd className="font-medium capitalize">{order.site_link_type}</dd>

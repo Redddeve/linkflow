@@ -6,20 +6,20 @@ import type { UserRow } from '@/lib/auth';
 import { countSitesByStatus } from '@/lib/data/sites';
 import { countUsersByStatus } from '@/lib/data/users';
 import { countInvoicesByStatus } from '@/lib/data/invoices';
-import { sumPayableCommissions } from '@/lib/data/commissions';
+import { sumUnpaidPayouts } from '@/lib/data/earnings';
 
 function formatCurrency(cents: number) {
   return `$${(cents / 100).toFixed(2)}`;
 }
 
 export async function AdminHome({ user }: { user: UserRow }) {
-  const [siteReview, pendingInvites, draftInv, sentInv, payableTotalCents] =
+  const [siteReview, pendingInvites, draftInv, sentInv, unpaidPayoutsCents] =
     await Promise.all([
       countSitesByStatus('Pending'),
       countUsersByStatus('PENDING'),
       countInvoicesByStatus('Draft'),
       countInvoicesByStatus('Sent'),
-      sumPayableCommissions(),
+      sumUnpaidPayouts(),
     ]);
 
   return (
@@ -54,17 +54,17 @@ export async function AdminHome({ user }: { user: UserRow }) {
         <CardContent className="flex items-center justify-between p-4">
           <div>
             <div className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
-              Payable commissions
+              Unpaid sourcer payouts
             </div>
             <div className="mt-1 text-2xl font-semibold tabular-nums text-(--st-live-fg)">
-              {formatCurrency(payableTotalCents)}
+              {formatCurrency(unpaidPayoutsCents)}
             </div>
             <div className="mt-1 text-sm text-muted-foreground">
-              Total ready to pay out
+              Total owed to sourcers across all months
             </div>
           </div>
           <Link
-            href="/dashboard/commissions?status=PAYABLE"
+            href="/dashboard/earnings"
             className="text-sm font-medium text-primary hover:underline"
           >
             Review →

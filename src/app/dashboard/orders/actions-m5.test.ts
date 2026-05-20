@@ -4,12 +4,10 @@ import type { UserRow } from '@/lib/auth';
 // ── Shared mock state ──────────────────────────────────────────────────────────
 
 const mockFrom = vi.fn();
-const mockRpc = vi.fn();
 
 vi.mock('@/lib/supabase/server', () => ({
   createClient: vi.fn(async () => ({
     from: mockFrom,
-    rpc: mockRpc,
   })),
 }));
 
@@ -276,15 +274,23 @@ describe('addComment()', () => {
 describe('publishOrder()', () => {
   beforeEach(() => vi.clearAllMocks());
 
-  it('transitions Content Approved → Published and sets billing_month', async () => {
+  it('transitions Content Approved → Published and snapshots sourcer payout', async () => {
     mockRequireRole.mockResolvedValueOnce(makeUser({ id: MGR_1, role: 'Manager' }));
+    const SOURCER_ID = 'd0000002-0000-4000-8000-000000000002';
     const orderData = {
-      id: ORD_1, status: 'Content Approved', created_by_id: CLIENT_1,
+      id: ORD_1, status: 'Content Approved', site_id: 'site-1', created_by_id: CLIENT_1,
       manager_id: MGR_1, copywriter_id: CW_1,
     };
-    const selectChain = makeChain({ data: orderData, error: null });
+    const orderSelect = makeChain({ data: orderData, error: null });
+    const siteSelect = makeChain({
+      data: { sourcer_id: SOURCER_ID, sourcer_payout_cents: 4200 },
+      error: null,
+    });
     const updateChain = makeChain({ data: null, error: null });
-    mockFrom.mockReturnValueOnce(selectChain).mockReturnValue(updateChain);
+    mockFrom
+      .mockReturnValueOnce(orderSelect)
+      .mockReturnValueOnce(siteSelect)
+      .mockReturnValue(updateChain);
 
     await publishOrder({
       orderId: ORD_1,
@@ -293,13 +299,48 @@ describe('publishOrder()', () => {
     });
 
     expect(mockRecordAudit).toHaveBeenCalledWith(
-      expect.objectContaining({ action: 'order.published', entityId: ORD_1 }),
+      expect.objectContaining({
+        action: 'order.published',
+        entityId: ORD_1,
+        after: expect.objectContaining({ sourcer_payout_cents: 4200 }),
+      }),
     );
     expect(mockNotify).toHaveBeenCalledWith(
       expect.objectContaining({ recipientId: CLIENT_1, type: 'order.published' }),
     );
     expect(mockNotify).toHaveBeenCalledWith(
       expect.objectContaining({ recipientId: CW_1, type: 'order.published' }),
+    );
+  });
+
+  it('snapshots null payout when the site has no sourcer', async () => {
+    mockRequireRole.mockResolvedValueOnce(makeUser({ id: MGR_1, role: 'Manager' }));
+    const orderData = {
+      id: ORD_1, status: 'Content Approved', site_id: 'site-1', created_by_id: CLIENT_1,
+      manager_id: MGR_1, copywriter_id: CW_1,
+    };
+    const orderSelect = makeChain({ data: orderData, error: null });
+    const siteSelect = makeChain({
+      data: { sourcer_id: null, sourcer_payout_cents: 0 },
+      error: null,
+    });
+    const updateChain = makeChain({ data: null, error: null });
+    mockFrom
+      .mockReturnValueOnce(orderSelect)
+      .mockReturnValueOnce(siteSelect)
+      .mockReturnValue(updateChain);
+
+    await publishOrder({
+      orderId: ORD_1,
+      published_url: 'https://example.com/post',
+      publish_date: tomorrowStr,
+    });
+
+    expect(mockRecordAudit).toHaveBeenCalledWith(
+      expect.objectContaining({
+        action: 'order.published',
+        after: expect.objectContaining({ sourcer_payout_cents: null }),
+      }),
     );
   });
 
@@ -320,7 +361,7 @@ describe('publishOrder()', () => {
   it('throws VALIDATION when order is not Content Approved', async () => {
     mockRequireRole.mockResolvedValueOnce(makeUser({ id: MGR_1, role: 'Manager' }));
     const chain = makeChain({
-      data: { id: ORD_1, status: 'Content Sent', created_by_id: CLIENT_1, manager_id: MGR_1, copywriter_id: CW_1 },
+      data: { id: ORD_1, status: 'Content Sent', site_id: 'site-1', created_by_id: CLIENT_1, manager_id: MGR_1, copywriter_id: CW_1 },
       error: null,
     });
     mockFrom.mockReturnValue(chain);
@@ -328,92 +369,6 @@ describe('publishOrder()', () => {
     await expect(
       publishOrder({ orderId: ORD_1, published_url: 'https://example.com/post', publish_date: tomorrowStr }),
     ).rejects.toThrow('Content Sent');
-  });
-
-  it('accrues commission when RPC returns a new commission id', async () => {
-    mockRequireRole.mockResolvedValueOnce(makeUser({ id: MGR_1, role: 'Manager' }));
-    const orderData = {
-      id: ORD_1, status: 'Content Approved', created_by_id: CLIENT_1,
-      manager_id: MGR_1, copywriter_id: CW_1,
-    };
-    const COMM_ID = 'd0000001-0000-4000-8000-000000000001';
-    const SOURCER_ID = 'd0000002-0000-4000-8000-000000000002';
-    const selectChain = makeChain({ data: orderData, error: null });
-    const updateChain = makeChain({ data: null, error: null });
-    const commissionLookup = makeChain({
-      data: { amount_cents: 4200, sourcer_id: SOURCER_ID },
-      error: null,
-    });
-    mockFrom
-      .mockReturnValueOnce(selectChain)   // order fetch
-      .mockReturnValueOnce(updateChain)   // order update
-      .mockReturnValueOnce(commissionLookup); // commission lookup after RPC
-
-    mockRpc.mockResolvedValueOnce({ data: COMM_ID, error: null });
-
-    await publishOrder({
-      orderId: ORD_1,
-      published_url: 'https://example.com/post',
-      publish_date: tomorrowStr,
-    });
-
-    expect(mockRpc).toHaveBeenCalledWith('accrue_commission_for_order', { p_order_id: ORD_1 });
-    expect(mockRecordAudit).toHaveBeenCalledWith(
-      expect.objectContaining({ entityType: 'commission', action: 'commission.accrued', entityId: COMM_ID }),
-    );
-    expect(mockNotify).toHaveBeenCalledWith(
-      expect.objectContaining({ recipientId: SOURCER_ID, type: 'commission.accrued' }),
-    );
-  });
-
-  it('does not accrue when RPC returns null (no sourcer or inactive)', async () => {
-    mockRequireRole.mockResolvedValueOnce(makeUser({ id: MGR_1, role: 'Manager' }));
-    const orderData = {
-      id: ORD_1, status: 'Content Approved', created_by_id: CLIENT_1,
-      manager_id: MGR_1, copywriter_id: CW_1,
-    };
-    const selectChain = makeChain({ data: orderData, error: null });
-    const updateChain = makeChain({ data: null, error: null });
-    mockFrom.mockReturnValueOnce(selectChain).mockReturnValue(updateChain);
-
-    mockRpc.mockResolvedValueOnce({ data: null, error: null });
-
-    await publishOrder({
-      orderId: ORD_1,
-      published_url: 'https://example.com/post',
-      publish_date: tomorrowStr,
-    });
-
-    // order.published audit fired, but no commission.accrued audit
-    const commissionAuditCalls = mockRecordAudit.mock.calls.filter(
-      (call) => (call[0] as { action: string }).action === 'commission.accrued',
-    );
-    expect(commissionAuditCalls).toHaveLength(0);
-  });
-
-  it('does not fail publish when accrual RPC errors', async () => {
-    mockRequireRole.mockResolvedValueOnce(makeUser({ id: MGR_1, role: 'Manager' }));
-    const orderData = {
-      id: ORD_1, status: 'Content Approved', created_by_id: CLIENT_1,
-      manager_id: MGR_1, copywriter_id: CW_1,
-    };
-    const selectChain = makeChain({ data: orderData, error: null });
-    const updateChain = makeChain({ data: null, error: null });
-    mockFrom.mockReturnValueOnce(selectChain).mockReturnValue(updateChain);
-
-    mockRpc.mockRejectedValueOnce(new Error('rpc explosion'));
-
-    await expect(
-      publishOrder({
-        orderId: ORD_1,
-        published_url: 'https://example.com/post',
-        publish_date: tomorrowStr,
-      }),
-    ).resolves.toBeUndefined();
-
-    expect(mockRecordAudit).toHaveBeenCalledWith(
-      expect.objectContaining({ action: 'order.published' }),
-    );
   });
 });
 

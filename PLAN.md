@@ -42,8 +42,8 @@
 
 **DB changes** (single Supabase migration `0001_init.sql`):
 
-- Enums: `user_status`, `user_role`, `site_status`, `link_type`, `country`, `language`, `order_status`, `invoice_status`, `commission_status`, `notification_channel`.
-- Tables: `users`, `categories`, `sites`, `carts`, `cart_items`, `orders`, `comments`, `invoices`, `commissions`, `audit_log`, `notifications`, `notification_preferences`.
+- Enums: `user_status`, `user_role`, `site_status`, `link_type`, `country`, `language`, `order_status`, `invoice_status`, `notification_channel`.
+- Tables: `users`, `categories`, `sites`, `carts`, `cart_items`, `orders`, `comments`, `invoices`, `audit_log`, `notifications`, `notification_preferences`.
 - Indexes: `sites.domain` unique, `sites.status`, `orders.status`, `orders.copywriter_id`, `orders.created_by_id`, `invoices(client_id, billing_month)` unique, `cart_items(cart_id, site_id)` unique.
 - RLS policies per role × entity (rough draft per §3.2; refined in each later milestone).
 - Trigger: `auth.users` insert → `public.users` row with `status = PENDING`, role from invite metadata.
@@ -113,7 +113,7 @@
 - `disableUser(userId, reason)` — branches per role:
   - Self → 403.
   - **Copywriter with active orders (`In Progress` / `Needs changes`) → blocked**. Server returns 409 with the count of blocking orders; UI shows the list with deep-links so the admin can reassign each via the existing Reassign Copywriter flow (UC-OM-3.2) and retry the disable. **No bulk-reassignment step inside the disable flow.** (Departs from PRD UC-U-6.2 per product decision.)
-  - **Sourcer → set `sourcer_id = NULL` AND `status = ARCHIVED` on every site that user owns**, so those sites disappear from the client catalog (PRD §6.5 only shows `ACTIVE`). Existing accrued commissions are preserved but flagged for admin review; new commissions cannot accrue. (Extends PRD §10.7 / UC-U-6.3 with explicit catalog removal.)
+  - **Sourcer → set `sourcer_id = NULL` AND `status = ARCHIVED` on every site that user owns**, so those sites disappear from the client catalog (PRD §6.5 only shows `ACTIVE`). Already-published orders keep their snapshotted `sourcer_payout_cents` (and remain payable); future orders on archived sites won't accrue payouts. (Extends PRD §10.7 / UC-U-6.3 with explicit catalog removal.)
   - Else → set `status = DISABLED`, `disabled_reason`.
 - `activateUser(userId)`. Re-activating a sourcer does **not** auto-unarchive their sites — admin unarchives individually if needed.
 
@@ -266,7 +266,7 @@
   - HTTPS only.
   - **Link verifier** — `src/lib/verify-link.ts`: HEAD then GET, content-type allowlist (text/html), 10s timeout, max-3 redirects, **deny private IP ranges** (PRD §7.3 / §10.11), parse for `<a href>` matching `anchor_text` case-insensitive.
   - On verifier failure, allow manager override with typed reason; both paths logged.
-  - On success → `Published`; set `published_at`, `published_by_id`, `billing_month = first day of month(published_at)`; accrue Commission if `sourcer_id` present (sets up M7).
+  - On success → `Published`; set `published_at`, `published_by_id`, `billing_month = first day of month(published_at)`; snapshot `sites.sourcer_payout_cents` onto `orders.sourcer_payout_cents` if the site has a `sourcer_id` (sets up M7).
 
 **Components (shadcn):** `Dialog` for confirms, `Textarea` for comments.
 
@@ -325,41 +325,38 @@
 
 ---
 
-## M7 — Commissions (Sourcer)
+## M7 — Sourcer Earnings
 
-**Goal:** Commissions accrue on publish, mature to Payable after the verification window with link-still-live re-check, Admin marks Paid.
+**Goal:** Sourcer payout is snapshot onto the Order at publish; Admin marks payouts paid; Sourcers see their orders + earnings.
 
-**Scope:** §6.10 (FR-COM-1..4), §3.2 sourcer caps, §8.2 sourcer dashboard.
+**Scope:** §6.10 (FR-EARN-1..4), §3.2 sourcer caps, §8.2 sourcer dashboard.
 
-**DB changes:** none.
+**DB changes:** `orders.sourcer_payout_cents`, `orders.sourcer_paid_at`, `orders.sourcer_payout_reference`.
+
+> Note: an earlier draft introduced a separate `commissions` table with `ACCRUED → PAYABLE → PAID → REVERSED` lifecycle, RPCs (`accrue_commission_for_order`, `promote_commissions_candidates`), and a nightly link-verification job. All of that has been **removed**. There is no Commission entity; sourcer payout state lives on the Order.
 
 **Routes:**
 
-- `/dashboard/commissions` — admin queue + sourcer self-view (role-scoped).
-- `/dashboard/sites?owner=me` — already from M2 with sourcer filter.
+- `/dashboard/earnings` — Admin (all sourcers, mark-paid) + Sourcer (own, read-only). Manager has no access.
+- `/dashboard/orders` — Sourcer view scoped to orders on their sites (sites.sourcer_id = actor).
 
 **Server actions / API:**
 
-- Accrual hook in `publishOrder` from M5 (insert Commission `ACCRUED`, snapshot `sourcer_payout_cents`).
-- `markCommissionsPaid(commissionIds, payoutReference)` — admin only; `PAYABLE` → `PAID`.
+- `publishOrder` (from M5) snapshots `sites.sourcer_payout_cents` → `orders.sourcer_payout_cents` when the site has a sourcer.
+- `markOrdersPayoutPaid(orderIds, payoutReference)` — Admin only; sets `sourcer_paid_at` + `sourcer_payout_reference` on eligible orders.
 
-**Jobs:**
+**Components (shadcn):** dashboard cards, `Table`, `Checkbox`, `Dialog`.
 
-- **Commission promotion** (nightly):
-  - Promote `ACCRUED` → `PAYABLE` after window (default 30 days; configurable).
-  - Re-check `published_url` is still live (reuse verifier from M5).
-  - On failure: 3 retries over 7 days, then `REVERSED` + admin escalation.
-
-**Components (shadcn):** dashboard cards, `Table`, `Badge`.
-
-**Deliverables:** sourcer dashboard shows Accrued / Payable / Paid totals; admin can batch-mark Paid.
+**Deliverables:** Sourcer dashboard shows last month's earnings totals (Earned / Paid / Unpaid); Admin can batch-mark payouts paid; Sourcer can browse orders placed on their sites with payout status.
 
 **Verification:**
 
-- Order published 31 days ago + link live → next nightly run flips to `PAYABLE`.
-- Order published, link removed → 3 retries logged, then escalation row visible to admin.
+- Publish an order on a site with sourcer → `orders.sourcer_payout_cents` populated; row appears in `/dashboard/earnings` for that sourcer's billing month as Unpaid.
+- Admin marks selection paid with a reference → `sourcer_paid_at` + `sourcer_payout_reference` set; sourcer sees Paid status + receives `order.payout_paid` notification.
+- Sourcer hits `/dashboard/orders` → sees only orders for their sites; visiting an order for another sourcer's site returns 404.
+- Manager visiting `/dashboard/earnings` returns 404.
 
-**Depends on:** M5, M6 (jobs infra).
+**Depends on:** M5.
 
 ---
 
@@ -409,8 +406,8 @@
   - Client: active Orders by status, Orders awaiting review, Cart summary, latest Invoice + outstanding, Browse Catalog CTA.
   - Manager: All Orders filtered to active work; counters Unassigned / In Progress / Needs Changes / Awaiting Publication.
   - Copywriter: assigned Orders + quick filters (In Progress / Needs Changes).
-  - Sourcer: my Sites by status, commissions summary.
-  - Admin: Site review queue, pending invitations, Draft/Sent invoice counts, payable commissions total.
+  - Sourcer: my Sites by status, last month's earnings summary (Earned / Paid / Unpaid).
+  - Admin: Site review queue, pending invitations, Draft/Sent invoice counts, unpaid sourcer payouts total.
 
 **Components (shadcn):** `Card`, `Badge`, `Tabs`, `Separator`. Install `Skeleton` for loading states.
 
@@ -430,14 +427,14 @@
 
 - **State machine tests** — unit tests for every transition (Site, User, Order, Invoice) covering valid + invalid (PRD §15).
 - **RBAC tests** — one test per server action × forbidden role ensuring 403 (PRD §3.2 enforcement, §15).
-- **Cron tests** — invoice generation: no-eligible / single / multi / idempotency / late-publish; commission promotion: happy path / link-down retry / escalation.
+- **Cron tests** — invoice generation: no-eligible / single / multi / idempotency / late-publish.
 - **SSRF / link verifier tests** — private IP, redirect cap, content-type allowlist, timeout.
 - **File upload validation** — avatar (MIME allowlist, ≤ 10 MB).
 - **Observability** — Sentry init (or equivalent); structured logger emits a record per state transition.
 - **Performance** — load test against staging at 50% of §7.2 targets; p95 dashboard < 1.5s, list/search < 500ms.
 - **Accessibility** — axe-core sweep on primary flows (login, dashboard, sites list, order detail, cart, checkout, publish, invoice send).
 - **i18n** — externalize user-facing strings to `src/lib/i18n.ts`; English ships.
-- **Runbooks** — `docs/runbooks/` for monthly invoicing, overdue invoice, commission promotion, link re-verification (PRD §15 last bullet).
+- **Runbooks** — `docs/runbooks/` for monthly invoicing, overdue invoice (PRD §15 last bullet).
 
 **Verification:** `npm run lint` and full test suite pass; runbooks exist; accessibility report attached.
 

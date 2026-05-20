@@ -1,30 +1,23 @@
-import { sumByStatus } from '@/lib/dashboard/counts';
 import { StatCard } from './stat-card';
 import { DashboardHeader, SectionHeading } from './dashboard-header';
 import type { UserRow } from '@/lib/auth';
 import { countSitesByStatusForSourcer } from '@/lib/data/sites';
-import { fetchCommissionTotals } from '@/lib/data/commissions';
-
-const COMMISSION_STATUSES = ['ACCRUED', 'PAYABLE', 'PAID', 'REVERSED'] as const;
-type CommissionStatus = (typeof COMMISSION_STATUSES)[number];
+import { addMonths, firstOfMonth } from '@/lib/billing';
+import { fetchEarningsTotals } from '@/lib/data/earnings';
 
 function formatCurrency(cents: number) {
   return `$${(cents / 100).toFixed(2)}`;
 }
 
 export async function SourcerHome({ user }: { user: UserRow }) {
-  const [pending, active, needsChanges, archived, commissions] = await Promise.all([
+  const lastMonth = addMonths(firstOfMonth(new Date()), -1);
+  const [pending, active, needsChanges, archived, earnings] = await Promise.all([
     countSitesByStatusForSourcer(user.id, 'Pending'),
     countSitesByStatusForSourcer(user.id, 'Active'),
     countSitesByStatusForSourcer(user.id, 'Needs changes'),
     countSitesByStatusForSourcer(user.id, 'Archived'),
-    fetchCommissionTotals(user.id),
+    fetchEarningsTotals({ month: lastMonth, sourcerId: user.id }),
   ]);
-
-  const totals = sumByStatus(
-    commissions as { status: CommissionStatus; amount_cents: number }[],
-    COMMISSION_STATUSES,
-  );
 
   return (
     <div className="space-y-6">
@@ -60,17 +53,25 @@ export async function SourcerHome({ user }: { user: UserRow }) {
       </div>
 
       <div>
-        <SectionHeading title="Commissions" />
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-          {COMMISSION_STATUSES.map((s) => (
-            <StatCard
-              key={s}
-              label={s}
-              value={formatCurrency(totals[s])}
-              href={`/dashboard/commissions?status=${s}`}
-              tone={s === 'PAYABLE' ? 'success' : s === 'REVERSED' ? 'warn' : 'default'}
-            />
-          ))}
+        <SectionHeading title="Earnings (last month)" />
+        <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+          <StatCard
+            label="Earned"
+            value={formatCurrency(earnings.earningsCents)}
+            href="/dashboard/earnings"
+          />
+          <StatCard
+            label="Paid"
+            value={formatCurrency(earnings.paidCents)}
+            href="/dashboard/earnings"
+            tone="success"
+          />
+          <StatCard
+            label="Unpaid"
+            value={formatCurrency(earnings.unpaidCents)}
+            href="/dashboard/earnings"
+            tone="warn"
+          />
         </div>
       </div>
     </div>

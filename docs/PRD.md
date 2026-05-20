@@ -385,20 +385,15 @@ Comments replace the previous `ChangeRequest` entity. Multiple comments per Orde
 - `InvoiceLine` is removed. Orders belong to an Invoice via `Order.invoice_id` directly; `total_price_cents` is the sum of those Orders' `price_cents`.
 - Invoice generation groups `Published` Orders by `billing_month` and creates one Invoice per `(client, billing_month)` pair.
 
-### 5.9 Commission
+### 5.9 Sourcer payout (on Order)
 
-| Field             | Type                    | Notes                                                  |
-| ----------------- | ----------------------- | ------------------------------------------------------ |
-| id                | UUID PK                 |                                                        |
-| created_at        | timestamp               |                                                        |
-| sourcer_id        | UUID FK → User          | `role = Sourcer`                                       |
-| order_id          | UUID FK → Order, unique | One commission per published Order                     |
-| site_id           | UUID FK → Site          | Snapshotted domain reference                           |
-| amount_cents      | int                     | Snapshot of `Site.sourcer_payout_cents` at publication |
-| status            | enum                    | `ACCRUED`, `PAYABLE`, `PAID`, `REVERSED`               |
-| accrued_at        | timestamp               |                                                        |
-| paid_at?          | timestamp               |                                                        |
-| payout_reference? | string                  |                                                        |
+There is no separate Commission entity. Sourcer payouts are tracked directly on the Order:
+
+| Field on Order             | Type      | Notes                                                                                  |
+| -------------------------- | --------- | -------------------------------------------------------------------------------------- |
+| sourcer_payout_cents?      | int       | Snapshot of `Site.sourcer_payout_cents` at publication, when `Site.sourcer_id` is set. |
+| sourcer_paid_at?           | timestamp | Set when Admin records an external payout.                                             |
+| sourcer_payout_reference?  | string    | External transfer reference / invoice number.                                          |
 
 ### 5.10 AuditLog
 
@@ -606,15 +601,15 @@ Auth is handled entirely by **Supabase Auth**. The application does not manage p
 
 **FR-INV-5.** **Late-publish / billing-month adjustment.** If an Order's `billing_month` is changed via Edit Invoice Orders to a month that already has a `Sent` or `Paid` Invoice, it is placed on a new corrective `Draft` Invoice for that period instead.
 
-### 6.10 Commissions (Sourcer)
+### 6.10 Sourcer Earnings
 
-**FR-COM-1.** When Order → `PUBLISHED` and Site has a `sourcer_id`, create a Commission with status `ACCRUED`, snapshotting `sourcer_payout_cents`.
+**FR-EARN-1.** When Order → `Published` and the Site has a `sourcer_id`, snapshot `Site.sourcer_payout_cents` onto the Order as `sourcer_payout_cents`. This locks in the payout amount; later edits to the Site never change historical earnings.
 
-**FR-COM-2.** Nightly job promotes `ACCRUED` → `PAYABLE` after the verification window (default 30 days, configurable), conditional on a link-still-live re-check (HTTP fetch of `published_url` confirming the anchor link still exists). On failure: up to 3 retries over 7 days; afterwards escalate to Admin queue.
+**FR-EARN-2.** Admin marks batches of published Orders as paid via `/dashboard/earnings`, recording `sourcer_paid_at` and `sourcer_payout_reference`. Only Orders with a non-null `sourcer_payout_cents` and a null `sourcer_paid_at` are eligible.
 
-**FR-COM-3.** Admin marks batches of `PAYABLE` commissions as `PAID` after external payout, recording `payout_reference`.
+**FR-EARN-3.** `/dashboard/earnings` is visible to Sourcer (own earnings only) and Admin (all sourcers, filterable). Manager has no access. It shows monthly totals (Earned / Paid / Unpaid) and a per-Order table with payout status and reference.
 
-**FR-COM-4.** Sourcer dashboard shows totals by status (Accrued / Payable / Paid) and a per-commission table with linked Order (anonymized client) and Site.
+**FR-EARN-4.** Sourcers have a read-only Orders view (`/dashboard/orders`) scoped to orders placed on sites where they are the sourcer; client/copywriter/manager identities are hidden, payout column is shown.
 
 ### 6.11 Notifications
 
@@ -635,8 +630,7 @@ Auth is handled entirely by **Supabase Auth**. The application does not manage p
 | Order published                                 | Client                                            | In-app + email  |
 | Invoice issued                                  | Client                                            | Email           |
 | Invoice overdue                                 | Client + Admin                                    | Email           |
-| Commission `PAYABLE`                            | Sourcer                                           | In-app          |
-| Commission `PAID`                               | Sourcer                                           | In-app + email  |
+| Sourcer payout marked paid                      | Sourcer                                           | In-app + email  |
 
 ### 6.12 Audit Log
 
@@ -706,9 +700,9 @@ Auth is handled entirely by **Supabase Auth**. The application does not manage p
 
 **Copywriter:** assigned Orders with publish date and status; quick filters: In Progress / Needs Changes.
 
-**Sourcer:** my Sites by status, commissions summary (Accrued / Payable / Paid totals).
+**Sourcer:** my Sites by status, last month's earnings summary (Earned / Paid / Unpaid totals).
 
-**Admin:** Site review queue count, User invitations awaiting acceptance, Draft/Sent Invoice counts, payable commissions total.
+**Admin:** Site review queue count, User invitations awaiting acceptance, Draft/Sent Invoice counts, unpaid sourcer payouts total.
 
 ---
 

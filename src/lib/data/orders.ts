@@ -6,6 +6,7 @@ type OrderStatus = Database['public']['Enums']['order_status'];
 export interface OrdersListFilters {
   createdById?: string;
   copywriterId?: string | null;
+  sourcerId?: string;
   unassigned?: boolean;
   status?: OrderStatus;
 }
@@ -16,29 +17,37 @@ export type OrdersListRow = {
   status: OrderStatus;
   price_cents: number;
   publish_date: string | null;
+  published_at: string | null;
   created_at: string;
   copywriter_id: string | null;
   manager_id: string | null;
+  sourcer_payout_cents: number | null;
+  sourcer_paid_at: string | null;
 };
 
 export async function fetchOrdersList(
   filters: OrdersListFilters,
 ): Promise<OrdersListRow[]> {
   const supabase = await createClient();
+  const baseSelect =
+    'id, site_domain, status, price_cents, publish_date, published_at, created_at, copywriter_id, manager_id, sourcer_payout_cents, sourcer_paid_at';
+  const select = filters.sourcerId
+    ? `${baseSelect}, sites!inner(sourcer_id)`
+    : baseSelect;
+
   let query = supabase
     .from('orders')
-    .select(
-      'id, site_domain, status, price_cents, publish_date, created_at, copywriter_id, manager_id',
-    )
+    .select(select)
     .order('created_at', { ascending: false });
 
   if (filters.createdById) query = query.eq('created_by_id', filters.createdById);
   if (filters.copywriterId) query = query.eq('copywriter_id', filters.copywriterId);
   if (filters.unassigned) query = query.is('copywriter_id', null);
   if (filters.status) query = query.eq('status', filters.status);
+  if (filters.sourcerId) query = query.eq('sites.sourcer_id', filters.sourcerId);
 
   const { data } = await query;
-  return data ?? [];
+  return (data ?? []) as unknown as OrdersListRow[];
 }
 
 export async function fetchOrderById(id: string) {

@@ -29,6 +29,7 @@ export default async function OrdersPage({ searchParams }: PageProps) {
   const isManagerOrAdmin = actor.role === 'Manager' || actor.role === 'Admin';
   const isCopywriter = actor.role === 'Copywriter';
   const isClient = actor.role === 'Client';
+  const isSourcer = actor.role === 'Sourcer';
 
   const rawList = await fetchOrdersList({
     createdById: isClient ? actor.id : undefined,
@@ -37,6 +38,7 @@ export default async function OrdersPage({ searchParams }: PageProps) {
       : copywriterFilter && isManagerOrAdmin
         ? copywriterFilter
         : undefined,
+    sourcerId: isSourcer ? actor.id : undefined,
     unassigned: params.assignee === 'unassigned' && isManagerOrAdmin,
     status: statusFilter,
   });
@@ -61,6 +63,8 @@ export default async function OrdersPage({ searchParams }: PageProps) {
     created_at: o.created_at,
     copywriter: o.copywriter_id ? (userMap[o.copywriter_id] ?? null) : null,
     manager: o.manager_id ? (userMap[o.manager_id] ?? null) : null,
+    sourcer_payout_cents: o.sourcer_payout_cents,
+    sourcer_paid_at: o.sourcer_paid_at,
   }));
 
   if (searchFilter) {
@@ -86,7 +90,9 @@ export default async function OrdersPage({ searchParams }: PageProps) {
             ? 'Your orders'
             : isCopywriter
               ? 'Your assigned orders'
-              : 'All orders'
+              : isSourcer
+                ? 'Orders on your sites'
+                : 'All orders'
         }
         // actions={
         //   isManagerOrAdmin && (
@@ -137,6 +143,8 @@ export default async function OrdersPage({ searchParams }: PageProps) {
             orders={orders as Parameters<typeof OrdersTable>[0]['orders']}
             showCopywriter={isManagerOrAdmin}
             showManager={actor.role === 'Admin'}
+            showPrice={!isSourcer}
+            showPayout={isSourcer}
           />
         )}
       </div>
