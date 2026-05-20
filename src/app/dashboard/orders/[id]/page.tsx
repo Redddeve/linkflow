@@ -15,6 +15,7 @@ import { CommentsTimeline } from '../components/comments-timeline';
 import { AddCommentForm } from '../components/add-comment-form';
 import { listCopywriters } from '../actions';
 import { BackLink } from '@/components/ui/back-link';
+import { StartChatButton } from '../components/start-chat-button';
 
 interface PageProps {
   params: Promise<{ id: string }>;
@@ -110,6 +111,9 @@ export default async function OrderDetailPage({ params }: PageProps) {
             <Link href={`/dashboard/orders/${id}/publish`} className={buttonVariants()}>
               Publish
             </Link>
+          )}
+          {canComment && (
+            <StartChatButton orderId={id} existingChatId={order.chat_id ?? null} />
           )}
         </div>
       </div>

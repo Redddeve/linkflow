@@ -23,7 +23,8 @@
       "Bash(npx vitest *)",
       "mcp__supabase__list_extensions",
       "mcp__supabase__list_tables",
-      "Bash(npx eslint *)"
+      "Bash(npx eslint *)",
+      "Bash(Get-ChildItem -Path \"d:\\\\Projects\\\\linkflow\" -Directory)"
     ],
     "deny": [
       "Read(.env*)",

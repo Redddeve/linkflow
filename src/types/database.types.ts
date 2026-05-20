@@ -159,6 +159,113 @@ export type Database = {
           },
         ]
       }
+      chat_messages: {
+        Row: {
+          chat_id: string
+          content: string
+          created_at: string
+          created_by_id: string
+          id: string
+          read_by: string[]
+        }
+        Insert: {
+          chat_id: string
+          content: string
+          created_at?: string
+          created_by_id: string
+          id?: string
+          read_by?: string[]
+        }
+        Update: {
+          chat_id?: string
+          content?: string
+          created_at?: string
+          created_by_id?: string
+          id?: string
+          read_by?: string[]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "chat_messages_chat_id_fkey"
+            columns: ["chat_id"]
+            isOneToOne: false
+            referencedRelation: "chats"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "chat_messages_created_by_id_fkey"
+            columns: ["created_by_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      chat_participants: {
+        Row: {
+          chat_id: string
+          user_id: string
+        }
+        Insert: {
+          chat_id: string
+          user_id: string
+        }
+        Update: {
+          chat_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "chat_participants_chat_id_fkey"
+            columns: ["chat_id"]
+            isOneToOne: false
+            referencedRelation: "chats"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "chat_participants_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      chats: {
+        Row: {
+          category: Database["public"]["Enums"]["chat_category"]
+          created_at: string
+          created_by_id: string
+          id: string
+          status: Database["public"]["Enums"]["chat_status"]
+          title: string
+        }
+        Insert: {
+          category?: Database["public"]["Enums"]["chat_category"]
+          created_at?: string
+          created_by_id: string
+          id?: string
+          status?: Database["public"]["Enums"]["chat_status"]
+          title: string
+        }
+        Update: {
+          category?: Database["public"]["Enums"]["chat_category"]
+          created_at?: string
+          created_by_id?: string
+          id?: string
+          status?: Database["public"]["Enums"]["chat_status"]
+          title?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "chats_created_by_id_fkey"
+            columns: ["created_by_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       comments: {
         Row: {
           created_at: string
@@ -399,6 +506,7 @@ export type Database = {
           billing_month: string | null
           canceled_at: string | null
           cancellation_reason: string | null
+          chat_id: string | null
           content_body: string | null
           copywriter_id: string | null
           created_at: string
@@ -433,6 +541,7 @@ export type Database = {
           billing_month?: string | null
           canceled_at?: string | null
           cancellation_reason?: string | null
+          chat_id?: string | null
           content_body?: string | null
           copywriter_id?: string | null
           created_at?: string
@@ -467,6 +576,7 @@ export type Database = {
           billing_month?: string | null
           canceled_at?: string | null
           cancellation_reason?: string | null
+          chat_id?: string | null
           content_body?: string | null
           copywriter_id?: string | null
           created_at?: string
@@ -497,6 +607,13 @@ export type Database = {
           status?: Database["public"]["Enums"]["order_status"]
         }
         Relationships: [
+          {
+            foreignKeyName: "orders_chat_id_fkey"
+            columns: ["chat_id"]
+            isOneToOne: false
+            referencedRelation: "chats"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "orders_copywriter_id_fkey"
             columns: ["copywriter_id"]
@@ -765,6 +882,8 @@ export type Database = {
       }
       is_active_user: { Args: never; Returns: boolean }
       is_admin: { Args: never; Returns: boolean }
+      is_chat_participant: { Args: { p_chat_id: string }; Returns: boolean }
+      mark_messages_read: { Args: { p_chat_id: string }; Returns: undefined }
       promote_commissions_candidates: {
         Args: { p_window_days: number }
         Returns: {
@@ -780,8 +899,12 @@ export type Database = {
         Args: { p_changes: Json }
         Returns: Json
       }
+      upsert_sales_chat: { Args: { p_user_id: string }; Returns: string }
+      upsert_support_chat: { Args: { p_user_id: string }; Returns: string }
     }
     Enums: {
+      chat_category: "Standard" | "Support" | "Sales"
+      chat_status: "Active" | "Archived"
       commission_status: "ACCRUED" | "PAYABLE" | "PAID" | "REVERSED"
       country:
         | "Ukraine"
@@ -938,6 +1061,8 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
+      chat_category: ["Standard", "Support", "Sales"],
+      chat_status: ["Active", "Archived"],
       commission_status: ["ACCRUED", "PAYABLE", "PAID", "REVERSED"],
       country: [
         "Ukraine",

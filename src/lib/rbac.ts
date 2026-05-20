@@ -46,6 +46,11 @@ export const PERMISSIONS = {
   'commissions:view_all':        ['Manager', 'Admin'] as UserRole[],
   'commissions:mark_paid':       ['Admin'] as UserRole[],
   'commissions:promote':         ['Admin'] as UserRole[],
+
+  // Chat capabilities
+  'chat:view':                   ['Client', 'Sourcer', 'Copywriter', 'Manager', 'Admin'] as UserRole[],
+  'chat:create':                 ['Client', 'Sourcer', 'Copywriter', 'Manager', 'Admin'] as UserRole[],
+  'chat:send_message':           ['Client', 'Sourcer', 'Copywriter', 'Manager', 'Admin'] as UserRole[],
 } as const
 
 export type Permission = keyof typeof PERMISSIONS
