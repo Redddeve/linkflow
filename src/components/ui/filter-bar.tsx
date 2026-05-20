@@ -3,6 +3,7 @@
 import { useRouter, useSearchParams, usePathname } from 'next/navigation';
 import { useRef, useState, useCallback } from 'react';
 import { SlidersHorizontal, X } from 'lucide-react';
+import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
@@ -155,10 +156,14 @@ export function FilterBar({ searchKey, searchPlaceholder = 'Search…', fields, 
           />
         )}
         <Button
-          variant={open ? 'default' : 'outline'}
+          variant="outline"
           size="sm"
-          className="gap-2"
+          className={cn(
+            'gap-2',
+            open && 'border-primary text-primary bg-primary-soft hover:bg-primary-soft-2',
+          )}
           onClick={() => setOpen((o) => !o)}
+          aria-pressed={open}
         >
           <SlidersHorizontal className="h-4 w-4" />
           Filters

@@ -2,7 +2,7 @@ import { createClient } from '@/lib/supabase/server';
 import type { Json } from '@/types/database.types';
 
 interface AuditParams {
-  entityType: 'site' | 'order' | 'user' | 'invoice' | 'commission';
+  entityType: 'site' | 'order' | 'user' | 'invoice' | 'commission' | 'chat';
   entityId: string;
   action: string;
   before?: Json;

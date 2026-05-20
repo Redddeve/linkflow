@@ -7,15 +7,15 @@ function startOfToday(): Date {
 }
 
 export const addCartItemSchema = z.object({
-  siteId: z.string().uuid(),
+  siteId: z.uuid(),
 });
 
 export const removeCartItemSchema = z.object({
-  cartItemId: z.string().uuid(),
+  cartItemId: z.uuid(),
 });
 
 export const updateCartItemSchema = z.object({
-  cartItemId: z.string().uuid(),
+  cartItemId: z.uuid(),
   publish_date: z.coerce
     .date()
     .refine((d) => d >= startOfToday(), 'Publish date must be today or later'),

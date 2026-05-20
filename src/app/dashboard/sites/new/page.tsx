@@ -1,18 +1,14 @@
 import { notFound } from 'next/navigation';
 import { requireRole } from '@/lib/auth';
-import { createClient } from '@/lib/supabase/server';
 import { SiteForm } from '@/components/sites/site-form';
+import { fetchCategories } from '@/lib/data/categories';
 
 export const metadata = { title: 'Add site' };
 
 export default async function NewSitePage() {
   const actor = await requireRole(['Sourcer', 'Manager', 'Admin']).catch(() => notFound());
 
-  const supabase = await createClient();
-  const { data: categories } = await supabase
-    .from('categories')
-    .select('id, name')
-    .order('name');
+  const categories = await fetchCategories();
 
   return (
     <div className="space-y-6">
@@ -22,7 +18,7 @@ export default async function NewSitePage() {
       </div>
       <SiteForm
         mode="create"
-        categories={categories ?? []}
+        categories={categories}
         actorRole={actor.role!}
       />
     </div>

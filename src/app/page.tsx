@@ -16,7 +16,7 @@ export default async function HomePage() {
       <div className="text-center">
         <div
           className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-xl font-mono text-xl font-bold text-white"
-          style={{ background: 'var(--accent)' }}
+          style={{ background: 'var(--primary)' }}
         >
           L
         </div>

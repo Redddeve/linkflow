@@ -18,7 +18,13 @@
       "Bash(npx shadcn@latest add command popover --yes)",
       "Bash(Get-ChildItem \"d:\\\\Projects\\\\linkflow\" -Name)",
       "Bash(npm test *)",
-      "Bash(npx shadcn@latest add calendar --yes)"
+      "Bash(npx shadcn@latest add calendar --yes)",
+      "Bash(Get-ChildItem -Path \"d:\\\\Projects\\\\linkflow\" -Name)",
+      "Bash(npx vitest *)",
+      "mcp__supabase__list_extensions",
+      "mcp__supabase__list_tables",
+      "Bash(npx eslint *)",
+      "Bash(Get-ChildItem -Path \"d:\\\\Projects\\\\linkflow\" -Directory)"
     ],
     "deny": [
       "Read(.env*)",

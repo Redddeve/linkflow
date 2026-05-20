@@ -40,6 +40,17 @@ export const PERMISSIONS = {
   // Audit log
   'audit_log:view_all':          ['Admin'] as UserRole[],
   'audit_log:view_assigned':     ['Manager'] as UserRole[],
+
+  // Commission capabilities
+  'commissions:view_own':        ['Sourcer'] as UserRole[],
+  'commissions:view_all':        ['Manager', 'Admin'] as UserRole[],
+  'commissions:mark_paid':       ['Admin'] as UserRole[],
+  'commissions:promote':         ['Admin'] as UserRole[],
+
+  // Chat capabilities
+  'chat:view':                   ['Client', 'Sourcer', 'Copywriter', 'Manager', 'Admin'] as UserRole[],
+  'chat:create':                 ['Client', 'Sourcer', 'Copywriter', 'Manager', 'Admin'] as UserRole[],
+  'chat:send_message':           ['Client', 'Sourcer', 'Copywriter', 'Manager', 'Admin'] as UserRole[],
 } as const
 
 export type Permission = keyof typeof PERMISSIONS

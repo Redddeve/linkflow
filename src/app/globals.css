@@ -5,27 +5,42 @@
 /* LinkFlow — design tokens & base styles */
 
 :root {
-  /* Primary brand — blue #4c66d3 */
-  --primary-h: 228;
-  --accent: #4c66d3;
-  --accent-soft: #e4eeff;
-  --accent-text: #2e4aab;
-  --accent-hover: #3d55c0;
+  color-scheme: light;
 
-  /* Surfaces — warm off-white */
-  --bg: #fdfcf9;
+  /* ─── Brand primary — indigo #4f46e5 ─────────────── */
+  /* Single source of truth for the primary color.
+     Tweak --primary to re-skin the entire app. */
+  --primary: #4f46e5;
+  --primary-hover: #4338ca;
+  --primary-active: #3730a3;
+  --primary-soft: #eef2ff;     /* tinted background for primary affordances */
+  --primary-soft-2: #e0e7ff;   /* slightly stronger tint (hover on soft) */
+  --primary-text: #3730a3;     /* on --primary-soft */
+  --primary-ring: color-mix(in srgb, var(--primary) 35%, transparent);
+
+  /* Shadcn-semantic --accent maps to the SOFT tint (used by hover/highlight
+     states in Select, DropdownMenu, Command, etc.). The strong brand color
+     is --primary; do not alias --accent to it or every highlighted menu
+     item ends up indigo-on-indigo. */
+  --accent: var(--primary-soft);
+  --accent-soft: var(--primary-soft);
+  --accent-text: var(--primary-text);
+  --accent-hover: var(--primary-hover);
+
+  /* ─── Surfaces — clean light theme ───────────────── */
+  --bg: #fafafa;
   --surface: #ffffff;
-  --surface-2: #f8f7f4;
-  --surface-3: #f1efe9;
+  --surface-2: #f5f5f7;
+  --surface-3: #ececef;
 
   /* Borders */
-  --border: #e8e6e0;
-  --border-strong: #d4d1c9;
+  --border: #e6e6ea;
+  --border-strong: #d1d1d6;
 
   /* Text */
-  --text: #1a1917;
-  --text-muted: #6b6860;
-  --text-faint: #9c9a95;
+  --text: #111114;
+  --text-muted: #5e5e66;
+  --text-faint: #9a9aa3;
 
   /* Status colours */
   --st-new-bg: #eff6ff;    --st-new-fg: #1d4ed8;
@@ -62,29 +77,28 @@
   --card-foreground: var(--text);
   --popover: var(--surface);
   --popover-foreground: var(--text);
-  --primary: var(--accent);
   --primary-foreground: #ffffff;
   --secondary: var(--surface-2);
   --secondary-foreground: var(--text);
   --muted: var(--surface-2);
   --muted-foreground: var(--text-muted);
-  --accent-foreground: var(--accent-text);
+  --accent-foreground: var(--primary-text);
   --destructive: var(--st-rejected-fg);
   --input: var(--border);
-  --ring: var(--accent);
-  --chart-1: var(--accent);
+  --ring: var(--primary);
+  --chart-1: var(--primary);
   --chart-2: var(--st-pub-fg);
   --chart-3: var(--st-write-fg);
   --chart-4: var(--st-new-fg);
   --chart-5: var(--st-review-fg);
   --sidebar: var(--surface-2);
   --sidebar-foreground: var(--text);
-  --sidebar-primary: var(--accent);
+  --sidebar-primary: var(--primary);
   --sidebar-primary-foreground: #ffffff;
-  --sidebar-accent: var(--accent-soft);
-  --sidebar-accent-foreground: var(--accent-text);
+  --sidebar-accent: var(--primary-soft);
+  --sidebar-accent-foreground: var(--primary-text);
   --sidebar-border: var(--border);
-  --sidebar-ring: var(--accent);
+  --sidebar-ring: var(--primary);
 }
 
 * { box-sizing: border-box; }
@@ -101,9 +115,15 @@ html, body {
   height: 100%;
 }
 
-button { font-family: inherit; cursor: pointer; border: none; background: none; color: inherit; }
-input, textarea, select { font-family: inherit; font-size: inherit; color: inherit; }
-a { color: inherit; text-decoration: none; }
+/* Inherit typography only — DON'T reset background/border, that breaks
+   Tailwind's bg-primary/border-* utilities on <button> elements.
+   Wrapped in @layer base so Tailwind utility classes (in @layer utilities)
+   can still override `color` on links styled as buttons. */
+@layer base {
+  button { font-family: inherit; }
+  input, textarea, select { font-family: inherit; font-size: inherit; color: inherit; }
+  a { color: inherit; text-decoration: none; }
+}
 
 /* ─── App shell ─────────────────────────────────── */
 .app {
@@ -142,14 +162,16 @@ a { color: inherit; text-decoration: none; }
 .brand-mark {
   width: 28px; height: 28px;
   border-radius: 8px;
-  background: var(--accent);
+  background: linear-gradient(135deg, var(--primary) 0%, var(--primary-active) 100%);
   display: grid;
   place-items: center;
   color: white;
   font-weight: 800;
   font-size: 13px;
   flex-shrink: 0;
-  box-shadow: 0 2px 8px color-mix(in srgb, var(--accent) 40%, transparent);
+  box-shadow:
+    0 1px 0 rgb(255 255 255 / 0.15) inset,
+    0 2px 8px color-mix(in srgb, var(--primary) 35%, transparent);
 }
 
 /* Nav section label */
@@ -183,9 +205,10 @@ a { color: inherit; text-decoration: none; }
   color: var(--text);
 }
 .nav-item.active {
-  background: var(--accent-soft);
-  color: var(--accent-text);
+  background: var(--primary-soft);
+  color: var(--primary-text);
   font-weight: 550;
+  box-shadow: inset 2px 0 0 var(--primary);
 }
 .nav-item .nav-icon {
   width: 16px; height: 16px;
@@ -285,8 +308,8 @@ a { color: inherit; text-decoration: none; }
   transition: border-color 0.15s, box-shadow 0.15s;
 }
 .search:focus-within {
-  border-color: var(--accent);
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 15%, transparent);
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary) 15%, transparent);
 }
 .search kbd {
   font-family: var(--font-mono);
@@ -322,7 +345,9 @@ a { color: inherit; text-decoration: none; }
 }
 
 /* ─── Page ───────────────────────────────────────── */
-.page { padding: 32px; max-width: 100%; }
+/* Padding now lives on the shell's <main>. .page is kept as an
+   identity hook for legacy markup but contributes no spacing. */
+.page { max-width: 100%; }
 .page-header {
   display: flex;
   align-items: flex-end;
@@ -359,16 +384,24 @@ a { color: inherit; text-decoration: none; }
   box-shadow: var(--shadow-sm);
 }
 .btn-primary {
-  background: var(--accent);
-  color: white;
-  border-color: var(--accent);
+  background: var(--primary);
+  color: var(--primary-foreground);
+  border-color: var(--primary);
   font-weight: 550;
-  box-shadow: 0 1px 4px color-mix(in srgb, var(--accent) 30%, transparent);
+  box-shadow:
+    0 1px 0 rgb(255 255 255 / 0.12) inset,
+    0 1px 3px color-mix(in srgb, var(--primary) 30%, transparent);
 }
 .btn-primary:hover {
-  background: var(--accent-hover);
-  border-color: var(--accent-hover);
-  box-shadow: 0 2px 8px color-mix(in srgb, var(--accent) 40%, transparent);
+  background: var(--primary-hover);
+  border-color: var(--primary-hover);
+  box-shadow:
+    0 1px 0 rgb(255 255 255 / 0.12) inset,
+    0 2px 8px color-mix(in srgb, var(--primary) 40%, transparent);
+}
+.btn-primary:active {
+  background: var(--primary-active);
+  border-color: var(--primary-active);
 }
 .btn-ghost { background: transparent; border-color: transparent; box-shadow: none; }
 .btn-ghost:hover { background: var(--surface-2); }
@@ -504,8 +537,8 @@ a { color: inherit; text-decoration: none; }
 }
 .input:hover, .select:hover { border-color: var(--border-strong); }
 .input:focus, .textarea:focus, .select:focus {
-  border-color: var(--accent);
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 15%, transparent);
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary) 15%, transparent);
 }
 .textarea { resize: vertical; height: auto; min-height: 80px; padding: 8px 12px; line-height: 1.5; }
 
@@ -528,7 +561,7 @@ a { color: inherit; text-decoration: none; }
 .step.active { background: var(--accent-soft); color: var(--accent-text); font-weight: 500; }
 .step.done { color: var(--st-live-fg); }
 .step-num { width: 18px; height: 18px; border-radius: 50%; display: grid; place-items: center; font-size: 10px; font-weight: 600; background: var(--surface-3); }
-.step.active .step-num { background: var(--accent); color: white; }
+.step.active .step-num { background: var(--primary); color: white; }
 .step.done .step-num { background: var(--st-live-fg); color: white; }
 .step-arrow { color: var(--text-faint); }
 
@@ -599,13 +632,13 @@ a { color: inherit; text-decoration: none; }
 /* ─── Checkbox row ───────────────────────────────── */
 .check-row { display: flex; align-items: center; gap: 10px; padding: 10px 14px; border: 1px solid var(--border); border-radius: var(--radius-sm); background: var(--surface); cursor: pointer; transition: border-color 0.12s, background 0.12s; }
 .check-row:hover { border-color: var(--border-strong); background: var(--surface-2); }
-.check-row.selected { border-color: var(--accent); background: var(--accent-soft); }
+.check-row.selected { border-color: var(--primary); background: var(--accent-soft); }
 .check-box { width: 16px; height: 16px; border-radius: 4px; border: 1.5px solid var(--border-strong); display: grid; place-items: center; flex-shrink: 0; background: var(--surface); font-size: 11px; font-weight: 700; }
 
 /* ─── Charts ─────────────────────────────────────── */
 .bar-chart { display: flex; align-items: flex-end; gap: 6px; height: 120px; }
 .bar { flex: 1; background: var(--accent-soft); border-radius: 4px 4px 0 0; position: relative; transition: background 0.15s; }
-.bar:hover { background: var(--accent); }
+.bar:hover { background: var(--primary); }
 .bar-x { display: flex; gap: 6px; padding-top: 6px; }
 .bar-x span { flex: 1; text-align: center; font-size: 10.5px; color: var(--text-faint); font-family: var(--font-mono); }
 
@@ -654,6 +687,11 @@ a { color: inherit; text-decoration: none; }
   --color-secondary: var(--secondary);
   --color-primary-foreground: var(--primary-foreground);
   --color-primary: var(--primary);
+  --color-primary-hover: var(--primary-hover);
+  --color-primary-active: var(--primary-active);
+  --color-primary-soft: var(--primary-soft);
+  --color-primary-soft-2: var(--primary-soft-2);
+  --color-primary-text: var(--primary-text);
   --color-popover-foreground: var(--popover-foreground);
   --color-popover: var(--popover);
   --color-card-foreground: var(--card-foreground);

@@ -26,16 +26,24 @@ const ACTION_RESULT_STATUS: Record<SiteStatusAction, SiteStatus> = {
 
 function mapForbidden(e: unknown): never {
   if (e instanceof Error && e.message.startsWith('FORBIDDEN')) {
-    throw new AppError('FORBIDDEN', 'You do not have permission to perform this action');
+    throw new AppError(
+      'FORBIDDEN',
+      'You do not have permission to perform this action',
+    );
   }
   throw e;
 }
 
-export async function createSite(input: CreateSiteInput): Promise<{ siteId: string }> {
-  const actor = await requireRole(['Sourcer', 'Manager', 'Admin']).catch(mapForbidden);
+export async function createSite(
+  input: CreateSiteInput,
+): Promise<{ siteId: string }> {
+  const actor = await requireRole(['Sourcer', 'Manager', 'Admin']).catch(
+    mapForbidden,
+  );
 
   const parsed = createSiteSchema.safeParse(input);
-  if (!parsed.success) throw new AppError('VALIDATION', parsed.error.issues[0].message);
+  if (!parsed.success)
+    throw new AppError('VALIDATION', parsed.error.issues[0].message);
 
   const supabase = await createClient();
 
@@ -45,7 +53,8 @@ export async function createSite(input: CreateSiteInput): Promise<{ siteId: stri
     .eq('domain', parsed.data.domain)
     .maybeSingle();
 
-  if (existing) throw new AppError('CONFLICT', 'A site with that domain already exists');
+  if (existing)
+    throw new AppError('CONFLICT', 'A site with that domain already exists');
 
   const { data: site, error } = await supabase
     .from('sites')
@@ -58,7 +67,8 @@ export async function createSite(input: CreateSiteInput): Promise<{ siteId: stri
     .select('id')
     .single();
 
-  if (error || !site) throw new Error(error?.message ?? 'Failed to create site');
+  if (error || !site)
+    throw new Error(error?.message ?? 'Failed to create site');
 
   await recordAudit({
     entityType: 'site',
@@ -70,11 +80,17 @@ export async function createSite(input: CreateSiteInput): Promise<{ siteId: stri
   return { siteId: site.id };
 }
 
-export async function editSite(id: string, patch: EditSiteInput): Promise<void> {
-  const actor = await requireRole(['Sourcer', 'Manager', 'Admin']).catch(mapForbidden);
+export async function editSite(
+  id: string,
+  patch: EditSiteInput,
+): Promise<void> {
+  const actor = await requireRole(['Sourcer', 'Manager', 'Admin']).catch(
+    mapForbidden,
+  );
 
   const parsed = editSiteSchema.safeParse(patch);
-  if (!parsed.success) throw new AppError('VALIDATION', parsed.error.issues[0].message);
+  if (!parsed.success)
+    throw new AppError('VALIDATION', parsed.error.issues[0].message);
 
   const supabase = await createClient();
 
@@ -87,7 +103,10 @@ export async function editSite(id: string, patch: EditSiteInput): Promise<void> 
   if (fetchError || !current) throw new AppError('NOT_FOUND', 'Site not found');
 
   if (actor.role === 'Sourcer' && current.sourcer_id !== actor.id) {
-    throw new AppError('FORBIDDEN', 'You do not have permission to edit this site');
+    throw new AppError(
+      'FORBIDDEN',
+      'You do not have permission to edit this site',
+    );
   }
 
   if (parsed.data.domain && parsed.data.domain !== current.domain) {
@@ -98,13 +117,19 @@ export async function editSite(id: string, patch: EditSiteInput): Promise<void> 
       .neq('id', id)
       .maybeSingle();
 
-    if (domainConflict) throw new AppError('CONFLICT', 'A site with that domain already exists');
+    if (domainConflict)
+      throw new AppError('CONFLICT', 'A site with that domain already exists');
   }
 
   const isOwner = actor.role === 'Sourcer' && current.sourcer_id === actor.id;
-  const updatePayload = isOwner ? { ...parsed.data, status: 'Pending' as SiteStatus } : parsed.data;
+  const updatePayload = isOwner
+    ? { ...parsed.data, status: 'Pending' as SiteStatus }
+    : parsed.data;
 
-  const { error: updateError } = await supabase.from('sites').update(updatePayload).eq('id', id);
+  const { error: updateError } = await supabase
+    .from('sites')
+    .update(updatePayload)
+    .eq('id', id);
   if (updateError) throw new Error(updateError.message);
 
   await recordAudit({
@@ -124,7 +149,8 @@ export async function setSiteStatus(
   const actor = await requireRole(['Admin']).catch(mapForbidden);
 
   const parsed = setSiteStatusSchema.safeParse({ action, change_note });
-  if (!parsed.success) throw new AppError('VALIDATION', parsed.error.issues[0].message);
+  if (!parsed.success)
+    throw new AppError('VALIDATION', parsed.error.issues[0].message);
 
   const supabase = await createClient();
 
@@ -137,11 +163,16 @@ export async function setSiteStatus(
   if (fetchError || !site) throw new AppError('NOT_FOUND', 'Site not found');
 
   if (!VALID_TRANSITIONS[action].includes(site.status)) {
-    throw new AppError('CONFLICT', `Cannot ${action} a site with status "${site.status}"`);
+    throw new AppError(
+      'CONFLICT',
+      `Cannot ${action} a site with status "${site.status}"`,
+    );
   }
 
   const now = new Date().toISOString();
-  const updatePayload: TablesUpdate<'sites'> = { status: ACTION_RESULT_STATUS[action] };
+  const updatePayload: TablesUpdate<'sites'> = {
+    status: ACTION_RESULT_STATUS[action],
+  };
 
   if (action === 'APPROVE') {
     updatePayload.approved_by_id = actor.id;
@@ -151,7 +182,10 @@ export async function setSiteStatus(
     updatePayload.needs_changes_at = now;
   }
 
-  const { error: updateError } = await supabase.from('sites').update(updatePayload).eq('id', id);
+  const { error: updateError } = await supabase
+    .from('sites')
+    .update(updatePayload)
+    .eq('id', id);
   if (updateError) throw new Error(updateError.message);
 
   await recordAudit({
@@ -159,19 +193,28 @@ export async function setSiteStatus(
     entityId: id,
     action: `site.${action.toLowerCase()}`,
     before: { status: site.status },
-    after: { status: ACTION_RESULT_STATUS[action], change_note: change_note ?? null },
+    after: {
+      status: ACTION_RESULT_STATUS[action],
+      change_note: change_note ?? null,
+    },
   });
 
   if (site.sourcer_id) {
     await notify({
       recipientId: site.sourcer_id,
       type: `site.${action.toLowerCase()}`,
-      payload: { site_id: id, domain: site.domain, change_note: change_note ?? null },
+      payload: {
+        site_id: id,
+        domain: site.domain,
+        change_note: change_note ?? null,
+      },
     });
   }
 }
 
-export async function listCategories(): Promise<{ id: string; name: string }[]> {
+export async function listCategories(): Promise<
+  { id: string; name: string }[]
+> {
   const supabase = await createClient();
   const { data } = await supabase
     .from('categories')

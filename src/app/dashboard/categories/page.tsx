@@ -3,9 +3,10 @@ import { requireRole } from '@/lib/auth';
 import {
   fetchCategories,
   fetchCategorySiteCountMap,
-} from '@/lib/queries/categories';
+} from '@/lib/data/categories';
 import { CreateCategoryForm } from '@/components/categories/create-form';
 import { CategoriesTable } from '@/components/categories/categories-table';
+import { PageHeader } from '@/components/ui/page-header';
 
 export const metadata = { title: 'Categories' };
 
@@ -23,17 +24,12 @@ export default async function CategoriesPage() {
   const siteCountMap = siteCountMapResult.status === 'fulfilled' ? siteCountMapResult.value : {};
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-semibold">Categories</h1>
-          <p className="text-sm text-muted-foreground">
-            Manage site categories
-          </p>
-        </div>
+    <div>
+      <PageHeader title="Categories" description="Manage site categories" />
+      <div className="space-y-4">
+        <CreateCategoryForm />
+        <CategoriesTable categories={categories} siteCountMap={siteCountMap} />
       </div>
-      <CreateCategoryForm />
-      <CategoriesTable categories={categories} siteCountMap={siteCountMap} />
     </div>
   );
 }
