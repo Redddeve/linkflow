@@ -28,9 +28,18 @@ function initials(user: UserInfo) {
   return `${user.first_name[0] ?? ''}${user.last_name[0] ?? ''}`.toUpperCase();
 }
 
-export function MessageThread({ messages, userMap, actorId, participants }: Props) {
+export function MessageThread({
+  messages,
+  userMap,
+  actorId,
+  participants,
+}: Props) {
   if (!messages.length) {
-    return <p className="text-center text-sm text-muted-foreground py-8">No messages yet. Say hello!</p>;
+    return (
+      <p className="text-center text-sm text-muted-foreground py-8">
+        No messages yet. Say hello!
+      </p>
+    );
   }
 
   return (
@@ -47,7 +56,10 @@ export function MessageThread({ messages, userMap, actorId, participants }: Prop
           .map((p) => `${p.first_name} ${p.last_name}`);
 
         return (
-          <div key={msg.id} className={`flex gap-3 ${isOwn ? 'flex-row-reverse' : 'flex-row'}`}>
+          <div
+            key={msg.id}
+            className={`flex gap-3 ${isOwn ? 'flex-row-reverse' : 'flex-row'}`}
+          >
             {!isOwn && (
               <Avatar className="h-8 w-8 shrink-0 mt-1">
                 <AvatarFallback className="bg-primary-soft text-primary-text text-xs">
@@ -55,12 +67,16 @@ export function MessageThread({ messages, userMap, actorId, participants }: Prop
                 </AvatarFallback>
               </Avatar>
             )}
-            <div className={`max-w-[70%] space-y-1 ${isOwn ? 'items-end' : 'items-start'} flex flex-col`}>
+            <div
+              className={`max-w-[70%] space-y-1 ${isOwn ? 'items-end' : 'items-start'} flex flex-col`}
+            >
               {!isOwn && (
-                <span className="text-xs font-medium text-muted-foreground">{authorName}</span>
+                <span className="text-xs font-medium text-muted-foreground">
+                  {authorName}
+                </span>
               )}
               <div
-                className={`rounded-lg px-3 py-2 text-sm break-words ${
+                className={`rounded-lg px-3 py-2 text-sm wrap-break-word ${
                   isOwn
                     ? 'bg-primary text-primary-foreground'
                     : 'bg-muted text-foreground'
@@ -68,7 +84,9 @@ export function MessageThread({ messages, userMap, actorId, participants }: Prop
               >
                 {msg.content}
               </div>
-              <span className="text-[11px] text-muted-foreground">{relativeTime(msg.created_at)}</span>
+              <span className="text-[11px] text-muted-foreground">
+                {relativeTime(msg.created_at)}
+              </span>
               {isOwn && readByNames.length > 0 && (
                 <span className="text-[11px] text-muted-foreground">
                   Read by {readByNames.join(', ')}
