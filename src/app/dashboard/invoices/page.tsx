@@ -1,10 +1,11 @@
 import { notFound } from 'next/navigation';
 import { requireUser } from '@/lib/auth';
-import { createClient } from '@/lib/supabase/server';
 import { InvoiceFilters } from './components/invoice-filters';
 import { InvoicesTable } from './components/invoices-table';
 import { GenerateInvoicesDialog } from './components/generate-invoices-dialog';
 import { PageHeader } from '@/components/ui/page-header';
+import { fetchInvoicesList } from '@/lib/data/invoices';
+import { fetchUsersByIds, fetchActiveByRole } from '@/lib/data/users';
 import type { Database } from '@/types/database.types';
 
 interface PageProps {
@@ -29,34 +30,20 @@ export default async function InvoicesPage({ searchParams }: PageProps) {
   const clientFilter = params.client;
   const searchFilter = params.search?.toLowerCase();
 
-  const supabase = await createClient();
-
   const isManagerOrAdmin = actor.role === 'Manager' || actor.role === 'Admin';
   const isClient = actor.role === 'Client';
 
   if (!isManagerOrAdmin && !isClient) notFound();
 
-  let query = supabase
-    .from('invoices')
-    .select('id, client_id, billing_month, status, total_price_cents, created_at')
-    .order('billing_month', { ascending: false })
-    .order('created_at', { ascending: false });
-
-  if (isClient) {
-    query = query.eq('client_id', actor.id);
-  }
-  if (statusFilter) query = query.eq('status', statusFilter);
-  if (clientFilter && isManagerOrAdmin) query = query.eq('client_id', clientFilter);
-
-  const { data: invoicesRaw } = await query;
-  const rawList = invoicesRaw ?? [];
+  const rawList = await fetchInvoicesList({
+    clientId: isClient ? actor.id : clientFilter && isManagerOrAdmin ? clientFilter : undefined,
+    status: statusFilter,
+  });
 
   // Resolve client names separately (avoid multi-FK Supabase join typing issue)
   const clientIds = [...new Set(rawList.map((i) => i.client_id))];
-  const { data: clientsData } = clientIds.length
-    ? await supabase.from('users').select('id, first_name, last_name').in('id', clientIds)
-    : { data: [] };
-  const clientMap = Object.fromEntries((clientsData ?? []).map((u) => [u.id, u]));
+  const clientsData = await fetchUsersByIds(clientIds);
+  const clientMap = Object.fromEntries(clientsData.map((u) => [u.id, u]));
 
   let invoices = rawList.map((i) => ({
     id: i.id,
@@ -76,16 +63,7 @@ export default async function InvoicesPage({ searchParams }: PageProps) {
   }
 
   // Clients list for filter (manager/admin only)
-  let clients: { id: string; first_name: string; last_name: string }[] = [];
-  if (isManagerOrAdmin) {
-    const { data } = await supabase
-      .from('users')
-      .select('id, first_name, last_name')
-      .eq('role', 'Client')
-      .eq('status', 'ACTIVE')
-      .order('first_name');
-    clients = data ?? [];
-  }
+  const clients = isManagerOrAdmin ? await fetchActiveByRole('Client') : [];
 
   return (
     <div>

@@ -1,10 +1,15 @@
 import { notFound } from 'next/navigation';
 import { requireUser } from '@/lib/auth';
-import { createClient } from '@/lib/supabase/server';
 import { CommissionFilters } from './components/commission-filters';
 import { CommissionsTable } from './components/commissions-table';
 import { RunPromotionButton } from './components/run-promotion-button';
 import { PageHeader } from '@/components/ui/page-header';
+import {
+  fetchCommissionsList,
+  fetchCommissionTotals,
+} from '@/lib/data/commissions';
+import { fetchUsersByIds } from '@/lib/data/users';
+import { fetchSiteDomainsByIds } from '@/lib/data/sites';
 import type { Database } from '@/types/database.types';
 
 interface PageProps {
@@ -29,41 +34,26 @@ export default async function CommissionsPage({ searchParams }: PageProps) {
   const params = await searchParams;
   const statusFilter = isStatus(params.status) ? params.status : undefined;
 
-  const supabase = await createClient();
   const isAdmin = actor.role === 'Admin';
   const isSourcer = actor.role === 'Sourcer';
 
-  let query = supabase
-    .from('commissions')
-    .select('id, order_id, site_id, sourcer_id, amount_cents, status, accrued_at, paid_at, payout_reference, retry_count')
-    .order('accrued_at', { ascending: false });
-
-  if (isSourcer) {
-    query = query.eq('sourcer_id', actor.id);
-  }
-  if (statusFilter) {
-    query = query.eq('status', statusFilter);
-  }
-
-  const { data: rowsRaw } = await query;
-  const rows = rowsRaw ?? [];
+  const rows = await fetchCommissionsList({
+    sourcerId: isSourcer ? actor.id : undefined,
+    status: statusFilter,
+  });
 
   // Resolve site domain and sourcer name in separate lookups.
   const siteIds = [...new Set(rows.map((r) => r.site_id))];
   const sourcerIds = [...new Set(rows.map((r) => r.sourcer_id))];
 
-  const [{ data: sitesData }, { data: sourcersData }] = await Promise.all([
-    siteIds.length
-      ? supabase.from('sites').select('id, domain').in('id', siteIds)
-      : Promise.resolve({ data: [] as { id: string; domain: string }[] }),
-    sourcerIds.length && !isSourcer
-      ? supabase.from('users').select('id, first_name, last_name').in('id', sourcerIds)
-      : Promise.resolve({ data: [] as { id: string; first_name: string; last_name: string }[] }),
+  const [sitesData, sourcersData] = await Promise.all([
+    fetchSiteDomainsByIds(siteIds),
+    isSourcer ? Promise.resolve([]) : fetchUsersByIds(sourcerIds),
   ]);
 
-  const siteMap = Object.fromEntries((sitesData ?? []).map((s) => [s.id, s.domain]));
+  const siteMap = Object.fromEntries(sitesData.map((s) => [s.id, s.domain]));
   const sourcerMap = Object.fromEntries(
-    (sourcersData ?? []).map((u) => [u.id, `${u.first_name} ${u.last_name}`.trim()]),
+    sourcersData.map((u) => [u.id, `${u.first_name} ${u.last_name}`.trim()]),
   );
 
   const commissions = rows.map((r) => ({
@@ -81,10 +71,8 @@ export default async function CommissionsPage({ searchParams }: PageProps) {
   }));
 
   // Totals: across whole dataset (not paginated), respecting role scope.
-  let totalsQuery = supabase.from('commissions').select('status, amount_cents');
-  if (isSourcer) totalsQuery = totalsQuery.eq('sourcer_id', actor.id);
-  const { data: totalsData } = await totalsQuery;
-  const totals = (totalsData ?? []).reduce(
+  const totalsData = await fetchCommissionTotals(isSourcer ? actor.id : undefined);
+  const totals = totalsData.reduce(
     (acc, row) => {
       acc[row.status] = (acc[row.status] ?? 0) + row.amount_cents;
       return acc;

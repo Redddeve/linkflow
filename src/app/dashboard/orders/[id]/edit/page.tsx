@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { requireRole } from '@/lib/auth';
-import { createClient } from '@/lib/supabase/server';
+import { fetchOrderForEdit } from '@/lib/data/orders';
 import { buttonVariants } from '@/components/ui/button';
 import { OrderStatusBadge } from '../../components/order-status-badge';
 import { ContentEditorForm } from '../../components/content-editor-form';
@@ -14,12 +14,7 @@ export default async function ContentEditorPage({ params }: PageProps) {
   const { id } = await params;
   const actor = await requireRole(['Copywriter']).catch(() => notFound());
 
-  const supabase = await createClient();
-  const { data: order, error } = await supabase
-    .from('orders')
-    .select('id, site_domain, status, copywriter_id, content_body, site_requirements, site_description, publish_date')
-    .eq('id', id)
-    .single();
+  const { data: order, error } = await fetchOrderForEdit(id);
 
   if (error || !order) notFound();
 

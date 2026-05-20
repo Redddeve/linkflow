@@ -1,0 +1,82 @@
+import { createClient } from '@/lib/supabase/server';
+import type { Database } from '@/types/database.types';
+
+type SiteStatus = Database['public']['Enums']['site_status'];
+
+export interface SitesListFilters {
+  sourcerId?: string;
+  status?: SiteStatus;
+  categoryId?: string;
+  priceMinCents?: number;
+  priceMaxCents?: number;
+}
+
+export type SitesListRow = {
+  id: string;
+  domain: string;
+  status: SiteStatus;
+  price_cents: number;
+  link_type: Database['public']['Enums']['link_type'];
+  category_id: string | null;
+  created_at: string;
+  categories: { name: string } | null;
+};
+
+export async function fetchSitesList(filters: SitesListFilters): Promise<SitesListRow[]> {
+  const supabase = await createClient();
+  let query = supabase
+    .from('sites')
+    .select(
+      'id, domain, status, price_cents, link_type, category_id, created_at, categories(name)',
+    )
+    .order('created_at', { ascending: false });
+
+  if (filters.sourcerId) query = query.eq('sourcer_id', filters.sourcerId);
+  if (filters.status) query = query.eq('status', filters.status);
+  if (filters.categoryId) query = query.eq('category_id', filters.categoryId);
+  if (filters.priceMinCents !== undefined) query = query.gte('price_cents', filters.priceMinCents);
+  if (filters.priceMaxCents !== undefined) query = query.lte('price_cents', filters.priceMaxCents);
+
+  const { data } = await query;
+  return (data ?? []) as SitesListRow[];
+}
+
+export async function fetchSiteById(id: string) {
+  const supabase = await createClient();
+  return supabase
+    .from('sites')
+    .select('*, categories(name)')
+    .eq('id', id)
+    .single();
+}
+
+export async function countSitesByStatusForSourcer(
+  sourcerId: string,
+  status: SiteStatus,
+): Promise<number> {
+  const supabase = await createClient();
+  const { count } = await supabase
+    .from('sites')
+    .select('*', { count: 'exact', head: true })
+    .eq('sourcer_id', sourcerId)
+    .eq('status', status);
+  return count ?? 0;
+}
+
+export async function fetchSiteDomainsByIds(
+  ids: string[],
+): Promise<{ id: string; domain: string }[]> {
+  if (!ids.length) return [];
+  const supabase = await createClient();
+  const { data } = await supabase.from('sites').select('id, domain').in('id', ids);
+  return data ?? [];
+}
+
+export async function countSitesByStatus(status: SiteStatus): Promise<number> {
+  const supabase = await createClient();
+  const { count } = await supabase
+    .from('sites')
+    .select('*', { count: 'exact', head: true })
+    .eq('status', status);
+  return count ?? 0;
+}

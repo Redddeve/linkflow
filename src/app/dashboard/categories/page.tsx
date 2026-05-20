@@ -3,7 +3,7 @@ import { requireRole } from '@/lib/auth';
 import {
   fetchCategories,
   fetchCategorySiteCountMap,
-} from '@/lib/queries/categories';
+} from '@/lib/data/categories';
 import { CreateCategoryForm } from '@/components/categories/create-form';
 import { CategoriesTable } from '@/components/categories/categories-table';
 import { PageHeader } from '@/components/ui/page-header';

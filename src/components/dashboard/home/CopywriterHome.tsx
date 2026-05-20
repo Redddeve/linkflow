@@ -1,11 +1,15 @@
 import Link from 'next/link';
-import { createClient } from '@/lib/supabase/server';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { StatCard } from './stat-card';
 import { DashboardHeader, SectionHeading } from './dashboard-header';
 import type { UserRow } from '@/lib/auth';
 import type { Database } from '@/types/database.types';
+import {
+  countCopywriterOrders,
+  countCopywriterOrdersByStatus,
+  fetchCopywriterUpcoming,
+} from '@/lib/data/orders';
 
 type OrderStatus = Database['public']['Enums']['order_status'];
 
@@ -13,34 +17,12 @@ const COPYWRITER_ACTIVE: OrderStatus[] = ['New', 'In Progress', 'Needs changes',
 const COPYWRITER_UPCOMING: OrderStatus[] = ['In Progress', 'Needs changes'];
 
 export async function CopywriterHome({ user }: { user: UserRow }) {
-  const supabase = await createClient();
-
-  const [activeRes, inProgressRes, needsChangesRes, upcomingRes] = await Promise.all([
-    supabase
-      .from('orders')
-      .select('*', { count: 'exact', head: true })
-      .eq('copywriter_id', user.id)
-      .in('status', COPYWRITER_ACTIVE),
-    supabase
-      .from('orders')
-      .select('*', { count: 'exact', head: true })
-      .eq('copywriter_id', user.id)
-      .eq('status', 'In Progress'),
-    supabase
-      .from('orders')
-      .select('*', { count: 'exact', head: true })
-      .eq('copywriter_id', user.id)
-      .eq('status', 'Needs changes'),
-    supabase
-      .from('orders')
-      .select('id, site_domain, status, publish_date')
-      .eq('copywriter_id', user.id)
-      .in('status', COPYWRITER_UPCOMING)
-      .order('publish_date', { ascending: true, nullsFirst: false })
-      .limit(5),
+  const [active, inProgress, needsChanges, upcoming] = await Promise.all([
+    countCopywriterOrders(user.id, COPYWRITER_ACTIVE),
+    countCopywriterOrdersByStatus(user.id, 'In Progress'),
+    countCopywriterOrdersByStatus(user.id, 'Needs changes'),
+    fetchCopywriterUpcoming(user.id, COPYWRITER_UPCOMING, 5),
   ]);
-
-  const upcoming = upcomingRes.data ?? [];
 
   return (
     <div className="space-y-6">
@@ -49,17 +31,17 @@ export async function CopywriterHome({ user }: { user: UserRow }) {
       <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
         <StatCard
           label="Assigned (active)"
-          value={activeRes.count ?? 0}
+          value={active}
           href="/dashboard/orders"
         />
         <StatCard
           label="In Progress"
-          value={inProgressRes.count ?? 0}
+          value={inProgress}
           href="/dashboard/orders?status=In+Progress"
         />
         <StatCard
           label="Needs changes"
-          value={needsChangesRes.count ?? 0}
+          value={needsChanges}
           href="/dashboard/orders?status=Needs+changes"
           tone="warn"
         />

@@ -79,15 +79,19 @@ export default function LoginForm() {
           'radial-gradient(1200px 500px at 50% -10%, color-mix(in srgb, var(--primary) 10%, transparent), transparent 60%), var(--bg)',
       }}
     >
-      <div className="w-full max-w-sm">
+      <div className="w-full max-w-md">
         <div className="flex flex-col gap-6">
           <Card className="shadow-sm">
             <CardHeader>
               <div className="mb-1 flex items-center gap-3">
                 <div className="brand-mark">L</div>
-                <CardTitle className="text-xl tracking-tight">LinkFlow</CardTitle>
+                <CardTitle className="text-xl tracking-tight">
+                  LinkFlow
+                </CardTitle>
               </div>
-              <CardDescription>Sign in to your account to continue</CardDescription>
+              <CardDescription>
+                Sign in to your account to continue
+              </CardDescription>
             </CardHeader>
             <CardContent className="flex flex-col gap-5">
               {/* Role quick-select */}

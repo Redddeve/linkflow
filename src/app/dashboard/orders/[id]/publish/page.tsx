@@ -1,7 +1,7 @@
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import { requireRole } from '@/lib/auth';
-import { createClient } from '@/lib/supabase/server';
+import { fetchOrderForPublish } from '@/lib/data/orders';
 import { buttonVariants } from '@/components/ui/button';
 import { PublishOrderForm } from '../../components/publish-order-form';
 
@@ -13,12 +13,7 @@ export default async function PublishOrderPage({ params }: PageProps) {
   const { id } = await params;
   await requireRole(['Manager', 'Admin']).catch(() => notFound());
 
-  const supabase = await createClient();
-  const { data: order, error } = await supabase
-    .from('orders')
-    .select('id, site_domain, status, publish_date')
-    .eq('id', id)
-    .single();
+  const { data: order, error } = await fetchOrderForPublish(id);
 
   if (error || !order) notFound();
   if (order.status !== 'Content Approved') notFound();

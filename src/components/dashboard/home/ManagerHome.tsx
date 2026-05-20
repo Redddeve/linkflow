@@ -1,11 +1,15 @@
 import Link from 'next/link';
-import { createClient } from '@/lib/supabase/server';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { StatCard } from './stat-card';
 import { DashboardHeader, SectionHeading } from './dashboard-header';
 import type { UserRow } from '@/lib/auth';
 import type { Database } from '@/types/database.types';
+import {
+  countUnassignedOrders,
+  countOrdersByStatus,
+  fetchManagerRecentActive,
+} from '@/lib/data/orders';
 
 type OrderStatus = Database['public']['Enums']['order_status'];
 
@@ -18,36 +22,13 @@ const ACTIVE_NOT_DONE: OrderStatus[] = [
 ];
 
 export async function ManagerHome({ user }: { user: UserRow }) {
-  const supabase = await createClient();
-
-  const [unassignedRes, inProgressRes, needsChangesRes, awaitingPubRes, recentRes] =
-    await Promise.all([
-      supabase
-        .from('orders')
-        .select('*', { count: 'exact', head: true })
-        .is('copywriter_id', null)
-        .in('status', ACTIVE_NOT_DONE),
-      supabase
-        .from('orders')
-        .select('*', { count: 'exact', head: true })
-        .eq('status', 'In Progress'),
-      supabase
-        .from('orders')
-        .select('*', { count: 'exact', head: true })
-        .eq('status', 'Needs changes'),
-      supabase
-        .from('orders')
-        .select('*', { count: 'exact', head: true })
-        .eq('status', 'Content Approved'),
-      supabase
-        .from('orders')
-        .select('id, site_domain, status, copywriter_id, publish_date')
-        .in('status', ACTIVE_NOT_DONE)
-        .order('created_at', { ascending: false })
-        .limit(5),
-    ]);
-
-  const recent = recentRes.data ?? [];
+  const [unassigned, inProgress, needsChanges, awaitingPub, recent] = await Promise.all([
+    countUnassignedOrders(ACTIVE_NOT_DONE),
+    countOrdersByStatus('In Progress'),
+    countOrdersByStatus('Needs changes'),
+    countOrdersByStatus('Content Approved'),
+    fetchManagerRecentActive(ACTIVE_NOT_DONE, 5),
+  ]);
 
   return (
     <div className="space-y-6">
@@ -56,24 +37,24 @@ export async function ManagerHome({ user }: { user: UserRow }) {
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         <StatCard
           label="Unassigned"
-          value={unassignedRes.count ?? 0}
+          value={unassigned}
           href="/dashboard/orders?assignee=unassigned"
           tone="warn"
         />
         <StatCard
           label="In Progress"
-          value={inProgressRes.count ?? 0}
+          value={inProgress}
           href="/dashboard/orders?status=In+Progress"
         />
         <StatCard
           label="Needs changes"
-          value={needsChangesRes.count ?? 0}
+          value={needsChanges}
           href="/dashboard/orders?status=Needs+changes"
           tone="warn"
         />
         <StatCard
           label="Awaiting publication"
-          value={awaitingPubRes.count ?? 0}
+          value={awaitingPub}
           href="/dashboard/orders?status=Content+Approved"
           tone="success"
         />

@@ -1,9 +1,10 @@
 import { notFound } from 'next/navigation';
 import { Badge } from '@/components/ui/badge';
 import { requireRole } from '@/lib/auth';
-import { createClient } from '@/lib/supabase/server';
 import { StatusActions } from '@/components/sites/status-actions';
 import { EditSiteDialog } from '@/components/sites/edit-dialog';
+import { fetchSiteById } from '@/lib/data/sites';
+import { fetchCategories } from '@/lib/data/categories';
 import type { Database } from '@/types/database.types';
 
 interface PageProps {
@@ -24,12 +25,7 @@ export default async function SiteDetailPage({ params }: PageProps) {
 
   const actor = await requireRole(['Sourcer', 'Manager', 'Admin']).catch(() => notFound());
 
-  const supabase = await createClient();
-  const { data: site, error } = await supabase
-    .from('sites')
-    .select('*, categories(name)')
-    .eq('id', id)
-    .single();
+  const { data: site, error } = await fetchSiteById(id);
 
   if (error || !site) notFound();
 
@@ -40,9 +36,7 @@ export default async function SiteDetailPage({ params }: PageProps) {
     actor.role === 'Manager' ||
     actor.role === 'Admin';
 
-  const { data: categories } = canEdit
-    ? await supabase.from('categories').select('id, name').order('name')
-    : { data: [] };
+  const categories = canEdit ? await fetchCategories() : [];
 
   const isAdmin = actor.role === 'Admin';
   const showSourcerFields = actor.role === 'Admin' || actor.role === 'Manager';
@@ -66,7 +60,7 @@ export default async function SiteDetailPage({ params }: PageProps) {
             <EditSiteDialog
               siteId={id}
               actorRole={actor.role!}
-              categories={categories ?? []}
+              categories={categories}
               defaultValues={{
                 domain: site.domain,
                 category_id: site.category_id,

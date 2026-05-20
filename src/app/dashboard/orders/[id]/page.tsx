@@ -1,7 +1,8 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { requireUser } from '@/lib/auth';
-import { createClient } from '@/lib/supabase/server';
+import { fetchOrderById, fetchOrderComments } from '@/lib/data/orders';
+import { fetchUsersByIds } from '@/lib/data/users';
 import { buttonVariants } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { OrderStatusBadge } from '../components/order-status-badge';
@@ -23,12 +24,7 @@ export default async function OrderDetailPage({ params }: PageProps) {
   const actor = await requireUser();
   if (!actor.role) notFound();
 
-  const supabase = await createClient();
-  const { data: order, error } = await supabase
-    .from('orders')
-    .select('*')
-    .eq('id', id)
-    .single();
+  const { data: order, error } = await fetchOrderById(id);
 
   if (error || !order) notFound();
 
@@ -41,14 +37,10 @@ export default async function OrderDetailPage({ params }: PageProps) {
   const isCopywriter = actor.role === 'Copywriter';
 
   // Fetch comments
-  const { data: comments } = await supabase
-    .from('comments')
-    .select('id, text, created_at, created_by_id')
-    .eq('order_id', id)
-    .order('created_at');
+  const comments = await fetchOrderComments(id);
 
   // Collect all user IDs needed (order actors + comment authors)
-  const commentAuthorIds = (comments ?? []).map((c) => c.created_by_id);
+  const commentAuthorIds = comments.map((c) => c.created_by_id);
   const userIds = [
     order.copywriter_id,
     order.manager_id,
@@ -57,11 +49,9 @@ export default async function OrderDetailPage({ params }: PageProps) {
   ].filter(Boolean) as string[];
 
   const uniqueIds = [...new Set(userIds)];
-  const { data: relatedUsers } = uniqueIds.length
-    ? await supabase.from('users').select('id, first_name, last_name').in('id', uniqueIds)
-    : { data: [] };
+  const relatedUsers = await fetchUsersByIds(uniqueIds);
 
-  const userMap = Object.fromEntries((relatedUsers ?? []).map((u) => [u.id, u]));
+  const userMap = Object.fromEntries(relatedUsers.map((u) => [u.id, u]));
   const copywriter = order.copywriter_id ? (userMap[order.copywriter_id] ?? null) : null;
   const manager = order.manager_id ? (userMap[order.manager_id] ?? null) : null;
   const client = userMap[order.created_by_id] ?? null;
@@ -245,7 +235,7 @@ export default async function OrderDetailPage({ params }: PageProps) {
 
       <div className="space-y-4">
         <h2 className="text-sm font-semibold">Comments</h2>
-        <CommentsTimeline comments={comments ?? []} userMap={userMap} />
+        <CommentsTimeline comments={comments} userMap={userMap} />
         {canComment && <AddCommentForm orderId={id} />}
       </div>
     </div>

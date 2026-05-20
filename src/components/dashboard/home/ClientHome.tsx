@@ -1,5 +1,4 @@
 import Link from 'next/link';
-import { createClient } from '@/lib/supabase/server';
 import { Card, CardContent } from '@/components/ui/card';
 import { buttonVariants } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
@@ -7,6 +6,15 @@ import { countByStatus } from '@/lib/dashboard/counts';
 import { StatCard } from './stat-card';
 import { DashboardHeader } from './dashboard-header';
 import type { UserRow } from '@/lib/auth';
+import { fetchClientActiveOrders } from '@/lib/data/orders';
+import {
+  fetchClientCart,
+  fetchCartItemsWithPrice,
+} from '@/lib/data/cart';
+import {
+  fetchLatestInvoiceForClient,
+  sumClientInvoicesByStatus,
+} from '@/lib/data/invoices';
 
 const CLIENT_ACTIVE_STATUSES = ['New', 'In Progress', 'Needs changes', 'Content Sent'] as const;
 type ClientActiveStatus = (typeof CLIENT_ACTIVE_STATUSES)[number];
@@ -21,50 +29,25 @@ function formatBillingMonth(value: string) {
 }
 
 export async function ClientHome({ user }: { user: UserRow }) {
-  const supabase = await createClient();
-
-  const [ordersRes, cartRes, latestInvoiceRes, outstandingRes] = await Promise.all([
-    supabase
-      .from('orders')
-      .select('status')
-      .eq('created_by_id', user.id)
-      .not('status', 'in', '("Completed","Canceled")'),
-    supabase.from('carts').select('id').eq('created_by_id', user.id).maybeSingle(),
-    supabase
-      .from('invoices')
-      .select('id, billing_month, total_price_cents, status')
-      .eq('client_id', user.id)
-      .order('billing_month', { ascending: false })
-      .limit(1)
-      .maybeSingle(),
-    supabase
-      .from('invoices')
-      .select('total_price_cents')
-      .eq('client_id', user.id)
-      .eq('status', 'Sent'),
+  const [orders, cart, latestInvoice, outstandingCents] = await Promise.all([
+    fetchClientActiveOrders(user.id),
+    fetchClientCart(user.id),
+    fetchLatestInvoiceForClient(user.id),
+    sumClientInvoicesByStatus(user.id, 'Sent'),
   ]);
 
   let cartCount = 0;
   let cartTotalCents = 0;
-  if (cartRes.data) {
-    const { data: items } = await supabase
-      .from('cart_items')
-      .select('id, sites!inner(price_cents)')
-      .eq('cart_id', cartRes.data.id);
-    const list = (items ?? []) as { id: string; sites: { price_cents: number } }[];
-    cartCount = list.length;
-    cartTotalCents = list.reduce((sum, i) => sum + (i.sites?.price_cents ?? 0), 0);
+  if (cart) {
+    const items = await fetchCartItemsWithPrice(cart.id);
+    cartCount = items.length;
+    cartTotalCents = items.reduce((sum, i) => sum + (i.sites?.price_cents ?? 0), 0);
   }
 
   const counts = countByStatus(
-    (ordersRes.data ?? []) as { status: ClientActiveStatus }[],
+    orders as { status: ClientActiveStatus }[],
     CLIENT_ACTIVE_STATUSES,
   );
-  const outstandingCents = (outstandingRes.data ?? []).reduce(
-    (sum, i) => sum + (i.total_price_cents ?? 0),
-    0,
-  );
-  const latestInvoice = latestInvoiceRes.data;
 
   return (
     <div className="space-y-6">

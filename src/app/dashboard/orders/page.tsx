@@ -1,11 +1,12 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { requireUser } from '@/lib/auth';
-import { createClient } from '@/lib/supabase/server';
 import { OrderFilters } from './components/order-filters';
 import { OrdersTable } from './components/orders-table';
 import { OrdersKanban } from './components/orders-kanban';
 import { PageHeader } from '@/components/ui/page-header';
+import { fetchOrdersList } from '@/lib/data/orders';
+import { fetchUsersByIds, fetchActiveByRole } from '@/lib/data/users';
 import type { Database } from '@/types/database.types';
 
 interface PageProps {
@@ -26,38 +27,31 @@ export default async function OrdersPage({ searchParams }: PageProps) {
   const searchFilter = params.search?.toLowerCase();
   const view = params.view ?? 'list';
 
-  const supabase = await createClient();
-
   const isManagerOrAdmin = actor.role === 'Manager' || actor.role === 'Admin';
   const isCopywriter = actor.role === 'Copywriter';
   const isClient = actor.role === 'Client';
 
-  let query = supabase
-    .from('orders')
-    .select('id, site_domain, status, price_cents, publish_date, created_at, copywriter_id, manager_id')
-    .order('created_at', { ascending: false });
-
-  if (isClient) {
-    query = query.eq('created_by_id', actor.id);
-  } else if (isCopywriter) {
-    query = query.eq('copywriter_id', actor.id);
-  }
-
-  if (statusFilter) query = query.eq('status', statusFilter);
-  if (copywriterFilter && isManagerOrAdmin) query = query.eq('copywriter_id', copywriterFilter);
-  if (params.assignee === 'unassigned' && isManagerOrAdmin) query = query.is('copywriter_id', null);
-
-  const { data: ordersRaw } = await query;
-  const rawList = ordersRaw ?? [];
+  const rawList = await fetchOrdersList({
+    createdById: isClient ? actor.id : undefined,
+    copywriterId: isCopywriter
+      ? actor.id
+      : copywriterFilter && isManagerOrAdmin
+        ? copywriterFilter
+        : undefined,
+    unassigned: params.assignee === 'unassigned' && isManagerOrAdmin,
+    status: statusFilter,
+  });
 
   // Resolve user names separately to avoid multi-FK Supabase type error
   const allUserIds = [
-    ...new Set(rawList.flatMap((o) => [o.copywriter_id, o.manager_id].filter(Boolean) as string[])),
+    ...new Set(
+      rawList.flatMap(
+        (o) => [o.copywriter_id, o.manager_id].filter(Boolean) as string[],
+      ),
+    ),
   ];
-  const { data: usersData } = allUserIds.length
-    ? await supabase.from('users').select('id, first_name, last_name').in('id', allUserIds)
-    : { data: [] };
-  const userMap = Object.fromEntries((usersData ?? []).map((u) => [u.id, u]));
+  const usersData = await fetchUsersByIds(allUserIds);
+  const userMap = Object.fromEntries(usersData.map((u) => [u.id, u]));
 
   let orders = rawList.map((o) => ({
     id: o.id,
@@ -71,20 +65,15 @@ export default async function OrdersPage({ searchParams }: PageProps) {
   }));
 
   if (searchFilter) {
-    orders = orders.filter((o) => o.site_domain.toLowerCase().includes(searchFilter));
+    orders = orders.filter((o) =>
+      o.site_domain.toLowerCase().includes(searchFilter),
+    );
   }
 
   // Copywriters list for filter (manager/admin only)
-  let copywriters: { id: string; first_name: string; last_name: string }[] = [];
-  if (isManagerOrAdmin) {
-    const { data } = await supabase
-      .from('users')
-      .select('id, first_name, last_name')
-      .eq('role', 'Copywriter')
-      .eq('status', 'ACTIVE')
-      .order('first_name');
-    copywriters = data ?? [];
-  }
+  const copywriters = isManagerOrAdmin
+    ? await fetchActiveByRole('Copywriter')
+    : [];
 
   const showKanban = isManagerOrAdmin && view === 'kanban';
   const checkedOut = params.checked_out ? Number(params.checked_out) : null;
@@ -93,33 +82,39 @@ export default async function OrdersPage({ searchParams }: PageProps) {
     <div>
       <PageHeader
         title="Orders"
-        description={isClient ? 'Your orders' : isCopywriter ? 'Your assigned orders' : 'All orders'}
-        actions={
-          isManagerOrAdmin && (
-            <div className="inline-flex rounded-lg border border-border bg-card p-0.5 shadow-xs">
-              <Link
-                href="?view=list"
-                className={`rounded-md px-3 py-1 text-sm font-medium transition-colors ${
-                  view !== 'kanban'
-                    ? 'bg-primary text-primary-foreground shadow-xs'
-                    : 'text-muted-foreground hover:text-foreground'
-                }`}
-              >
-                List
-              </Link>
-              <Link
-                href="?view=kanban"
-                className={`rounded-md px-3 py-1 text-sm font-medium transition-colors ${
-                  view === 'kanban'
-                    ? 'bg-primary text-primary-foreground shadow-xs'
-                    : 'text-muted-foreground hover:text-foreground'
-                }`}
-              >
-                Kanban
-              </Link>
-            </div>
-          )
+        description={
+          isClient
+            ? 'Your orders'
+            : isCopywriter
+              ? 'Your assigned orders'
+              : 'All orders'
         }
+        // actions={
+        //   isManagerOrAdmin && (
+        //     <div className="inline-flex rounded-lg border border-border bg-card p-0.5 shadow-xs">
+        //       <Link
+        //         href="?view=list"
+        //         className={`rounded-md px-3 py-1 text-sm font-medium transition-colors ${
+        //           view !== 'kanban'
+        //             ? 'bg-primary text-primary-foreground shadow-xs'
+        //             : 'text-muted-foreground hover:text-foreground'
+        //         }`}
+        //       >
+        //         List
+        //       </Link>
+        //       <Link
+        //         href="?view=kanban"
+        //         className={`rounded-md px-3 py-1 text-sm font-medium transition-colors ${
+        //           view === 'kanban'
+        //             ? 'bg-primary text-primary-foreground shadow-xs'
+        //             : 'text-muted-foreground hover:text-foreground'
+        //         }`}
+        //       >
+        //         Kanban
+        //       </Link>
+        //     </div>
+        //   )
+        // }
       />
 
       {checkedOut !== null && (
@@ -135,10 +130,12 @@ export default async function OrdersPage({ searchParams }: PageProps) {
         />
 
         {showKanban ? (
-          <OrdersKanban orders={orders} />
+          <OrdersKanban
+            orders={orders as Parameters<typeof OrdersKanban>[0]['orders']}
+          />
         ) : (
           <OrdersTable
-            orders={orders}
+            orders={orders as Parameters<typeof OrdersTable>[0]['orders']}
             showCopywriter={isManagerOrAdmin}
             showManager={actor.role === 'Admin'}
           />

@@ -2,7 +2,7 @@ import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import { ChevronLeft } from 'lucide-react';
 import { requireRole } from '@/lib/auth';
-import { createClient } from '@/lib/supabase/server';
+import { fetchUserById } from '@/lib/data/users';
 import { listManagers } from '../actions';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
@@ -25,12 +25,7 @@ export default async function UserDetailPage({ params }: PageProps) {
   const currentUser = await requireRole(['Admin']);
   const { id } = await params;
 
-  const supabase = await createClient();
-  const { data: user, error } = await supabase
-    .from('users')
-    .select('*')
-    .eq('id', id)
-    .single();
+  const { data: user, error } = await fetchUserById(id);
 
   if (error || !user) notFound();
 

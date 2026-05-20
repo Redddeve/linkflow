@@ -1,7 +1,7 @@
 import { notFound } from 'next/navigation';
 import { requireRole } from '@/lib/auth';
-import { createClient } from '@/lib/supabase/server';
-import { fetchActiveCatalog, type CatalogFilters } from '@/lib/queries/catalog';
+import { fetchActiveCatalog, type CatalogFilters } from '@/lib/data/catalog';
+import { fetchCategories } from '@/lib/data/categories';
 import { CatalogFiltersDrawer } from '@/components/catalog/catalog-filters-drawer';
 import { CatalogTable } from '@/components/catalog/catalog-table';
 import { PageHeader } from '@/components/ui/page-header';
@@ -32,10 +32,9 @@ export default async function CatalogPage({ searchParams }: PageProps) {
     pageSize: 30,
   };
 
-  const supabase = await createClient();
-  const [{ sites, total }, { data: categories }] = await Promise.all([
+  const [{ sites, total }, categories] = await Promise.all([
     fetchActiveCatalog(filters, actor.id),
-    supabase.from('categories').select('id, name').order('name'),
+    fetchCategories(),
   ]);
 
   return (
@@ -45,7 +44,7 @@ export default async function CatalogPage({ searchParams }: PageProps) {
         description={`${total} active site${total !== 1 ? 's' : ''} available`}
       />
       <div className="space-y-4">
-        <CatalogFiltersDrawer categories={categories ?? []} />
+        <CatalogFiltersDrawer categories={categories} />
         <CatalogTable sites={sites} />
       </div>
     </div>

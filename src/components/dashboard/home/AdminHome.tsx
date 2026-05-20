@@ -1,43 +1,26 @@
-import { createClient } from '@/lib/supabase/server';
 import { Card, CardContent } from '@/components/ui/card';
 import Link from 'next/link';
 import { StatCard } from './stat-card';
 import { DashboardHeader } from './dashboard-header';
 import type { UserRow } from '@/lib/auth';
+import { countSitesByStatus } from '@/lib/data/sites';
+import { countUsersByStatus } from '@/lib/data/users';
+import { countInvoicesByStatus } from '@/lib/data/invoices';
+import { sumPayableCommissions } from '@/lib/data/commissions';
 
 function formatCurrency(cents: number) {
   return `$${(cents / 100).toFixed(2)}`;
 }
 
 export async function AdminHome({ user }: { user: UserRow }) {
-  const supabase = await createClient();
-
-  const [siteReviewRes, pendingInvitesRes, draftInvRes, sentInvRes, payableRes] = await Promise.all(
-    [
-      supabase
-        .from('sites')
-        .select('*', { count: 'exact', head: true })
-        .eq('status', 'Pending'),
-      supabase
-        .from('users')
-        .select('*', { count: 'exact', head: true })
-        .eq('status', 'PENDING'),
-      supabase
-        .from('invoices')
-        .select('*', { count: 'exact', head: true })
-        .eq('status', 'Draft'),
-      supabase
-        .from('invoices')
-        .select('*', { count: 'exact', head: true })
-        .eq('status', 'Sent'),
-      supabase.from('commissions').select('amount_cents').eq('status', 'PAYABLE'),
-    ],
-  );
-
-  const payableTotalCents = (payableRes.data ?? []).reduce(
-    (sum, c) => sum + (c.amount_cents ?? 0),
-    0,
-  );
+  const [siteReview, pendingInvites, draftInv, sentInv, payableTotalCents] =
+    await Promise.all([
+      countSitesByStatus('Pending'),
+      countUsersByStatus('PENDING'),
+      countInvoicesByStatus('Draft'),
+      countInvoicesByStatus('Sent'),
+      sumPayableCommissions(),
+    ]);
 
   return (
     <div className="space-y-6">
@@ -46,23 +29,23 @@ export async function AdminHome({ user }: { user: UserRow }) {
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         <StatCard
           label="Site review queue"
-          value={siteReviewRes.count ?? 0}
+          value={siteReview}
           href="/dashboard/sites?status=Pending"
           tone="warn"
         />
         <StatCard
           label="Pending invitations"
-          value={pendingInvitesRes.count ?? 0}
+          value={pendingInvites}
           href="/dashboard/users?status=PENDING"
         />
         <StatCard
           label="Draft invoices"
-          value={draftInvRes.count ?? 0}
+          value={draftInv}
           href="/dashboard/invoices?status=Draft"
         />
         <StatCard
           label="Sent invoices"
-          value={sentInvRes.count ?? 0}
+          value={sentInv}
           href="/dashboard/invoices?status=Sent"
         />
       </div>

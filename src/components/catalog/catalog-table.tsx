@@ -8,7 +8,7 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { AddToCartButton } from './add-to-cart-button';
-import type { CatalogSite } from '@/lib/queries/catalog';
+import type { CatalogSite } from '@/lib/data/catalog';
 import clsx from 'clsx';
 
 interface Props {

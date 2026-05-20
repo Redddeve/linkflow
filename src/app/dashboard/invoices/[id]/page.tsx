@@ -1,7 +1,8 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { requireUser } from '@/lib/auth';
-import { createClient } from '@/lib/supabase/server';
+import { fetchInvoiceById, fetchInvoiceOrders } from '@/lib/data/invoices';
+import { fetchUsersWithEmailByIds } from '@/lib/data/users';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import { buttonVariants } from '@/components/ui/button';
@@ -20,12 +21,7 @@ export default async function InvoiceDetailPage({ params }: PageProps) {
   const actor = await requireUser();
   if (!actor.role) notFound();
 
-  const supabase = await createClient();
-  const { data: invoice, error } = await supabase
-    .from('invoices')
-    .select('*')
-    .eq('id', id)
-    .single();
+  const { data: invoice, error } = await fetchInvoiceById(id);
 
   if (error || !invoice) notFound();
 
@@ -37,13 +33,7 @@ export default async function InvoiceDetailPage({ params }: PageProps) {
   const isAdmin = actor.role === 'Admin';
 
   // Load attached orders
-  const { data: ordersData } = await supabase
-    .from('orders')
-    .select('id, site_domain, publish_date, price_cents, billing_month, status, published_url')
-    .eq('invoice_id', invoice.id)
-    .order('publish_date', { ascending: true });
-
-  const orders = ordersData ?? [];
+  const orders = await fetchInvoiceOrders(invoice.id);
 
   // Load user records (client + sent_by + marked_as_paid_by)
   const userIds = [
@@ -52,10 +42,8 @@ export default async function InvoiceDetailPage({ params }: PageProps) {
     invoice.marked_as_paid_by_id,
   ].filter(Boolean) as string[];
 
-  const { data: users } = userIds.length
-    ? await supabase.from('users').select('id, first_name, last_name, email').in('id', userIds)
-    : { data: [] };
-  const userMap = Object.fromEntries((users ?? []).map((u) => [u.id, u]));
+  const users = await fetchUsersWithEmailByIds(userIds);
+  const userMap = Object.fromEntries(users.map((u) => [u.id, u]));
 
   const client = userMap[invoice.client_id];
   const sentBy = invoice.sent_by_id ? userMap[invoice.sent_by_id] : null;
