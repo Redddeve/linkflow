@@ -242,8 +242,10 @@ html, body {
   padding: 8px;
   border-radius: 8px;
   min-width: 0;
-  cursor: default;
+  cursor: pointer;
   transition: background 0.12s;
+  text-decoration: none;
+  color: inherit;
 }
 .user-row:hover { background: var(--surface-3); }
 

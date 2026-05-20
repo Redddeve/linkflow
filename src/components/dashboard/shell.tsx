@@ -15,9 +15,11 @@ import {
   Tag,
   MessageSquare,
   Wallet,
+  User as UserIcon,
 } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
-import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { avatarPublicUrl } from '@/lib/avatar';
 import {
   Tooltip,
   TooltipContent,
@@ -227,6 +229,7 @@ export function DashboardShell({
   const pathname = usePathname();
   const router = useRouter();
   const navItems = (user.role ? NAV_ITEMS[user.role] : null) ?? [];
+  const avatarUrl = avatarPublicUrl(user.avatar);
 
   const handleSignOut = async () => {
     const supabase = createClient();
@@ -262,8 +265,13 @@ export function DashboardShell({
 
           {/* Bottom: user info + sign out */}
           <div className="sidebar-footer">
-            <div className="user-row">
+            <Link
+              href="/dashboard/profile"
+              className={`user-row ${pathname === '/dashboard/profile' ? 'active' : ''}`}
+              aria-label="View profile"
+            >
               <Avatar className="h-8 w-8 shrink-0">
+                {avatarUrl && <AvatarImage src={avatarUrl} alt="" />}
                 <AvatarFallback className="text-[11px] font-semibold">
                   {userInitials(user)}
                 </AvatarFallback>
@@ -272,7 +280,7 @@ export function DashboardShell({
                 <div className="user-name">{displayName(user)}</div>
                 <div className="user-email">{user.email}</div>
               </div>
-            </div>
+            </Link>
             <button
               onClick={handleSignOut}
               className="nav-item w-full mt-0.5 text-left"
@@ -305,6 +313,7 @@ export function DashboardShell({
                 aria-label="User menu"
               >
                 <Avatar className="h-7 w-7 ring-2 ring-primary-soft">
+                  {avatarUrl && <AvatarImage src={avatarUrl} alt="" />}
                   <AvatarFallback className="bg-primary-soft text-[11px] font-semibold text-primary-text">
                     {userInitials(user)}
                   </AvatarFallback>
@@ -321,6 +330,10 @@ export function DashboardShell({
                   </div>
                 </div>
                 <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={() => router.push('/dashboard/profile')}>
+                  <UserIcon className="h-4 w-4" />
+                  Profile
+                </DropdownMenuItem>
                 <DropdownMenuItem onClick={handleSignOut}>
                   <LogOut className="h-4 w-4" />
                   Sign out
