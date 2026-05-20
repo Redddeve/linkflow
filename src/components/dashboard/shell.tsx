@@ -1,5 +1,6 @@
 'use client';
 
+import Image from 'next/image';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import {
@@ -243,10 +244,17 @@ export function DashboardShell({
         {/* Sidebar */}
         <aside className="sidebar">
           {/* Brand */}
-          <div className="brand">
-            <div className="brand-mark">L</div>
+          <Link href="/dashboard" className="brand" aria-label="LinkFlow home">
+            <Image
+              src="/logo.svg"
+              alt=""
+              width={28}
+              height={28}
+              className="brand-mark"
+              priority
+            />
             <span>LinkFlow</span>
-          </div>
+          </Link>
 
           {/* Nav */}
           <div className="nav-label">Workspace</div>
@@ -271,7 +279,7 @@ export function DashboardShell({
               aria-label="View profile"
             >
               <Avatar className="h-8 w-8 shrink-0">
-                {avatarUrl && <AvatarImage src={avatarUrl} alt="" />}
+                {avatarUrl && <AvatarImage src={avatarUrl} alt="User avatar" />}
                 <AvatarFallback className="text-[11px] font-semibold">
                   {userInitials(user)}
                 </AvatarFallback>
@@ -321,7 +329,9 @@ export function DashboardShell({
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-56">
                 <div className="px-2 py-2">
-                  <div className="truncate text-sm font-medium">{displayName(user)}</div>
+                  <div className="truncate text-sm font-medium">
+                    {displayName(user)}
+                  </div>
                   <div className="mt-0.5 truncate text-xs text-muted-foreground">
                     {user.email}
                   </div>
@@ -330,7 +340,9 @@ export function DashboardShell({
                   </div>
                 </div>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={() => router.push('/dashboard/profile')}>
+                <DropdownMenuItem
+                  onClick={() => router.push('/dashboard/profile')}
+                >
                   <UserIcon className="h-4 w-4" />
                   Profile
                 </DropdownMenuItem>

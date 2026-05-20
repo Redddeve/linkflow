@@ -13,6 +13,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Constants } from '@/types/database.types';
+import Image from 'next/image';
 import Link from 'next/link';
 import { loginWithPassword } from './actions';
 
@@ -84,7 +85,14 @@ export default function LoginForm() {
           <Card className="shadow-sm">
             <CardHeader>
               <div className="mb-1 flex items-center gap-3">
-                <div className="brand-mark">L</div>
+                <Image
+                  src="/logo.svg"
+                  alt=""
+                  width={28}
+                  height={28}
+                  className="brand-mark"
+                  priority
+                />
                 <CardTitle className="text-xl tracking-tight">
                   LinkFlow
                 </CardTitle>

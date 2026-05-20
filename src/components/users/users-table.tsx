@@ -14,7 +14,7 @@ import {
 } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import {
   Dialog,
   DialogContent,
@@ -39,6 +39,7 @@ import {
   type DisableResult,
   type BlockingOrder,
 } from '@/app/dashboard/users/actions';
+import { avatarPublicUrl } from '@/lib/avatar';
 
 function userInitials(u: UserRow) {
   const f = u.first_name?.trim() ?? '';
@@ -47,7 +48,9 @@ function userInitials(u: UserRow) {
   return (u.email[0] ?? '?').toUpperCase();
 }
 
-function statusVariant(status: UserRow['status']): 'success' | 'warning' | 'destructive' {
+function statusVariant(
+  status: UserRow['status'],
+): 'success' | 'warning' | 'destructive' {
   if (status === 'ACTIVE') return 'success';
   if (status === 'PENDING') return 'warning';
   return 'destructive';
@@ -71,7 +74,9 @@ export function UsersTable({ users, currentUserId }: Props) {
   const [disableTarget, setDisableTarget] = useState<UserRow | null>(null);
   const [disableReason, setDisableReason] = useState('');
   const [disableError, setDisableError] = useState('');
-  const [blockingOrders, setBlockingOrders] = useState<BlockingOrder[] | null>(null);
+  const [blockingOrders, setBlockingOrders] = useState<BlockingOrder[] | null>(
+    null,
+  );
 
   const [activateTarget, setActivateTarget] = useState<UserRow | null>(null);
   const [resendTarget, setResendTarget] = useState<UserRow | null>(null);
@@ -88,7 +93,10 @@ export function UsersTable({ users, currentUserId }: Props) {
     setDisableError('');
     startTransition(async () => {
       try {
-        const result: DisableResult = await disableUser(disableTarget.id, disableReason);
+        const result: DisableResult = await disableUser(
+          disableTarget.id,
+          disableReason,
+        );
         if (result.ok) {
           resetDisable();
           router.refresh();
@@ -144,7 +152,10 @@ export function UsersTable({ users, currentUserId }: Props) {
         <TableBody>
           {users.length === 0 && (
             <TableRow>
-              <TableCell colSpan={5} className="text-center text-muted-foreground py-8">
+              <TableCell
+                colSpan={5}
+                className="text-center text-muted-foreground py-8"
+              >
                 No users found.
               </TableCell>
             </TableRow>
@@ -154,7 +165,15 @@ export function UsersTable({ users, currentUserId }: Props) {
               <TableCell>
                 <div className="flex items-center gap-2">
                   <Avatar className="h-7 w-7 text-xs">
-                    <AvatarFallback>{userInitials(u)}</AvatarFallback>
+                    {u.avatar && (
+                      <AvatarImage
+                        src={avatarPublicUrl(u.avatar)}
+                        alt="User avatar"
+                      />
+                    )}
+                    <AvatarFallback className="text-[11px] font-semibold">
+                      {userInitials(u)}
+                    </AvatarFallback>
                   </Avatar>
                   <div>
                     <Link
@@ -163,7 +182,9 @@ export function UsersTable({ users, currentUserId }: Props) {
                     >
                       {u.first_name} {u.last_name}
                     </Link>
-                    <div className="text-xs text-muted-foreground">{u.email}</div>
+                    <div className="text-xs text-muted-foreground">
+                      {u.email}
+                    </div>
                   </div>
                 </div>
               </TableCell>
@@ -171,10 +192,14 @@ export function UsersTable({ users, currentUserId }: Props) {
                 <Badge variant="outline">{u.role ?? '—'}</Badge>
               </TableCell>
               <TableCell>
-                <Badge variant={statusVariant(u.status)}>{statusLabel(u.status)}</Badge>
+                <Badge variant={statusVariant(u.status)}>
+                  {statusLabel(u.status)}
+                </Badge>
               </TableCell>
               <TableCell className="text-muted-foreground text-xs">
-                {u.invited_at ? new Date(u.invited_at).toLocaleDateString('en-CA') : '—'}
+                {u.invited_at
+                  ? new Date(u.invited_at).toLocaleDateString('en-CA')
+                  : '—'}
               </TableCell>
               <TableCell>
                 <DropdownMenu>
@@ -185,7 +210,9 @@ export function UsersTable({ users, currentUserId }: Props) {
                     <MoreHorizontal className="h-4 w-4" />
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end">
-                    <DropdownMenuItem onClick={() => router.push(`/dashboard/users/${u.id}`)}>
+                    <DropdownMenuItem
+                      onClick={() => router.push(`/dashboard/users/${u.id}`)}
+                    >
                       View / Edit
                     </DropdownMenuItem>
                     {u.status === 'PENDING' && (
@@ -217,10 +244,17 @@ export function UsersTable({ users, currentUserId }: Props) {
         </TableBody>
       </Table>
 
-      <Dialog open={!!disableTarget && !blockingOrders} onOpenChange={(o) => { if (!o) resetDisable(); }}>
+      <Dialog
+        open={!!disableTarget && !blockingOrders}
+        onOpenChange={(o) => {
+          if (!o) resetDisable();
+        }}
+      >
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Disable {disableTarget?.first_name} {disableTarget?.last_name}?</DialogTitle>
+            <DialogTitle>
+              Disable {disableTarget?.first_name} {disableTarget?.last_name}?
+            </DialogTitle>
           </DialogHeader>
           <div className="grid gap-2">
             <Label htmlFor="disable-reason">Reason</Label>
@@ -231,10 +265,14 @@ export function UsersTable({ users, currentUserId }: Props) {
               onChange={(e) => setDisableReason(e.target.value)}
               rows={3}
             />
-            {disableError && <p className="text-sm text-destructive">{disableError}</p>}
+            {disableError && (
+              <p className="text-sm text-destructive">{disableError}</p>
+            )}
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={resetDisable}>Cancel</Button>
+            <Button variant="outline" onClick={resetDisable}>
+              Cancel
+            </Button>
             <Button
               variant="destructive"
               disabled={isPending || disableReason.trim().length < 5}
@@ -246,13 +284,19 @@ export function UsersTable({ users, currentUserId }: Props) {
         </DialogContent>
       </Dialog>
 
-      <Dialog open={!!blockingOrders} onOpenChange={(o) => { if (!o) resetDisable(); }}>
+      <Dialog
+        open={!!blockingOrders}
+        onOpenChange={(o) => {
+          if (!o) resetDisable();
+        }}
+      >
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Reassign active orders first</DialogTitle>
           </DialogHeader>
           <p className="text-sm text-muted-foreground">
-            This copywriter has active orders. Reassign each one before disabling.
+            This copywriter has active orders. Reassign each one before
+            disabling.
           </p>
           <ul className="mt-2 space-y-1">
             {blockingOrders?.map((o) => (
@@ -261,28 +305,40 @@ export function UsersTable({ users, currentUserId }: Props) {
                   href={`/dashboard/orders/${o.id}`}
                   className="text-sm hover:underline text-primary"
                 >
-                  {o.site_domain} — <span className="text-muted-foreground">{o.status}</span>
+                  {o.site_domain} —{' '}
+                  <span className="text-muted-foreground">{o.status}</span>
                 </Link>
               </li>
             ))}
           </ul>
           <DialogFooter>
-            <Button variant="outline" onClick={resetDisable}>Close</Button>
+            <Button variant="outline" onClick={resetDisable}>
+              Close
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
 
-      <Dialog open={!!activateTarget} onOpenChange={(o) => { if (!o) setActivateTarget(null); }}>
+      <Dialog
+        open={!!activateTarget}
+        onOpenChange={(o) => {
+          if (!o) setActivateTarget(null);
+        }}
+      >
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Activate {activateTarget?.first_name} {activateTarget?.last_name}?</DialogTitle>
+            <DialogTitle>
+              Activate {activateTarget?.first_name} {activateTarget?.last_name}?
+            </DialogTitle>
           </DialogHeader>
           <p className="text-sm text-muted-foreground">
-            Their account will be set to Active. Sites that were archived when this Sourcer was disabled will
-            not be automatically restored.
+            Their account will be set to Active. Sites that were archived when
+            this Sourcer was disabled will not be automatically restored.
           </p>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setActivateTarget(null)}>Cancel</Button>
+            <Button variant="outline" onClick={() => setActivateTarget(null)}>
+              Cancel
+            </Button>
             <Button disabled={isPending} onClick={handleActivate}>
               {isPending ? 'Activating…' : 'Activate'}
             </Button>
@@ -290,16 +346,25 @@ export function UsersTable({ users, currentUserId }: Props) {
         </DialogContent>
       </Dialog>
 
-      <Dialog open={!!resendTarget} onOpenChange={(o) => { if (!o) setResendTarget(null); }}>
+      <Dialog
+        open={!!resendTarget}
+        onOpenChange={(o) => {
+          if (!o) setResendTarget(null);
+        }}
+      >
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Resend invitation to {resendTarget?.email}?</DialogTitle>
+            <DialogTitle>
+              Resend invitation to {resendTarget?.email}?
+            </DialogTitle>
           </DialogHeader>
           <p className="text-sm text-muted-foreground">
             A new invitation email will be sent. The previous link will expire.
           </p>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setResendTarget(null)}>Cancel</Button>
+            <Button variant="outline" onClick={() => setResendTarget(null)}>
+              Cancel
+            </Button>
             <Button disabled={isPending} onClick={handleResend}>
               {isPending ? 'Sending…' : 'Resend'}
             </Button>
