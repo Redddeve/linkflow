@@ -1,8 +1,7 @@
 import { notFound } from 'next/navigation';
-import Link from 'next/link';
 import { requireRole } from '@/lib/auth';
 import { fetchOrderForPublish } from '@/lib/data/orders';
-import { buttonVariants } from '@/components/ui/button';
+import { BackLink } from '@/components/ui/back-link';
 import { PublishOrderForm } from '../../components/publish-order-form';
 
 interface PageProps {
@@ -20,14 +19,10 @@ export default async function PublishOrderPage({ params }: PageProps) {
 
   return (
     <div className="space-y-6 max-w-lg">
-      <div className="flex items-center justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-semibold">Publish order</h1>
-          <p className="text-sm text-muted-foreground mt-1">{order.site_domain}</p>
-        </div>
-        <Link href={`/dashboard/orders/${id}`} className={buttonVariants({ variant: 'outline', size: 'sm' })}>
-          Back to order
-        </Link>
+      <BackLink href={`/dashboard/orders/${id}`} label="Back to order" />
+      <div>
+        <h1 className="text-2xl font-semibold">Publish order</h1>
+        <p className="text-sm text-muted-foreground mt-1">{order.site_domain}</p>
       </div>
 
       <PublishOrderForm orderId={id} defaultPublishDate={order.publish_date} />

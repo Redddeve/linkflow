@@ -3,6 +3,7 @@ import { Badge } from '@/components/ui/badge';
 import { requireRole } from '@/lib/auth';
 import { StatusActions } from '@/components/sites/status-actions';
 import { EditSiteDialog } from '@/components/sites/edit-dialog';
+import { BackLink } from '@/components/ui/back-link';
 import { fetchSiteById } from '@/lib/data/sites';
 import { fetchCategories } from '@/lib/data/categories';
 import type { Database } from '@/types/database.types';
@@ -45,6 +46,7 @@ export default async function SiteDetailPage({ params }: PageProps) {
 
   return (
     <div className="space-y-6 max-w-3xl">
+      <BackLink href="/dashboard/sites" label="Sites" />
       <div className="flex items-start justify-between gap-4">
         <div>
           <div className="flex items-center gap-3">

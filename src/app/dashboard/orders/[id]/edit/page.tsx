@@ -1,8 +1,7 @@
-import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { requireRole } from '@/lib/auth';
 import { fetchOrderForEdit } from '@/lib/data/orders';
-import { buttonVariants } from '@/components/ui/button';
+import { BackLink } from '@/components/ui/back-link';
 import { OrderStatusBadge } from '../../components/order-status-badge';
 import { ContentEditorForm } from '../../components/content-editor-form';
 
@@ -26,18 +25,14 @@ export default async function ContentEditorPage({ params }: PageProps) {
 
   return (
     <div className="space-y-6 max-w-4xl">
-      <div className="flex items-start justify-between gap-4">
-        <div>
-          <div className="flex items-center gap-3">
-            <h1 className="text-2xl font-semibold">{order.site_domain}</h1>
-            <OrderStatusBadge status={order.status} />
-          </div>
-          <p className="text-sm text-muted-foreground mt-1">Publish date: {order.publish_date}</p>
-        </div>
-        <Link href={`/dashboard/orders/${id}`} className={buttonVariants({ variant: 'outline', size: 'sm' })}>
-          Back to order
-        </Link>
+      <BackLink href={`/dashboard/orders/${id}`} label="Back to order" />
+      <div className="flex items-center gap-3">
+        <h1 className="text-2xl font-semibold">{order.site_domain}</h1>
+        <OrderStatusBadge status={order.status} />
       </div>
+      {order.publish_date && (
+        <p className="-mt-4 text-sm text-muted-foreground">Publish date: {order.publish_date}</p>
+      )}
 
       {order.site_requirements && (
         <div className="rounded-md border bg-muted/40 p-4 space-y-1">

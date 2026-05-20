@@ -14,6 +14,7 @@ import { RejectOrderDialog } from '../components/reject-order-dialog';
 import { CommentsTimeline } from '../components/comments-timeline';
 import { AddCommentForm } from '../components/add-comment-form';
 import { listCopywriters } from '../actions';
+import { BackLink } from '@/components/ui/back-link';
 
 interface PageProps {
   params: Promise<{ id: string }>;
@@ -73,6 +74,7 @@ export default async function OrderDetailPage({ params }: PageProps) {
 
   return (
     <div className="space-y-6 max-w-3xl">
+      <BackLink href="/dashboard/orders" label="Orders" />
       <div className="flex items-start justify-between gap-4">
         <div>
           <div className="flex items-center gap-3">

@@ -1,7 +1,6 @@
 import { notFound } from 'next/navigation';
-import Link from 'next/link';
-import { ChevronLeft } from 'lucide-react';
 import { requireRole } from '@/lib/auth';
+import { BackLink } from '@/components/ui/back-link';
 import { fetchUserById } from '@/lib/data/users';
 import { listManagers } from '../actions';
 import { Badge } from '@/components/ui/badge';
@@ -33,15 +32,7 @@ export default async function UserDetailPage({ params }: PageProps) {
 
   return (
     <div className="page">
-      <div className="mb-6">
-        <Link
-          href="/dashboard/users"
-          className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground"
-        >
-          <ChevronLeft className="h-4 w-4" />
-          Users
-        </Link>
-      </div>
+      <BackLink href="/dashboard/users" label="Users" />
 
       <div className="page-header">
         <div>

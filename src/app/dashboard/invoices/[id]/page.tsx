@@ -3,6 +3,7 @@ import { notFound } from 'next/navigation';
 import { requireUser } from '@/lib/auth';
 import { fetchInvoiceById, fetchInvoiceOrders } from '@/lib/data/invoices';
 import { fetchUsersWithEmailByIds } from '@/lib/data/users';
+import { BackLink } from '@/components/ui/back-link';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import { buttonVariants } from '@/components/ui/button';
@@ -55,6 +56,7 @@ export default async function InvoiceDetailPage({ params }: PageProps) {
 
   return (
     <div className="space-y-6">
+      <BackLink href="/dashboard/invoices" label="Invoices" />
       <div className="flex items-start justify-between">
         <div>
           <h1 className="text-2xl font-semibold">{formatBillingMonth(invoice.billing_month)} invoice</h1>
