@@ -14,6 +14,7 @@ import {
   LogOut,
   Tag,
   MessageSquare,
+  Wallet,
 } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
@@ -98,6 +99,11 @@ const NAV_ITEMS: Record<UserRole, NavItem[]> = {
       icon: <BadgeDollarSign className="nav-icon" />,
     },
     {
+      href: '/dashboard/earnings',
+      label: 'Earnings',
+      icon: <Wallet className="nav-icon" />,
+    },
+    {
       href: '/dashboard/chat',
       label: 'Chat',
       icon: <MessageSquare className="nav-icon" />,
@@ -135,6 +141,11 @@ const NAV_ITEMS: Record<UserRole, NavItem[]> = {
       href: '/dashboard/commissions',
       label: 'Commissions',
       icon: <BadgeDollarSign className="nav-icon" />,
+    },
+    {
+      href: '/dashboard/earnings',
+      label: 'Earnings',
+      icon: <Wallet className="nav-icon" />,
     },
     {
       href: '/dashboard/chat',
@@ -177,6 +188,11 @@ const NAV_ITEMS: Record<UserRole, NavItem[]> = {
       href: '/dashboard/commissions',
       label: 'Commissions',
       icon: <BadgeDollarSign className="nav-icon" />,
+    },
+    {
+      href: '/dashboard/earnings',
+      label: 'Earnings',
+      icon: <Wallet className="nav-icon" />,
     },
     {
       href: '/dashboard/chat',
