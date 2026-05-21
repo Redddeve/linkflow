@@ -37,9 +37,7 @@ function mapForbidden(e: unknown): never {
 export async function createSite(
   input: CreateSiteInput,
 ): Promise<{ siteId: string }> {
-  const actor = await requireRole(['Sourcer', 'Manager', 'Admin']).catch(
-    mapForbidden,
-  );
+  const actor = await requireRole(['Sourcer']).catch(mapForbidden);
 
   const parsed = createSiteSchema.safeParse(input);
   if (!parsed.success)
@@ -61,7 +59,7 @@ export async function createSite(
     .insert({
       ...parsed.data,
       created_by_id: actor.id,
-      sourcer_id: actor.role === 'Sourcer' ? actor.id : null,
+      sourcer_id: actor.id,
       status: 'Pending',
     })
     .select('id')
@@ -84,7 +82,7 @@ export async function editSite(
   id: string,
   patch: EditSiteInput,
 ): Promise<void> {
-  const actor = await requireRole(['Sourcer', 'Manager', 'Admin']).catch(
+  const actor = await requireRole(['Sourcer', 'Admin']).catch(
     mapForbidden,
   );
 
@@ -199,17 +197,15 @@ export async function setSiteStatus(
     },
   });
 
-  if (site.sourcer_id) {
-    await notify({
-      recipientId: site.sourcer_id,
-      type: `site.${action.toLowerCase()}`,
-      payload: {
-        site_id: id,
-        domain: site.domain,
-        change_note: change_note ?? null,
-      },
-    });
-  }
+  await notify({
+    recipientId: site.sourcer_id,
+    type: `site.${action.toLowerCase()}`,
+    payload: {
+      site_id: id,
+      domain: site.domain,
+      change_note: change_note ?? null,
+    },
+  });
 }
 
 export async function listCategories(): Promise<

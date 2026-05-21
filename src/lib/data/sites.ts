@@ -9,6 +9,7 @@ export interface SitesListFilters {
   categoryId?: string;
   priceMinCents?: number;
   priceMaxCents?: number;
+  search?: string;
 }
 
 export type SitesListRow = {
@@ -36,6 +37,10 @@ export async function fetchSitesList(filters: SitesListFilters): Promise<SitesLi
   if (filters.categoryId) query = query.eq('category_id', filters.categoryId);
   if (filters.priceMinCents !== undefined) query = query.gte('price_cents', filters.priceMinCents);
   if (filters.priceMaxCents !== undefined) query = query.lte('price_cents', filters.priceMaxCents);
+  if (filters.search) {
+    const escaped = filters.search.replace(/[\\%_]/g, (m) => `\\${m}`);
+    query = query.ilike('domain', `%${escaped}%`);
+  }
 
   const { data } = await query;
   return (data ?? []) as SitesListRow[];

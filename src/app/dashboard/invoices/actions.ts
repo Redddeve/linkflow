@@ -13,11 +13,15 @@ import {
   reassignOrderBillingMonthSchema,
   reassignOrdersSchema,
   generateInvoicesSchema,
+  addOrdersToInvoiceSchema,
+  removeOrdersFromInvoiceSchema,
   type SendInvoiceInput,
   type MarkInvoicePaidInput,
   type ReassignOrderBillingMonthInput,
   type ReassignOrdersInput,
   type GenerateInvoicesInput,
+  type AddOrdersToInvoiceInput,
+  type RemoveOrdersFromInvoiceInput,
 } from '@/lib/schemas/invoices';
 
 function mapForbidden(e: unknown): never {
@@ -288,4 +292,136 @@ export async function generateInvoicesForMonth(
   }
 
   return result;
+}
+
+// ── addOrdersToInvoice / removeOrdersFromInvoice ──────────────────────────────
+
+async function recomputeInvoiceTotal(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  invoiceId: string,
+): Promise<number> {
+  const { data: rows } = await supabase
+    .from('orders')
+    .select('price_cents')
+    .eq('invoice_id', invoiceId);
+  const total = (rows ?? []).reduce((sum, r) => sum + (r.price_cents ?? 0), 0);
+  const { error } = await supabase
+    .from('invoices')
+    .update({ total_price_cents: total })
+    .eq('id', invoiceId);
+  if (error) throw new Error(error.message);
+  return total;
+}
+
+export async function addOrdersToInvoice(
+  input: AddOrdersToInvoiceInput,
+): Promise<{ added: number; total_price_cents: number }> {
+  await requireRole(['Manager', 'Admin']).catch(mapForbidden);
+
+  const parsed = addOrdersToInvoiceSchema.safeParse(input);
+  if (!parsed.success) throw new AppError('VALIDATION', parsed.error.issues[0].message);
+  const { invoiceId, orderIds } = parsed.data;
+
+  const supabase = await createClient();
+
+  const { data: invoice, error: invErr } = await supabase
+    .from('invoices')
+    .select('id, status, client_id, billing_month')
+    .eq('id', invoiceId)
+    .single();
+  if (invErr || !invoice) throw new AppError('NOT_FOUND', 'Invoice not found');
+  if (invoice.status !== 'Draft') {
+    throw new AppError('VALIDATION', 'Orders can only be added to a Draft invoice');
+  }
+
+  // Only attach orders that match the invoice's client + billing_month, are
+  // Published, and are not already on another invoice.
+  const { data: eligible, error: eligErr } = await supabase
+    .from('orders')
+    .select('id')
+    .in('id', orderIds)
+    .eq('created_by_id', invoice.client_id)
+    .eq('billing_month', invoice.billing_month)
+    .eq('status', 'Published')
+    .is('invoice_id', null);
+  if (eligErr) throw new Error(eligErr.message);
+
+  const eligibleIds = (eligible ?? []).map((o) => o.id);
+  if (eligibleIds.length === 0) {
+    throw new AppError(
+      'VALIDATION',
+      'None of the selected orders are eligible (must be Published, same client, same billing month, and not already attached).',
+    );
+  }
+
+  const { error: updErr } = await supabase
+    .from('orders')
+    .update({ invoice_id: invoiceId })
+    .in('id', eligibleIds);
+  if (updErr) throw new Error(updErr.message);
+
+  const total = await recomputeInvoiceTotal(supabase, invoiceId);
+
+  await recordAudit({
+    entityType: 'invoice',
+    entityId: invoiceId,
+    action: 'invoice.orders_added',
+    after: { order_ids: eligibleIds, total_price_cents: total },
+  });
+
+  revalidatePath('/dashboard/invoices');
+  revalidatePath(`/dashboard/invoices/${invoiceId}`);
+
+  return { added: eligibleIds.length, total_price_cents: total };
+}
+
+export async function removeOrdersFromInvoice(
+  input: RemoveOrdersFromInvoiceInput,
+): Promise<{ removed: number; total_price_cents: number }> {
+  await requireRole(['Manager', 'Admin']).catch(mapForbidden);
+
+  const parsed = removeOrdersFromInvoiceSchema.safeParse(input);
+  if (!parsed.success) throw new AppError('VALIDATION', parsed.error.issues[0].message);
+  const { invoiceId, orderIds } = parsed.data;
+
+  const supabase = await createClient();
+
+  const { data: invoice, error: invErr } = await supabase
+    .from('invoices')
+    .select('id, status')
+    .eq('id', invoiceId)
+    .single();
+  if (invErr || !invoice) throw new AppError('NOT_FOUND', 'Invoice not found');
+  if (invoice.status !== 'Draft') {
+    throw new AppError('VALIDATION', 'Orders can only be removed from a Draft invoice');
+  }
+
+  // Only unlink orders actually attached to this invoice. Keep billing_month
+  // so the order remains eligible for re-attachment / re-generation.
+  const { data: updated, error: updErr } = await supabase
+    .from('orders')
+    .update({ invoice_id: null })
+    .in('id', orderIds)
+    .eq('invoice_id', invoiceId)
+    .select('id');
+  if (updErr) throw new Error(updErr.message);
+
+  const removedIds = (updated ?? []).map((o) => o.id);
+  if (removedIds.length === 0) {
+    throw new AppError('VALIDATION', 'No matching orders were attached to this invoice');
+  }
+
+  const total = await recomputeInvoiceTotal(supabase, invoiceId);
+
+  await recordAudit({
+    entityType: 'invoice',
+    entityId: invoiceId,
+    action: 'invoice.orders_removed',
+    after: { order_ids: removedIds, total_price_cents: total },
+  });
+
+  revalidatePath('/dashboard/invoices');
+  revalidatePath(`/dashboard/invoices/${invoiceId}`);
+
+  return { removed: removedIds.length, total_price_cents: total };
 }

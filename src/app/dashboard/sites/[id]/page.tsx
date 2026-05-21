@@ -34,13 +34,12 @@ export default async function SiteDetailPage({ params }: PageProps) {
 
   const canEdit =
     (actor.role === 'Sourcer' && site.sourcer_id === actor.id) ||
-    actor.role === 'Manager' ||
     actor.role === 'Admin';
 
   const categories = canEdit ? await fetchCategories() : [];
 
   const isAdmin = actor.role === 'Admin';
-  const showSourcerFields = actor.role === 'Admin' || actor.role === 'Manager';
+  const showSourcerFields = actor.role === 'Admin' || actor.role === 'Sourcer';
 
   const categoryName = (site.categories as { name: string } | null)?.name;
 

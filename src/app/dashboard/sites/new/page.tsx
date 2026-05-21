@@ -6,7 +6,7 @@ import { fetchCategories } from '@/lib/data/categories';
 export const metadata = { title: 'Add site' };
 
 export default async function NewSitePage() {
-  const actor = await requireRole(['Sourcer', 'Manager', 'Admin']).catch(() => notFound());
+  const actor = await requireRole(['Sourcer']).catch(() => notFound());
 
   const categories = await fetchCategories();
 

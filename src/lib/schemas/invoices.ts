@@ -34,8 +34,20 @@ export const generateInvoicesSchema = z.object({
   billing_month: billingMonth,
 });
 
+export const addOrdersToInvoiceSchema = z.object({
+  invoiceId: z.uuid(),
+  orderIds: z.array(z.uuid()).min(1, 'Select at least one order').max(500),
+});
+
+export const removeOrdersFromInvoiceSchema = z.object({
+  invoiceId: z.uuid(),
+  orderIds: z.array(z.uuid()).min(1, 'Select at least one order').max(500),
+});
+
 export type SendInvoiceInput = z.input<typeof sendInvoiceSchema>;
 export type MarkInvoicePaidInput = z.input<typeof markInvoicePaidSchema>;
 export type ReassignOrderBillingMonthInput = z.input<typeof reassignOrderBillingMonthSchema>;
 export type ReassignOrdersInput = z.input<typeof reassignOrdersSchema>;
 export type GenerateInvoicesInput = z.input<typeof generateInvoicesSchema>;
+export type AddOrdersToInvoiceInput = z.input<typeof addOrdersToInvoiceSchema>;
+export type RemoveOrdersFromInvoiceInput = z.input<typeof removeOrdersFromInvoiceSchema>;

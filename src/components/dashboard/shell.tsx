@@ -10,7 +10,6 @@ import {
   ShoppingCart,
   FileText,
   Receipt,
-  BadgeDollarSign,
   Bell,
   LogOut,
   Tag,
@@ -97,16 +96,6 @@ const NAV_ITEMS: Record<UserRole, NavItem[]> = {
       icon: <Receipt className="nav-icon" />,
     },
     {
-      href: '/dashboard/commissions',
-      label: 'Commissions',
-      icon: <BadgeDollarSign className="nav-icon" />,
-    },
-    {
-      href: '/dashboard/earnings',
-      label: 'Earnings',
-      icon: <Wallet className="nav-icon" />,
-    },
-    {
       href: '/dashboard/chat',
       label: 'Chat',
       icon: <MessageSquare className="nav-icon" />,
@@ -141,9 +130,9 @@ const NAV_ITEMS: Record<UserRole, NavItem[]> = {
       icon: <Globe className="nav-icon" />,
     },
     {
-      href: '/dashboard/commissions',
-      label: 'Commissions',
-      icon: <BadgeDollarSign className="nav-icon" />,
+      href: '/dashboard/orders',
+      label: 'Orders',
+      icon: <FileText className="nav-icon" />,
     },
     {
       href: '/dashboard/earnings',
@@ -186,11 +175,6 @@ const NAV_ITEMS: Record<UserRole, NavItem[]> = {
       href: '/dashboard/invoices',
       label: 'Invoices',
       icon: <Receipt className="nav-icon" />,
-    },
-    {
-      href: '/dashboard/commissions',
-      label: 'Commissions',
-      icon: <BadgeDollarSign className="nav-icon" />,
     },
     {
       href: '/dashboard/earnings',

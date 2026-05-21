@@ -572,7 +572,7 @@ export async function publishOrder(input: PublishOrderInput): Promise<void> {
   const supabase = await createClient();
   const { data: order, error } = await supabase
     .from('orders')
-    .select('id, status, created_by_id, manager_id, copywriter_id')
+    .select('id, status, site_id, created_by_id, manager_id, copywriter_id')
     .eq('id', orderId)
     .single();
 
@@ -580,6 +580,16 @@ export async function publishOrder(input: PublishOrderInput): Promise<void> {
   if (!TRANSITION_GUARDS.publish.includes(order.status)) {
     throw new AppError('VALIDATION', `Cannot publish an order with status "${order.status}"`);
   }
+
+  // Snapshot the sourcer payout onto the order so future changes to the site
+  // don't retroactively shift historical earnings.
+  const { data: site } = await supabase
+    .from('sites')
+    .select('sourcer_payout_cents')
+    .eq('id', order.site_id)
+    .single();
+  const sourcerPayoutCents =
+    site && site.sourcer_payout_cents > 0 ? site.sourcer_payout_cents : null;
 
   const now = new Date();
   // billing_month is derived from publish_date (the business event the client
@@ -597,6 +607,7 @@ export async function publishOrder(input: PublishOrderInput): Promise<void> {
       published_url,
       publish_date: publishDateStr,
       billing_month: billingMonth,
+      sourcer_payout_cents: sourcerPayoutCents,
     })
     .eq('id', orderId)
     .eq('status', 'Content Approved');
@@ -608,7 +619,12 @@ export async function publishOrder(input: PublishOrderInput): Promise<void> {
     entityId: orderId,
     action: 'order.published',
     before: { status: order.status },
-    after: { status: 'Published', published_url, billing_month: billingMonth },
+    after: {
+      status: 'Published',
+      published_url,
+      billing_month: billingMonth,
+      sourcer_payout_cents: sourcerPayoutCents,
+    },
   });
 
   const notifications: Promise<void>[] = [
@@ -620,36 +636,6 @@ export async function publishOrder(input: PublishOrderInput): Promise<void> {
     );
   }
   await Promise.all(notifications);
-
-  // Accrue commission if the site has an active sourcer. Best-effort —
-  // failures here must not roll back the publish.
-  try {
-    const { data: commissionId } = await supabase.rpc('accrue_commission_for_order', {
-      p_order_id: orderId,
-    });
-    if (commissionId) {
-      const { data: comm } = await supabase
-        .from('commissions')
-        .select('amount_cents, sourcer_id')
-        .eq('id', commissionId)
-        .single();
-      if (comm) {
-        await recordAudit({
-          entityType: 'commission',
-          entityId: commissionId,
-          action: 'commission.accrued',
-          after: { amount_cents: comm.amount_cents, sourcer_id: comm.sourcer_id, order_id: orderId },
-        });
-        await notify({
-          recipientId: comm.sourcer_id,
-          type: 'commission.accrued',
-          payload: { commissionId, orderId, amount_cents: comm.amount_cents },
-        });
-      }
-    }
-  } catch (e) {
-    console.error('[publishOrder] accrual failed:', (e as Error).message);
-  }
 
   revalidatePath('/dashboard/orders');
   revalidatePath(`/dashboard/orders/${orderId}`);

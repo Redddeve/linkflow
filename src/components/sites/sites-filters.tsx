@@ -41,8 +41,10 @@ export function SitesFilters({ categories }: Props) {
 
   return (
     <FilterBar
+      searchKey="search"
+      searchPlaceholder="Search by domain…"
       fields={fields}
-      filterKeys={['status', 'category', 'price_min', 'price_max']}
+      filterKeys={['search', 'status', 'category', 'price_min', 'price_max']}
     />
   );
 }

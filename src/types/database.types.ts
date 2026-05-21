@@ -305,73 +305,6 @@ export type Database = {
           },
         ]
       }
-      commissions: {
-        Row: {
-          accrued_at: string
-          amount_cents: number
-          created_at: string
-          id: string
-          last_retry_at: string | null
-          order_id: string
-          paid_at: string | null
-          payout_reference: string | null
-          retry_count: number
-          site_id: string
-          sourcer_id: string
-          status: Database["public"]["Enums"]["commission_status"]
-        }
-        Insert: {
-          accrued_at?: string
-          amount_cents: number
-          created_at?: string
-          id?: string
-          last_retry_at?: string | null
-          order_id: string
-          paid_at?: string | null
-          payout_reference?: string | null
-          retry_count?: number
-          site_id: string
-          sourcer_id: string
-          status?: Database["public"]["Enums"]["commission_status"]
-        }
-        Update: {
-          accrued_at?: string
-          amount_cents?: number
-          created_at?: string
-          id?: string
-          last_retry_at?: string | null
-          order_id?: string
-          paid_at?: string | null
-          payout_reference?: string | null
-          retry_count?: number
-          site_id?: string
-          sourcer_id?: string
-          status?: Database["public"]["Enums"]["commission_status"]
-        }
-        Relationships: [
-          {
-            foreignKeyName: "commissions_order_id_fkey"
-            columns: ["order_id"]
-            isOneToOne: true
-            referencedRelation: "orders"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "commissions_site_id_fkey"
-            columns: ["site_id"]
-            isOneToOne: false
-            referencedRelation: "sites"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "commissions_sourcer_id_fkey"
-            columns: ["sourcer_id"]
-            isOneToOne: false
-            referencedRelation: "users"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       invoices: {
         Row: {
           billing_month: string
@@ -534,6 +467,9 @@ export type Database = {
           site_organic_traffic_count: number
           site_requirements: string | null
           site_top_countries: string | null
+          sourcer_paid_at: string | null
+          sourcer_payout_cents: number | null
+          sourcer_payout_reference: string | null
           status: Database["public"]["Enums"]["order_status"]
         }
         Insert: {
@@ -569,6 +505,9 @@ export type Database = {
           site_organic_traffic_count?: number
           site_requirements?: string | null
           site_top_countries?: string | null
+          sourcer_paid_at?: string | null
+          sourcer_payout_cents?: number | null
+          sourcer_payout_reference?: string | null
           status?: Database["public"]["Enums"]["order_status"]
         }
         Update: {
@@ -604,6 +543,9 @@ export type Database = {
           site_organic_traffic_count?: number
           site_requirements?: string | null
           site_top_countries?: string | null
+          sourcer_paid_at?: string | null
+          sourcer_payout_cents?: number | null
+          sourcer_payout_reference?: string | null
           status?: Database["public"]["Enums"]["order_status"]
         }
         Relationships: [
@@ -680,7 +622,7 @@ export type Database = {
           organic_traffic_count: number
           price_cents: number
           requirements: string | null
-          sourcer_id: string | null
+          sourcer_id: string
           sourcer_notes: string | null
           sourcer_payout_cents: number
           status: Database["public"]["Enums"]["site_status"]
@@ -707,7 +649,7 @@ export type Database = {
           organic_traffic_count?: number
           price_cents?: number
           requirements?: string | null
-          sourcer_id?: string | null
+          sourcer_id: string
           sourcer_notes?: string | null
           sourcer_payout_cents?: number
           status?: Database["public"]["Enums"]["site_status"]
@@ -734,7 +676,7 @@ export type Database = {
           organic_traffic_count?: number
           price_cents?: number
           requirements?: string | null
-          sourcer_id?: string | null
+          sourcer_id?: string
           sourcer_notes?: string | null
           sourcer_payout_cents?: number
           status?: Database["public"]["Enums"]["site_status"]
@@ -840,10 +782,6 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      accrue_commission_for_order: {
-        Args: { p_order_id: string }
-        Returns: string
-      }
       check_user_email_exists: {
         Args: { lookup_email: string }
         Returns: boolean
@@ -884,17 +822,6 @@ export type Database = {
       is_admin: { Args: never; Returns: boolean }
       is_chat_participant: { Args: { p_chat_id: string }; Returns: boolean }
       mark_messages_read: { Args: { p_chat_id: string }; Returns: undefined }
-      promote_commissions_candidates: {
-        Args: { p_window_days: number }
-        Returns: {
-          commission_id: string
-          order_id: string
-          published_url: string
-          retry_count: number
-          site_domain: string
-          sourcer_id: string
-        }[]
-      }
       reassign_order_billing_months: {
         Args: { p_changes: Json }
         Returns: Json
@@ -905,7 +832,6 @@ export type Database = {
     Enums: {
       chat_category: "Standard" | "Support" | "Sales"
       chat_status: "Active" | "Archived"
-      commission_status: "ACCRUED" | "PAYABLE" | "PAID" | "REVERSED"
       country:
         | "Ukraine"
         | "Germany"
@@ -1063,7 +989,6 @@ export const Constants = {
     Enums: {
       chat_category: ["Standard", "Support", "Sales"],
       chat_status: ["Active", "Archived"],
-      commission_status: ["ACCRUED", "PAYABLE", "PAID", "REVERSED"],
       country: [
         "Ukraine",
         "Germany",
