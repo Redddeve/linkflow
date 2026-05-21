@@ -72,6 +72,21 @@ export async function addToCart(input: AddCartItemInput): Promise<void> {
   if (site.status !== 'Active')
     throw new AppError('VALIDATION', 'Site is not available');
 
+  const { data: activeOrders } = await supabase
+    .from('orders')
+    .select('id')
+    .eq('created_by_id', actor.id)
+    .eq('site_id', parsed.data.siteId)
+    .not('status', 'in', '("Completed","Canceled")')
+    .limit(1);
+
+  if (activeOrders && activeOrders.length > 0) {
+    throw new AppError(
+      'CONFLICT',
+      'You already have an active order for this site',
+    );
+  }
+
   const cartId = await getOrCreateCart(supabase, actor.id);
 
   const { error } = await supabase

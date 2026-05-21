@@ -14,6 +14,8 @@ import { TableEmptyState } from '@/components/ui/table-empty-state';
 import type { Database } from '@/types/database.types';
 
 type SiteStatus = Database['public']['Enums']['site_status'];
+type Country = Database['public']['Enums']['country'];
+type Language = Database['public']['Enums']['language'];
 
 interface SiteRow {
   id: string;
@@ -23,6 +25,10 @@ interface SiteRow {
   link_type: string;
   category_id: string | null;
   created_at: string;
+  dr: number | null;
+  top_countries: string | null;
+  countries: Country[];
+  languages: Language[];
   categories: { name: string } | null;
 }
 
@@ -46,11 +52,13 @@ export function SitesTable({ sites }: Props) {
         <TableHeader>
           <TableRow>
             <TableHead>Domain</TableHead>
+            <TableHead>DR</TableHead>
             <TableHead>Category</TableHead>
-            <TableHead>Status</TableHead>
-            <TableHead>Link type</TableHead>
+            <TableHead>Top countries</TableHead>
+            <TableHead>Countries</TableHead>
+            <TableHead>Languages</TableHead>
             <TableHead className="text-right">Price</TableHead>
-            <TableHead>Added</TableHead>
+            <TableHead>Status</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -61,18 +69,24 @@ export function SitesTable({ sites }: Props) {
               onClick={() => router.push(`/dashboard/sites/${site.id}`)}
             >
               <TableCell className="font-medium">{site.domain}</TableCell>
+              <TableCell className="text-sm">{site.dr ?? '—'}</TableCell>
               <TableCell className="text-muted-foreground text-sm">
                 {site.categories?.name ?? '—'}
               </TableCell>
-              <TableCell>
-                <Badge variant={statusVariant(site.status)}>{site.status}</Badge>
+              <TableCell className="text-muted-foreground text-sm">
+                {site.top_countries ?? '—'}
               </TableCell>
-              <TableCell className="text-sm capitalize">{site.link_type}</TableCell>
+              <TableCell className="text-muted-foreground text-sm">
+                {site.countries.length > 0 ? site.countries.join(', ') : '—'}
+              </TableCell>
+              <TableCell className="text-muted-foreground text-sm">
+                {site.languages.length > 0 ? site.languages.join(', ') : '—'}
+              </TableCell>
               <TableCell className="text-right text-sm">
                 {site.price_cents > 0 ? `$${(site.price_cents / 100).toFixed(2)}` : '—'}
               </TableCell>
-              <TableCell className="text-muted-foreground text-xs">
-                {new Date(site.created_at).toLocaleDateString('en-CA')}
+              <TableCell>
+                <Badge variant={statusVariant(site.status)}>{site.status}</Badge>
               </TableCell>
             </TableRow>
           ))}

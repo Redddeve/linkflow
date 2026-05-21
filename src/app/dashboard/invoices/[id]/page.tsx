@@ -81,7 +81,6 @@ export default async function InvoiceDetailPage({ params }: PageProps) {
                 site_domain: o.site_domain,
                 publish_date: o.publish_date,
                 price_cents: o.price_cents,
-                billing_month: o.billing_month ?? invoice.billing_month,
               }))}
               availableOrders={availableOrders}
             />

@@ -78,7 +78,6 @@ export default async function SiteDetailPage({ params }: PageProps) {
                 keywords_relevance: site.keywords_relevance,
                 top_countries: site.top_countries,
                 sourcer_notes: site.sourcer_notes,
-                sourcer_payout_cents: site.sourcer_payout_cents,
               }}
             />
           )}

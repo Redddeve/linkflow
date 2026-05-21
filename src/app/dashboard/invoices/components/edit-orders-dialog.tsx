@@ -14,21 +14,14 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
-import {
-  reassignOrders,
-  addOrdersToInvoice,
-  removeOrdersFromInvoice,
-} from '../actions';
+import { addOrdersToInvoice, removeOrdersFromInvoice } from '../actions';
 
 interface AttachedOrder {
   id: string;
   site_domain: string;
   publish_date: string | null;
   price_cents: number;
-  billing_month: string;
 }
 
 interface AvailableOrder {
@@ -44,14 +37,6 @@ interface Props {
   availableOrders: AvailableOrder[];
 }
 
-function toMonthInput(month: string): string {
-  return month.slice(0, 7);
-}
-
-function fromMonthInput(value: string): string {
-  return `${value}-01`;
-}
-
 function formatPrice(cents: number) {
   return `$${(cents / 100).toFixed(2)}`;
 }
@@ -59,9 +44,6 @@ function formatPrice(cents: number) {
 export function EditOrdersDialog({ invoiceId, orders, availableOrders }: Props) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
-  const [drafts, setDrafts] = useState<Record<string, string>>(() =>
-    Object.fromEntries(orders.map((o) => [o.id, toMonthInput(o.billing_month)])),
-  );
   const [toAdd, setToAdd] = useState<Set<string>>(new Set());
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
@@ -107,28 +89,6 @@ export function EditOrdersDialog({ invoiceId, orders, availableOrders }: Props) 
     });
   }
 
-  function handleSaveMonths() {
-    setError(null);
-    const changes = orders
-      .filter((o) => fromMonthInput(drafts[o.id]) !== o.billing_month)
-      .map((o) => ({ orderId: o.id, billing_month: fromMonthInput(drafts[o.id]) }));
-
-    if (changes.length === 0) {
-      close();
-      return;
-    }
-
-    startTransition(async () => {
-      try {
-        await reassignOrders({ changes });
-        close();
-        router.refresh();
-      } catch (e) {
-        setError(e instanceof Error ? e.message : 'Something went wrong');
-      }
-    });
-  }
-
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger render={<Button variant="outline" size="sm" />}>Edit orders</DialogTrigger>
@@ -136,9 +96,7 @@ export function EditOrdersDialog({ invoiceId, orders, availableOrders }: Props) 
         <DialogHeader>
           <DialogTitle>Manage invoice orders</DialogTitle>
           <DialogDescription>
-            Add or remove Published orders from this Draft invoice, or move an order to a
-            different billing month. Moving into a Sent/Paid month creates a corrective Draft
-            (FR-INV-5).
+            Add or remove Published orders from this Draft invoice.
           </DialogDescription>
         </DialogHeader>
 
@@ -151,23 +109,13 @@ export function EditOrdersDialog({ invoiceId, orders, availableOrders }: Props) 
               {orders.map((o) => (
                 <div
                   key={o.id}
-                  className="grid grid-cols-[1fr_auto_auto] gap-3 items-end border-b pb-3"
+                  className="grid grid-cols-[1fr_auto] gap-3 items-center border-b pb-3"
                 >
                   <div>
                     <p className="text-sm font-medium">{o.site_domain}</p>
                     <p className="text-xs text-muted-foreground">
                       Published {o.publish_date ?? '—'} · {formatPrice(o.price_cents)}
                     </p>
-                  </div>
-                  <div className="space-y-1">
-                    <Label htmlFor={`bm-${o.id}`} className="text-xs">Billing month</Label>
-                    <Input
-                      id={`bm-${o.id}`}
-                      type="month"
-                      value={drafts[o.id]}
-                      onChange={(e) => setDrafts({ ...drafts, [o.id]: e.target.value })}
-                      className="w-40"
-                    />
                   </div>
                   <Button
                     variant="ghost"
@@ -233,9 +181,6 @@ export function EditOrdersDialog({ invoiceId, orders, availableOrders }: Props) 
         <DialogFooter>
           <Button variant="outline" onClick={close} disabled={isPending}>
             Close
-          </Button>
-          <Button onClick={handleSaveMonths} disabled={isPending}>
-            {isPending ? 'Saving…' : 'Save month changes'}
           </Button>
         </DialogFooter>
       </DialogContent>

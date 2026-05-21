@@ -15,6 +15,7 @@ import {
 } from '@/components/ui/select';
 import { MultiSelect } from '@/components/ui/multi-select';
 import { createSite, editSite } from '@/app/dashboard/sites/actions';
+import { APP_COMMISSION_RATE } from '@/lib/commission';
 import type { Database } from '@/types/database.types';
 import { Constants } from '@/types/database.types';
 
@@ -48,7 +49,6 @@ interface SiteFormProps {
     keywords_relevance?: string | null;
     top_countries?: string | null;
     sourcer_notes?: string | null;
-    sourcer_payout_cents?: number;
   };
 }
 
@@ -68,7 +68,6 @@ type FormValues = {
   keywords_relevance: string;
   top_countries: string;
   sourcer_notes: string;
-  sourcer_payout_dollars: string;
 };
 
 const COUNTRIES = Constants.public.Enums.country;
@@ -95,13 +94,13 @@ export function SiteForm({ mode, siteId, categories, actorRole, onSuccess, onCan
       keywords_relevance: defaultValues?.keywords_relevance ?? '',
       top_countries: defaultValues?.top_countries ?? '',
       sourcer_notes: defaultValues?.sourcer_notes ?? '',
-      sourcer_payout_dollars: defaultValues?.sourcer_payout_cents ? (defaultValues.sourcer_payout_cents / 100).toString() : '0',
     },
   });
 
   const showSourcerFields = actorRole === 'Sourcer' || actorRole === 'Admin';
 
   async function onSubmit(data: FormValues) {
+    const priceCents = Math.round(parseFloat(data.price_dollars || '0') * 100);
     const payload = {
       domain: data.domain,
       category_id: data.category_id || null,
@@ -113,12 +112,12 @@ export function SiteForm({ mode, siteId, categories, actorRole, onSuccess, onCan
       dr: data.dr ? parseInt(data.dr, 10) : null,
       organic_traffic_count: parseInt(data.organic_traffic_count, 10) || 0,
       organic_keywords_count: parseInt(data.organic_keywords_count, 10) || 0,
-      price_cents: Math.round(parseFloat(data.price_dollars || '0') * 100),
+      price_cents: priceCents,
       link_type: data.link_type as Database['public']['Enums']['link_type'],
       keywords_relevance: data.keywords_relevance || null,
       top_countries: data.top_countries || null,
       sourcer_notes: data.sourcer_notes || null,
-      sourcer_payout_cents: Math.round(parseFloat(data.sourcer_payout_dollars || '0') * 100),
+      sourcer_payout_cents: Math.round(priceCents * (1 - APP_COMMISSION_RATE)),
     };
 
     try {
@@ -285,15 +284,6 @@ export function SiteForm({ mode, siteId, categories, actorRole, onSuccess, onCan
             <Label htmlFor="sourcer-notes">Sourcer notes</Label>
             <Textarea id="sourcer-notes" rows={3} maxLength={2000} {...register('sourcer_notes')} />
           </div>
-          {(actorRole === 'Admin' || actorRole === 'Sourcer') && (
-            <div className="grid gap-1.5 max-w-xs">
-              <Label htmlFor="sourcer-payout">Sourcer payout (USD)</Label>
-              <Input id="sourcer-payout" type="number" min={0} step="0.01" {...register('sourcer_payout_dollars')} />
-              <p className="text-xs text-muted-foreground">
-                Suggested: 95% of price. App keeps the remainder as commission.
-              </p>
-            </div>
-          )}
         </section>
       )}
 

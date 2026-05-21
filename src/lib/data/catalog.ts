@@ -40,6 +40,7 @@ export interface CatalogSite {
   status: Database['public']['Enums']['site_status'];
   categories: { name: string } | null;
   inMyCart: boolean;
+  inActiveOrder: boolean;
 }
 
 export async function fetchActiveCatalog(
@@ -69,22 +70,67 @@ export async function fetchActiveCatalog(
 
   query = query.range(offset, offset + pageSize - 1);
 
-  const [sitesResult, cartResult] = await Promise.all([
+  const [sitesResult, cartResult, activeOrdersResult] = await Promise.all([
     query,
     supabase
       .from('cart_items')
       .select('site_id, carts!inner(created_by_id)')
       .eq('carts.created_by_id', userId),
+    supabase
+      .from('orders')
+      .select('site_id')
+      .eq('created_by_id', userId)
+      .not('status', 'in', '("Completed","Canceled")'),
   ]);
 
   const inCartIds = new Set(
     (cartResult.data ?? []).map((ci) => ci.site_id),
   );
+  const inActiveOrderIds = new Set(
+    (activeOrdersResult.data ?? []).map((o) => o.site_id),
+  );
 
   const sites: CatalogSite[] = (sitesResult.data ?? []).map((s) => ({
     ...s,
     inMyCart: inCartIds.has(s.id),
+    inActiveOrder: inActiveOrderIds.has(s.id),
   })) as CatalogSite[];
 
   return { sites, total: sitesResult.count ?? 0 };
+}
+
+export async function fetchActiveCatalogSiteById(
+  id: string,
+  userId: string,
+): Promise<CatalogSite | null> {
+  const supabase = await createClient();
+
+  const [siteResult, cartResult, activeOrderResult] = await Promise.all([
+    supabase
+      .from('sites')
+      .select(CATALOG_SELECT)
+      .eq('id', id)
+      .eq('status', 'Active')
+      .maybeSingle(),
+    supabase
+      .from('cart_items')
+      .select('site_id, carts!inner(created_by_id)')
+      .eq('carts.created_by_id', userId)
+      .eq('site_id', id),
+    supabase
+      .from('orders')
+      .select('id')
+      .eq('created_by_id', userId)
+      .eq('site_id', id)
+      .not('status', 'in', '("Completed","Canceled")')
+      .limit(1),
+  ]);
+
+  if (!siteResult.data) return null;
+
+  return {
+    ...(siteResult.data as Omit<CatalogSite, 'inMyCart' | 'inActiveOrder'>),
+    inMyCart: (cartResult.data ?? []).length > 0,
+    inActiveOrder: (activeOrderResult.data ?? []).length > 0,
+  };
 }
