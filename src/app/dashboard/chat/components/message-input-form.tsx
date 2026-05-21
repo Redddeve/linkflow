@@ -1,10 +1,11 @@
 'use client';
 
-import { useState, useTransition } from 'react';
+import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { sendMessage } from '../actions';
+import { useOptimisticMessages } from './optimistic-messages';
 
 interface Props {
   chatId: string;
@@ -13,22 +14,23 @@ interface Props {
 export function MessageInputForm({ chatId }: Props) {
   const router = useRouter();
   const [content, setContent] = useState('');
-  const [error, setError] = useState<string | null>(null);
-  const [isPending, startTransition] = useTransition();
+  const { addPending, markFailed, remove } = useOptimisticMessages();
 
-  function handleSubmit(e: React.FormEvent) {
+  async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (!content.trim()) return;
-    setError(null);
-    startTransition(async () => {
-      try {
-        await sendMessage({ chatId, content: content.trim() });
-        setContent('');
-        router.refresh();
-      } catch (err) {
-        setError(err instanceof Error ? err.message : 'Something went wrong');
-      }
-    });
+    const trimmed = content.trim();
+    if (!trimmed) return;
+
+    setContent('');
+    const tempId = addPending(trimmed);
+
+    try {
+      await sendMessage({ chatId, content: trimmed });
+      remove(tempId);
+      router.refresh();
+    } catch (err) {
+      markFailed(tempId, err instanceof Error ? err.message : 'Failed to send');
+    }
   }
 
   function handleKeyDown(e: React.KeyboardEvent<HTMLTextAreaElement>) {
@@ -47,12 +49,10 @@ export function MessageInputForm({ chatId }: Props) {
         onKeyDown={handleKeyDown}
         rows={3}
         maxLength={10_000}
-        disabled={isPending}
       />
-      {error && <p className="text-sm text-destructive">{error}</p>}
       <div className="flex justify-end">
-        <Button type="submit" size="sm" disabled={isPending || !content.trim()}>
-          {isPending ? 'Sending…' : 'Send'}
+        <Button type="submit" size="sm" disabled={!content.trim()}>
+          Send
         </Button>
       </div>
     </form>

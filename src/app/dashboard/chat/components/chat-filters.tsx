@@ -1,26 +1,13 @@
 'use client';
 
 import { FilterBar } from '@/components/ui/filter-bar';
-import type { ChatParticipant } from '@/lib/data/chat';
 
-interface Props {
-  users: ChatParticipant[];
-}
-
-export function ChatFilters({ users }: Props) {
+export function ChatFilters() {
   return (
     <FilterBar
+      searchKey="q"
+      searchPlaceholder="Search chats or participants…"
       fields={[
-        {
-          type: 'select',
-          key: 'user',
-          placeholder: 'Participant',
-          allLabel: 'All participants',
-          options: users.map((u) => ({
-            value: u.id,
-            label: `${u.first_name} ${u.last_name}`,
-          })),
-        },
         {
           type: 'select',
           key: 'status',
@@ -31,8 +18,19 @@ export function ChatFilters({ users }: Props) {
             { value: 'Archived', label: 'Archived' },
           ],
         },
+        {
+          type: 'select',
+          key: 'category',
+          placeholder: 'Category',
+          allLabel: 'All categories',
+          options: [
+            { value: 'Standard', label: 'Standard' },
+            { value: 'Support', label: 'Support' },
+            { value: 'Sales', label: 'Sales' },
+          ],
+        },
       ]}
-      filterKeys={['user', 'status']}
+      filterKeys={['q', 'status', 'category']}
     />
   );
 }

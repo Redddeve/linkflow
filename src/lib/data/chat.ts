@@ -1,5 +1,6 @@
 import { createClient } from '@/lib/supabase/server';
 import type { Database } from '@/types/database.types';
+import type { UserRole } from '@/lib/auth';
 
 type ChatRow = Database['public']['Tables']['chats']['Row'];
 type ChatCategory = Database['public']['Enums']['chat_category'];
@@ -11,6 +12,7 @@ export interface ChatParticipant {
   id: string;
   first_name: string;
   last_name: string;
+  role: UserRole | null;
 }
 
 export interface ChatsListRow extends ChatRow {
@@ -18,9 +20,16 @@ export interface ChatsListRow extends ChatRow {
 }
 
 export interface ChatsListFilters {
-  userId?: string;
+  q?: string;
   status?: string;
+  category?: string;
 }
+
+const CLIENT_CATEGORY_RANK: Record<ChatCategory, number> = {
+  Support: 0,
+  Sales: 1,
+  Standard: 2,
+};
 
 export interface MessageRow {
   id: string;
@@ -33,15 +42,14 @@ export interface MessageRow {
 
 export async function fetchChatsList(
   filters: ChatsListFilters,
-  actorId: string,
+  actor: { id: string; role: UserRole | null },
 ): Promise<ChatsListRow[]> {
   const supabase = await createClient();
 
-  // Fetch chats where actor is a participant
   const { data: participantRows } = await supabase
     .from('chat_participants')
     .select('chat_id')
-    .eq('user_id', actorId);
+    .eq('user_id', actor.id);
 
   const chatIds = (participantRows ?? []).map((r) => r.chat_id);
   if (!chatIds.length) return [];
@@ -53,39 +61,23 @@ export async function fetchChatsList(
     .order('created_at', { ascending: false });
 
   if (filters.status) query = query.eq('status', filters.status as ChatStatus);
+  if (filters.category) query = query.eq('category', filters.category as ChatCategory);
 
   const { data: chats } = await query;
   if (!chats?.length) return [];
 
-  // Fetch all participants for these chats
-  let participantsQuery = supabase
+  const { data: allParticipants } = await supabase
     .from('chat_participants')
     .select('chat_id, user_id')
     .in('chat_id', chats.map((c) => c.id));
 
-  if (filters.userId) participantsQuery = participantsQuery.eq('user_id', filters.userId);
-
-  const { data: allParticipants } = await participantsQuery;
-
-  // Filter chats when userId filter applied (only chats that have that participant)
-  const visibleChatIds = filters.userId
-    ? new Set((allParticipants ?? []).map((p) => p.chat_id))
-    : null;
-
-  const filteredChats = visibleChatIds
-    ? chats.filter((c) => visibleChatIds.has(c.id))
-    : chats;
-
-  if (!filteredChats.length) return [];
-
-  // Fetch user info for all participant user_ids
   const userIds = [...new Set((allParticipants ?? []).map((p) => p.user_id))];
   const { data: users } = await supabase
     .from('users')
-    .select('id, first_name, last_name')
+    .select('id, first_name, last_name, role')
     .in('id', userIds);
 
-  const userMap = Object.fromEntries((users ?? []).map((u) => [u.id, u]));
+  const userMap = Object.fromEntries((users ?? []).map((u) => [u.id, u as ChatParticipant]));
   const participantsByChat: Record<string, ChatParticipant[]> = {};
   for (const p of allParticipants ?? []) {
     const u = userMap[p.user_id];
@@ -94,10 +86,30 @@ export async function fetchChatsList(
     participantsByChat[p.chat_id].push(u);
   }
 
-  return filteredChats.map((chat) => ({
+  const withParticipants: ChatsListRow[] = chats.map((chat) => ({
     ...chat,
     participants: participantsByChat[chat.id] ?? [],
   }));
+
+  const q = filters.q?.trim().toLowerCase();
+  const filtered = q
+    ? withParticipants.filter((chat) => {
+        if (chat.title.toLowerCase().includes(q)) return true;
+        return chat.participants.some((p) =>
+          `${p.first_name} ${p.last_name}`.toLowerCase().includes(q),
+        );
+      })
+    : withParticipants;
+
+  if (actor.role === 'Client') {
+    filtered.sort((a, b) => {
+      const rank = CLIENT_CATEGORY_RANK[a.category] - CLIENT_CATEGORY_RANK[b.category];
+      if (rank !== 0) return rank;
+      return b.created_at.localeCompare(a.created_at);
+    });
+  }
+
+  return filtered;
 }
 
 export async function fetchChatById(id: string) {
@@ -116,10 +128,10 @@ export async function fetchChatParticipants(chatId: string): Promise<ChatPartici
 
   const { data: users } = await supabase
     .from('users')
-    .select('id, first_name, last_name')
+    .select('id, first_name, last_name, role')
     .in('id', rows.map((r) => r.user_id));
 
-  return users ?? [];
+  return (users ?? []) as ChatParticipant[];
 }
 
 export async function fetchChatMessages(chatId: string): Promise<MessageRow[]> {
@@ -146,8 +158,8 @@ export async function fetchActiveUsers(): Promise<ChatParticipant[]> {
   const supabase = await createClient();
   const { data } = await supabase
     .from('users')
-    .select('id, first_name, last_name')
+    .select('id, first_name, last_name, role')
     .eq('status', 'ACTIVE')
     .order('first_name');
-  return data ?? [];
+  return (data ?? []) as ChatParticipant[];
 }
