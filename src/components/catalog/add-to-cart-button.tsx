@@ -8,13 +8,16 @@ import { addToCart } from '@/app/dashboard/cart/actions';
 interface Props {
   siteId: string;
   inMyCart: boolean;
+  inActiveOrder?: boolean;
 }
 
-export function AddToCartButton({ siteId, inMyCart }: Props) {
+export function AddToCartButton({ siteId, inMyCart, inActiveOrder = false }: Props) {
   const [isPending, startTransition] = useTransition();
 
+  const disabled = inMyCart || inActiveOrder || isPending;
+
   function handleAdd() {
-    if (inMyCart) return;
+    if (disabled) return;
     startTransition(async () => {
       try {
         await addToCart({ siteId });
@@ -24,6 +27,20 @@ export function AddToCartButton({ siteId, inMyCart }: Props) {
     });
   }
 
+  const label = inActiveOrder
+    ? 'Ordered'
+    : inMyCart
+      ? 'In cart'
+      : isPending
+        ? 'Adding…'
+        : 'Add to cart';
+
+  const tooltip = inActiveOrder
+    ? 'You already have an active order for this site'
+    : inMyCart
+      ? 'Already in cart'
+      : null;
+
   return (
     <TooltipProvider>
       <Tooltip>
@@ -31,15 +48,15 @@ export function AddToCartButton({ siteId, inMyCart }: Props) {
           render={
             <Button
               size="sm"
-              variant={inMyCart ? 'outline' : 'default'}
-              disabled={inMyCart || isPending}
+              variant={inMyCart || inActiveOrder ? 'outline' : 'default'}
+              disabled={disabled}
               onClick={handleAdd}
             >
-              {inMyCart ? 'In cart' : isPending ? 'Adding…' : 'Add to cart'}
+              {label}
             </Button>
           }
         />
-        {inMyCart && <TooltipContent>Already in cart</TooltipContent>}
+        {tooltip && <TooltipContent>{tooltip}</TooltipContent>}
       </Tooltip>
     </TooltipProvider>
   );

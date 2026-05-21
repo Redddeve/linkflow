@@ -81,7 +81,7 @@ export default async function EarningsPage({ searchParams }: PageProps) {
 
       <div className="mb-6 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-5">
         <div className="rounded-xl border border-border bg-card p-4 shadow-xs">
-          <div className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+          <div className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
             Total earned
           </div>
           <div className="mt-1 text-2xl font-semibold tabular-nums">
@@ -89,7 +89,7 @@ export default async function EarningsPage({ searchParams }: PageProps) {
           </div>
         </div>
         <div className="rounded-xl border border-border bg-card p-4 shadow-xs">
-          <div className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+          <div className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
             Paid
           </div>
           <div className="mt-1 text-2xl font-semibold tabular-nums">
@@ -97,7 +97,7 @@ export default async function EarningsPage({ searchParams }: PageProps) {
           </div>
         </div>
         <div className="rounded-xl border border-border bg-card p-4 shadow-xs">
-          <div className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+          <div className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
             Unpaid
           </div>
           <div className="mt-1 text-2xl font-semibold tabular-nums">
@@ -105,7 +105,7 @@ export default async function EarningsPage({ searchParams }: PageProps) {
           </div>
         </div>
         <div className="rounded-xl border border-border bg-card p-4 shadow-xs">
-          <div className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+          <div className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
             Commission
           </div>
           <div className="mt-1 text-2xl font-semibold tabular-nums">
@@ -113,7 +113,7 @@ export default async function EarningsPage({ searchParams }: PageProps) {
           </div>
         </div>
         <div className="rounded-xl border border-border bg-card p-4 shadow-xs">
-          <div className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+          <div className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
             Orders
           </div>
           <div className="mt-1 text-2xl font-semibold tabular-nums">

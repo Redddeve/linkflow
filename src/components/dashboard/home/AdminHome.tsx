@@ -53,7 +53,7 @@ export async function AdminHome({ user }: { user: UserRow }) {
       <Card>
         <CardContent className="flex items-center justify-between p-4">
           <div>
-            <div className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+            <div className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
               Unpaid sourcer payouts
             </div>
             <div className="mt-1 text-2xl font-semibold tabular-nums text-(--st-live-fg)">

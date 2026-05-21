@@ -166,7 +166,7 @@ export function UsersTable({ users, currentUserId }: Props) {
                         alt="User avatar"
                       />
                     )}
-                    <AvatarFallback className="text-[11px] font-semibold">
+                    <AvatarFallback className="text-xs font-semibold">
                       {userInitials(u)}
                     </AvatarFallback>
                   </Avatar>

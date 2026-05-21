@@ -130,11 +130,6 @@ const NAV_ITEMS: Record<UserRole, NavItem[]> = {
       icon: <Globe className="nav-icon" />,
     },
     {
-      href: '/dashboard/orders',
-      label: 'Orders',
-      icon: <FileText className="nav-icon" />,
-    },
-    {
       href: '/dashboard/earnings',
       label: 'Earnings',
       icon: <Wallet className="nav-icon" />,
@@ -243,16 +238,23 @@ export function DashboardShell({
           {/* Nav */}
           <div className="nav-label">Workspace</div>
           <nav className="flex flex-col gap-0.5 flex-1 pb-2">
-            {navItems.map((item) => (
-              <Link
-                key={item.href}
-                href={item.href}
-                className={`nav-item ${pathname === item.href ? 'active' : ''}`}
-              >
-                {item.icon}
-                <span>{item.label}</span>
-              </Link>
-            ))}
+            {navItems.map((item) => {
+              const isActive =
+                item.href === '/dashboard'
+                  ? pathname === '/dashboard'
+                  : pathname === item.href ||
+                    pathname.startsWith(`${item.href}/`);
+              return (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  className={`nav-item ${isActive ? 'active' : ''}`}
+                >
+                  {item.icon}
+                  <span>{item.label}</span>
+                </Link>
+              );
+            })}
           </nav>
 
           {/* Bottom: user info + sign out */}
@@ -264,7 +266,7 @@ export function DashboardShell({
             >
               <Avatar className="h-8 w-8 shrink-0">
                 {avatarUrl && <AvatarImage src={avatarUrl} alt="User avatar" />}
-                <AvatarFallback className="text-[11px] font-semibold">
+                <AvatarFallback className="text-xs font-semibold">
                   {userInitials(user)}
                 </AvatarFallback>
               </Avatar>
@@ -306,7 +308,7 @@ export function DashboardShell({
               >
                 <Avatar className="h-7 w-7 ring-2 ring-primary-soft">
                   {avatarUrl && <AvatarImage src={avatarUrl} alt="" />}
-                  <AvatarFallback className="bg-primary-soft text-[11px] font-semibold text-primary-text">
+                  <AvatarFallback className="bg-primary-soft text-xs font-semibold text-primary-text">
                     {userInitials(user)}
                   </AvatarFallback>
                 </Avatar>

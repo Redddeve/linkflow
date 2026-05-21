@@ -2,7 +2,7 @@ import Link from 'next/link';
 import { requireRole } from '@/lib/auth';
 import { notFound } from 'next/navigation';
 import { Separator } from '@/components/ui/separator';
-import { Card, CardContent } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { buttonVariants } from '@/components/ui/button';
 import { CartRow } from '@/components/cart/cart-row';
 import { CheckoutButton } from '@/components/cart/checkout-button';
@@ -20,8 +20,11 @@ export default async function CartPage() {
   const today = new Date().toISOString().split('T')[0];
   const hasUnavailable = items.some((i) => i.sites.status !== 'Active');
   const hasMissingDates = items.some((i) => !i.publish_date);
-  const hasPastDates = items.some((i) => i.publish_date && i.publish_date < today);
-  const isCheckoutDisabled = items.length === 0 || hasUnavailable || hasMissingDates || hasPastDates;
+  const hasPastDates = items.some(
+    (i) => i.publish_date && i.publish_date < today,
+  );
+  const isCheckoutDisabled =
+    items.length === 0 || hasUnavailable || hasMissingDates || hasPastDates;
 
   let disabledReason: string | undefined;
   if (items.length === 0) disabledReason = 'Cart is empty';
@@ -32,59 +35,81 @@ export default async function CartPage() {
   const total = items.reduce((sum, i) => sum + (i.sites.price_cents ?? 0), 0);
 
   return (
-    <div className="max-w-3xl">
+    <div>
       <PageHeader
         title="Cart"
         description={`${items.length} item${items.length !== 1 ? 's' : ''}`}
         actions={
-          <Link href="/dashboard/catalog" className={buttonVariants({ variant: 'outline' })}>
+          <Link
+            href="/dashboard/catalog"
+            className={buttonVariants({ variant: 'outline' })}
+          >
             Browse catalog
           </Link>
         }
       />
-      <div className="space-y-4">
 
       {items.length === 0 ? (
-        <p className="text-muted-foreground">Your cart is empty.</p>
-      ) : (
         <Card>
-          <CardContent className="p-0">
-            {items.map((item, i) => (
-              <div key={item.id}>
-                {i > 0 && <Separator />}
-                <div className="px-6">
-                  <CartRow
-                    item={{
-                      id: item.id,
-                      site_id: item.site_id,
-                      publish_date: item.publish_date,
-                      site_domain: item.sites.domain,
-                      site_status: item.sites.status,
-                      site_price_cents: item.sites.price_cents,
-                      site_link_type: item.sites.link_type,
-                    }}
-                  />
+          <CardContent>
+            <p className="py-12 text-center text-sm text-muted-foreground">
+              Your cart is empty.
+            </p>
+          </CardContent>
+        </Card>
+      ) : (
+        <div className="grid gap-4 lg:grid-cols-3">
+          <Card className="lg:col-span-2">
+            <CardHeader>
+              <CardTitle>Items</CardTitle>
+            </CardHeader>
+            <CardContent className="px-0">
+              {items.map((item, i) => (
+                <div key={item.id}>
+                  {i > 0 && <Separator />}
+                  <div className="px-4">
+                    <CartRow
+                      item={{
+                        id: item.id,
+                        site_id: item.site_id,
+                        publish_date: item.publish_date,
+                        site_domain: item.sites.domain,
+                        site_status: item.sites.status,
+                        site_price_cents: item.sites.price_cents,
+                        site_link_type: item.sites.link_type,
+                      }}
+                    />
+                  </div>
                 </div>
+              ))}
+            </CardContent>
+          </Card>
+
+          <Card className="lg:col-span-1 h-fit">
+            <CardHeader>
+              <CardTitle>Summary</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="flex items-center justify-between text-sm">
+                <span className="text-muted-foreground">Items</span>
+                <span className="font-medium tabular-nums">{items.length}</span>
               </div>
-            ))}
-            <Separator />
-            <div className="flex items-center justify-between px-6 py-4">
-              <div>
-                <p className="text-sm text-muted-foreground">Total</p>
-                <p className="text-lg font-semibold">
+              <Separator />
+              <div className="flex items-center justify-between">
+                <span className="text-sm text-muted-foreground">Total</span>
+                <span className="text-xl font-semibold tabular-nums">
                   {total > 0 ? `$${(total / 100).toFixed(2)}` : '—'}
-                </p>
+                </span>
               </div>
               <CheckoutButton
                 disabled={isCheckoutDisabled}
                 disabledReason={disabledReason}
                 itemCount={items.length}
               />
-            </div>
-          </CardContent>
-        </Card>
+            </CardContent>
+          </Card>
+        </div>
       )}
-      </div>
     </div>
   );
 }

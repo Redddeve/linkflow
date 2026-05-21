@@ -20,6 +20,10 @@ export type SitesListRow = {
   link_type: Database['public']['Enums']['link_type'];
   category_id: string | null;
   created_at: string;
+  dr: number | null;
+  top_countries: string | null;
+  countries: Database['public']['Enums']['country'][];
+  languages: Database['public']['Enums']['language'][];
   categories: { name: string } | null;
 };
 
@@ -28,7 +32,7 @@ export async function fetchSitesList(filters: SitesListFilters): Promise<SitesLi
   let query = supabase
     .from('sites')
     .select(
-      'id, domain, status, price_cents, link_type, category_id, created_at, categories(name)',
+      'id, domain, status, price_cents, link_type, category_id, created_at, dr, top_countries, countries, languages, categories(name)',
     )
     .order('created_at', { ascending: false });
 

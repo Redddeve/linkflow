@@ -25,7 +25,7 @@ export function StatCard({ label, value, href, tone = 'default', hint }: StatCar
         className="absolute inset-x-0 top-0 h-0.5 bg-primary opacity-0 transition-opacity group-hover:opacity-100"
         aria-hidden
       />
-      <div className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+      <div className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
         {label}
       </div>
       <div className={`mt-1 text-2xl font-semibold tabular-nums leading-tight ${toneClass[tone]}`}>

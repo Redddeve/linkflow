@@ -4,7 +4,7 @@ import { BackLink } from '@/components/ui/back-link';
 import { fetchUserById } from '@/lib/data/users';
 import { listManagers } from '../actions';
 import { Badge } from '@/components/ui/badge';
-import { Card, CardContent } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { EditUserDialog } from '@/components/users/edit-dialog';
 import { StatusActions } from '@/components/users/status-actions';
 
@@ -12,12 +12,16 @@ interface PageProps {
   params: Promise<{ id: string }>;
 }
 
-function statusVariant(
-  status: string,
-): 'success' | 'warning' | 'destructive' {
+function statusVariant(status: string): 'success' | 'warning' | 'destructive' {
   if (status === 'ACTIVE') return 'success';
   if (status === 'PENDING') return 'warning';
   return 'destructive';
+}
+
+function statusLabel(status: string) {
+  if (status === 'ACTIVE') return 'Active';
+  if (status === 'PENDING') return 'Pending';
+  return 'Disabled';
 }
 
 export default async function UserDetailPage({ params }: PageProps) {
@@ -30,79 +34,81 @@ export default async function UserDetailPage({ params }: PageProps) {
 
   const managers = await listManagers();
 
+  const details: { label: string; value: React.ReactNode }[] = [
+    { label: 'First Name', value: user.first_name ?? '—' },
+    { label: 'Last Name', value: user.last_name ?? '—' },
+    { label: 'Email', value: user.email },
+    { label: 'Role', value: user.role ?? '—' },
+    {
+      label: 'Status',
+      value: (
+        <Badge variant={statusVariant(user.status)}>
+          {statusLabel(user.status)}
+        </Badge>
+      ),
+    },
+  ];
+
+  if (user.invited_at) {
+    details.push({
+      label: 'Created',
+      value: new Date(user.invited_at).toLocaleDateString('en-US', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
+      }),
+    });
+  }
+
   return (
-    <div className="page">
+    <div className="space-y-6">
       <BackLink href="/dashboard/users" label="Users" />
 
-      <div className="page-header">
-        <div>
-          <h1 className="page-title">
+      <div className="flex items-start justify-between gap-4 flex-wrap">
+        <div className="min-w-0 space-y-1">
+          <h1 className="text-2xl font-semibold tracking-tight leading-tight">
             {user.first_name} {user.last_name}
           </h1>
-          <p className="page-subtitle">{user.email}</p>
+          <p className="text-base text-muted-foreground">{user.email}</p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 shrink-0">
           <EditUserDialog user={user} managers={managers} />
           <StatusActions user={user} currentUserId={currentUser.id} />
         </div>
       </div>
 
-      <Card>
-        <CardContent className="pt-6">
-          <dl>
-            <div className="flex items-center justify-start py-1.5 first:pt-0 last:pb-0">
-              <dt className="text-muted-foreground w-32 shrink-0">
-                First Name
-              </dt>
-              <dd className="font-medium">{user.first_name ?? '—'}</dd>
-            </div>
-            <div className="flex items-center justify-start py-1.5">
-              <dt className="text-muted-foreground w-32 shrink-0">Last Name</dt>
-              <dd className="font-medium">{user.last_name ?? '—'}</dd>
-            </div>
-            <div className="flex items-center justify-start py-1.5">
-              <dt className="text-muted-foreground w-32 shrink-0">Email</dt>
-              <dd className="font-medium">{user.email}</dd>
-            </div>
-            <div className="flex items-center justify-start py-1.5">
-              <dt className="text-muted-foreground w-32 shrink-0">Role</dt>
-              <dd className="font-medium">{user.role ?? '—'}</dd>
-            </div>
-            <div className="flex items-center justify-start py-1.5">
-              <dt className="text-muted-foreground w-32 shrink-0">Status</dt>
-              <dd>
-                <Badge variant={statusVariant(user.status)}>
-                  {user.status === 'ACTIVE'
-                    ? 'Active'
-                    : user.status === 'PENDING'
-                      ? 'Pending'
-                      : 'Disabled'}
-                </Badge>
-              </dd>
-            </div>
-            {user.invited_at && (
-              <div className="flex items-center justify-start py-1.5">
-                <dt className="text-muted-foreground w-32 shrink-0">Created</dt>
-                <dd className="font-medium">
-                  {new Date(user.invited_at).toLocaleDateString('en-US', {
-                    year: 'numeric',
-                    month: 'long',
-                    day: 'numeric',
-                  })}
-                </dd>
-              </div>
-            )}
-            {user.disabled_reason && (
-              <div className="flex items-start justify-start py-1.5 last:pb-0">
-                <dt className="text-muted-foreground w-32 shrink-0">
-                  Disabled reason
-                </dt>
-                <dd className="text-destructive">{user.disabled_reason}</dd>
-              </div>
-            )}
-          </dl>
-        </CardContent>
-      </Card>
+      <div className="grid gap-4 lg:grid-cols-3">
+        <Card className="lg:col-span-2">
+          <CardHeader>
+            <CardTitle>Account information</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <dl className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-4 text-sm">
+              {details.map((d) => (
+                <div key={d.label} className="space-y-1">
+                  <dt className="text-muted-foreground">{d.label}</dt>
+                  <dd className="font-medium text-base">{d.value}</dd>
+                </div>
+              ))}
+            </dl>
+          </CardContent>
+        </Card>
+
+        {user.disabled_reason && (
+          <Card className="lg:col-span-1 h-fit border-destructive/30">
+            <CardHeader>
+              <CardTitle className="text-destructive">
+                Disabled reason
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-base whitespace-pre-wrap text-destructive">
+                {user.disabled_reason}
+              </p>
+            </CardContent>
+          </Card>
+        )}
+      </div>
     </div>
   );
 }

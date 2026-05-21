@@ -148,7 +148,7 @@ export function FilterBar({ searchKey, searchPlaceholder = 'Search…', fields, 
       <div className="flex items-center gap-2 flex-wrap">
         {searchKey && (
           <Input
-            type="search"
+            type="text"
             placeholder={searchPlaceholder}
             value={values[searchKey] ?? ''}
             onChange={(e) => handleText(searchKey, e.target.value)}

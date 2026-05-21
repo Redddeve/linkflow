@@ -5,7 +5,11 @@ import { format, parseISO } from 'date-fns';
 import { CalendarIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Calendar } from '@/components/ui/calendar';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '@/components/ui/popover';
 import { cn } from '@/lib/utils';
 
 interface DatePickerProps {
@@ -45,9 +49,9 @@ export function DatePicker({
             id={id}
             variant="outline"
             className={cn(
-              'w-36 h-8 justify-start text-left text-sm font-normal',
+              'w-36 h-10 justify-start text-left text-sm font-normal',
               !selected && 'text-muted-foreground',
-              className
+              className,
             )}
           >
             <CalendarIcon className="mr-2 h-3.5 w-3.5 shrink-0" />
