@@ -219,7 +219,7 @@ export default async function OrderDetailPage({ params }: PageProps) {
         {metrics.map((m) => (
           <Card key={m.label} size="sm">
             <CardContent>
-              <div className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+              <div className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                 {m.label}
               </div>
               <div className="mt-1 text-2xl font-semibold tabular-nums">
@@ -327,7 +327,7 @@ export default async function OrderDetailPage({ params }: PageProps) {
                       className="flex items-start justify-between gap-3"
                     >
                       <dt className="text-muted-foreground">{r.label}</dt>
-                      <dd className="font-medium text-right">{r.value}</dd>
+                      <dd className="font-medium text-right text-base">{r.value}</dd>
                     </div>
                   ))}
                 </dl>
@@ -347,7 +347,7 @@ export default async function OrderDetailPage({ params }: PageProps) {
                     className="flex items-start justify-between gap-3"
                   >
                     <dt className="text-muted-foreground">{r.label}</dt>
-                    <dd className="font-medium text-right">{r.value}</dd>
+                    <dd className="font-medium text-right text-base">{r.value}</dd>
                   </div>
                 ))}
               </dl>

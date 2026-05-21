@@ -53,7 +53,7 @@ export default async function ProfilePage() {
               <p className="text-sm text-muted-foreground">{user.email}</p>
             </div>
             {user.role && (
-              <div className="inline-flex items-center rounded-full bg-primary-soft px-2.5 py-0.5 text-[11px] font-semibold uppercase tracking-wider text-primary-text">
+              <div className="inline-flex items-center rounded-full bg-primary-soft px-2.5 py-0.5 text-xs font-semibold uppercase tracking-wider text-primary-text">
                 {user.role}
               </div>
             )}
@@ -69,7 +69,7 @@ export default async function ProfilePage() {
               {details.map((d) => (
                 <div key={d.label} className="space-y-1">
                   <dt className="text-muted-foreground">{d.label}</dt>
-                  <dd className="font-medium">{d.value}</dd>
+                  <dd className="font-medium text-base">{d.value}</dd>
                 </div>
               ))}
             </dl>

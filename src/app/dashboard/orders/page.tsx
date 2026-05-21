@@ -90,9 +90,7 @@ export default async function OrdersPage({ searchParams }: PageProps) {
             ? 'Your orders'
             : isCopywriter
               ? 'Your assigned orders'
-              : isSourcer
-                ? 'Orders on your sites'
-                : 'All orders'
+              : 'All orders'
         }
         // actions={
         //   isManagerOrAdmin && (

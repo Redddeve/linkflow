@@ -36,7 +36,9 @@ interface Props {
   sites: SiteRow[];
 }
 
-function statusVariant(status: SiteStatus): 'success' | 'warning' | 'destructive' | 'outline' {
+function statusVariant(
+  status: SiteStatus,
+): 'success' | 'warning' | 'destructive' | 'outline' {
   if (status === 'Active') return 'success';
   if (status === 'Pending') return 'warning';
   if (status === 'Needs changes') return 'destructive';
@@ -57,7 +59,7 @@ export function SitesTable({ sites }: Props) {
             <TableHead>Top countries</TableHead>
             <TableHead>Countries</TableHead>
             <TableHead>Languages</TableHead>
-            <TableHead className="text-right">Price</TableHead>
+            <TableHead>Price</TableHead>
             <TableHead>Status</TableHead>
           </TableRow>
         </TableHeader>
@@ -82,11 +84,15 @@ export function SitesTable({ sites }: Props) {
               <TableCell className="text-muted-foreground text-sm">
                 {site.languages.length > 0 ? site.languages.join(', ') : '—'}
               </TableCell>
-              <TableCell className="text-right text-sm">
-                {site.price_cents > 0 ? `$${(site.price_cents / 100).toFixed(2)}` : '—'}
+              <TableCell className="text-sm">
+                {site.price_cents > 0
+                  ? `$${(site.price_cents / 100).toFixed(2)}`
+                  : '—'}
               </TableCell>
               <TableCell>
-                <Badge variant={statusVariant(site.status)}>{site.status}</Badge>
+                <Badge variant={statusVariant(site.status)}>
+                  {site.status}
+                </Badge>
               </TableCell>
             </TableRow>
           ))}

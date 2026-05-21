@@ -77,7 +77,7 @@ export async function ClientHome({ user }: { user: UserRow }) {
         <Card>
           <CardContent className="space-y-3 p-4">
             <div>
-              <div className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+              <div className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                 Cart
               </div>
               <div className="mt-1 text-2xl font-semibold tabular-nums">
@@ -108,7 +108,7 @@ export async function ClientHome({ user }: { user: UserRow }) {
         <Card>
           <CardContent className="space-y-3 p-4">
             <div>
-              <div className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+              <div className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                 Latest invoice
               </div>
               {latestInvoice ? (
@@ -127,7 +127,7 @@ export async function ClientHome({ user }: { user: UserRow }) {
             <Separator />
             <div className="flex items-center justify-between">
               <div>
-                <div className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+                <div className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                   Outstanding
                 </div>
                 <div className="mt-1 text-lg font-semibold tabular-nums">

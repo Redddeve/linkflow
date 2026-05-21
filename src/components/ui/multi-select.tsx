@@ -12,7 +12,11 @@ import {
   CommandItem,
   CommandList,
 } from '@/components/ui/command';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '@/components/ui/popover';
 import { Badge } from '@/components/ui/badge';
 
 interface MultiSelectProps {
@@ -53,7 +57,7 @@ export function MultiSelect({
         aria-expanded={open}
         className={cn(
           buttonVariants({ variant: 'outline' }),
-          'h-auto min-h-9 w-full justify-between font-normal',
+          'h-auto min-h-10 w-full justify-between font-normal',
           className,
         )}
       >
@@ -105,9 +109,16 @@ export function MultiSelect({
             <CommandEmpty>No results.</CommandEmpty>
             <CommandGroup>
               {options.map((option) => (
-                <CommandItem key={option} value={option} onSelect={() => toggle(option)}>
+                <CommandItem
+                  key={option}
+                  value={option}
+                  onSelect={() => toggle(option)}
+                >
                   <Check
-                    className={cn('mr-2 h-4 w-4', value.includes(option) ? 'opacity-100' : 'opacity-0')}
+                    className={cn(
+                      'mr-2 h-4 w-4',
+                      value.includes(option) ? 'opacity-100' : 'opacity-0',
+                    )}
                   />
                   {option}
                 </CommandItem>

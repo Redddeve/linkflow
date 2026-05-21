@@ -12,9 +12,7 @@ interface PageProps {
   params: Promise<{ id: string }>;
 }
 
-function statusVariant(
-  status: string,
-): 'success' | 'warning' | 'destructive' {
+function statusVariant(status: string): 'success' | 'warning' | 'destructive' {
   if (status === 'ACTIVE') return 'success';
   if (status === 'PENDING') return 'warning';
   return 'destructive';
@@ -71,7 +69,7 @@ export default async function UserDetailPage({ params }: PageProps) {
           <h1 className="text-2xl font-semibold tracking-tight leading-tight">
             {user.first_name} {user.last_name}
           </h1>
-          <p className="text-sm text-muted-foreground">{user.email}</p>
+          <p className="text-base text-muted-foreground">{user.email}</p>
         </div>
         <div className="flex items-center gap-2 shrink-0">
           <EditUserDialog user={user} managers={managers} />
@@ -89,7 +87,7 @@ export default async function UserDetailPage({ params }: PageProps) {
               {details.map((d) => (
                 <div key={d.label} className="space-y-1">
                   <dt className="text-muted-foreground">{d.label}</dt>
-                  <dd className="font-medium">{d.value}</dd>
+                  <dd className="font-medium text-base">{d.value}</dd>
                 </div>
               ))}
             </dl>
@@ -104,7 +102,7 @@ export default async function UserDetailPage({ params }: PageProps) {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <p className="text-sm whitespace-pre-wrap text-destructive">
+              <p className="text-base whitespace-pre-wrap text-destructive">
                 {user.disabled_reason}
               </p>
             </CardContent>

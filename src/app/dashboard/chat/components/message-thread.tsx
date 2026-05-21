@@ -126,11 +126,11 @@ export function MessageThread({
               >
                 {msg.content}
               </div>
-              <span className="text-[11px] text-muted-foreground">
+              <span className="text-xs text-muted-foreground">
                 {relativeTime(msg.created_at)}
               </span>
               {isOwn && uniqueReadBy.length > 0 && (
-                <span className="text-[11px] text-muted-foreground">
+                <span className="text-xs text-muted-foreground">
                   Read by {uniqueReadBy.join(', ')}
                 </span>
               )}
@@ -166,7 +166,7 @@ function PendingBubble({
           {message.content}
         </div>
         <span
-          className={`text-[11px] ${
+          className={`text-xs ${
             failed ? 'text-destructive' : 'text-muted-foreground'
           }`}
         >

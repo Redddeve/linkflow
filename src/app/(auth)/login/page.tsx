@@ -120,7 +120,7 @@ export default function LoginForm() {
                       <Button
                         key={role}
                         type="button"
-                        size="sm"
+                        size="tag"
                         variant="outline"
                         onClick={() => fillRole(role)}
                         style={{
