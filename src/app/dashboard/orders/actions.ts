@@ -585,11 +585,11 @@ export async function publishOrder(input: PublishOrderInput): Promise<void> {
   // don't retroactively shift historical earnings.
   const { data: site } = await supabase
     .from('sites')
-    .select('sourcer_id, sourcer_payout_cents')
+    .select('sourcer_payout_cents')
     .eq('id', order.site_id)
     .single();
   const sourcerPayoutCents =
-    site?.sourcer_id && site.sourcer_payout_cents > 0 ? site.sourcer_payout_cents : null;
+    site && site.sourcer_payout_cents > 0 ? site.sourcer_payout_cents : null;
 
   const now = new Date();
   // billing_month is derived from publish_date (the business event the client

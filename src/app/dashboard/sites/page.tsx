@@ -25,6 +25,7 @@ export default async function SitesPage({ searchParams }: PageProps) {
   const category = typeof params?.category === 'string' ? params.category : undefined;
   const priceMin = typeof params?.price_min === 'string' ? Number(params.price_min) * 100 : undefined;
   const priceMax = typeof params?.price_max === 'string' ? Number(params.price_max) * 100 : undefined;
+  const search = typeof params?.search === 'string' ? params.search.trim() || undefined : undefined;
 
   const [sites, categories] = await Promise.all([
     fetchSitesList({
@@ -33,11 +34,12 @@ export default async function SitesPage({ searchParams }: PageProps) {
       categoryId: category,
       priceMinCents: priceMin,
       priceMaxCents: priceMax,
+      search,
     }),
     fetchCategories(),
   ]);
 
-  const canCreate = ['Sourcer', 'Manager', 'Admin'].includes(actor.role ?? '');
+  const canCreate = actor.role === 'Sourcer';
 
   return (
     <div>

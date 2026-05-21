@@ -5,7 +5,7 @@ export const PERMISSIONS = {
   'sites:browse_active_catalog': ['Client'] as UserRole[],
   'sites:view_all_statuses':     ['Manager', 'Admin'] as UserRole[],
   'sites:view_own':              ['Sourcer'] as UserRole[],
-  'sites:create':                ['Sourcer', 'Manager', 'Admin'] as UserRole[],
+  'sites:create':                ['Sourcer'] as UserRole[],
   'sites:edit_own':              ['Sourcer'] as UserRole[],
   'sites:edit_any':              ['Manager', 'Admin'] as UserRole[],
   'sites:change_status':         ['Admin'] as UserRole[],

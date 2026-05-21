@@ -100,19 +100,6 @@ describe('createSite()', () => {
     expect(insertCall.status).toBe('Pending');
   });
 
-  it('sets sourcer_id to null for Manager actor', async () => {
-    mockRequireRole.mockResolvedValue(managerUser);
-    mockMaybeSingle.mockResolvedValue({ data: null, error: null });
-
-    const insertSelectSingle = vi.fn().mockResolvedValue({ data: { id: 'new-site' }, error: null });
-    const insertSelect = vi.fn().mockReturnValue({ single: insertSelectSingle });
-    mockInsert.mockReturnValue({ select: insertSelect });
-
-    await createSite({ domain: 'manager-site.com' });
-    const insertCall = mockInsert.mock.calls[0][0];
-    expect(insertCall.sourcer_id).toBeNull();
-  });
-
   it('throws FORBIDDEN when role is not allowed', async () => {
     mockRequireRole.mockRejectedValue(new Error('FORBIDDEN: requires role'));
 

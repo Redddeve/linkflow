@@ -39,6 +39,22 @@ export async function fetchInvoiceById(id: string) {
   return supabase.from('invoices').select('*').eq('id', id).single();
 }
 
+export async function fetchUnattachedOrdersForInvoice(
+  clientId: string,
+  billingMonth: string,
+) {
+  const supabase = await createClient();
+  const { data } = await supabase
+    .from('orders')
+    .select('id, site_domain, publish_date, price_cents')
+    .eq('created_by_id', clientId)
+    .eq('billing_month', billingMonth)
+    .eq('status', 'Published')
+    .is('invoice_id', null)
+    .order('publish_date', { ascending: true });
+  return data ?? [];
+}
+
 export async function fetchInvoiceOrders(invoiceId: string) {
   const supabase = await createClient();
   const { data } = await supabase

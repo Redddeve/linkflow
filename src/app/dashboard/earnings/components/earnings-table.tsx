@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useTransition } from 'react';
-import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import {
@@ -22,6 +22,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
+import { TableEmptyState } from '@/components/ui/table-empty-state';
 import { markOrdersPayoutPaid } from '../actions';
 
 export interface EarningsTableRow {
@@ -30,6 +31,7 @@ export interface EarningsTableRow {
   published_at: string | null;
   publish_date: string;
   payout_cents: number;
+  commission_cents: number;
   paid_at: string | null;
   payout_reference: string | null;
   sourcer_name?: string | null;
@@ -42,6 +44,7 @@ interface Props {
 }
 
 export function EarningsTable({ rows, showSourcer, canMarkPaid }: Props) {
+  const router = useRouter();
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [dialogOpen, setDialogOpen] = useState(false);
   const [reference, setReference] = useState('');
@@ -85,14 +88,6 @@ export function EarningsTable({ rows, showSourcer, canMarkPaid }: Props) {
     });
   }
 
-  if (rows.length === 0) {
-    return (
-      <p className="text-sm text-muted-foreground py-8 text-center">
-        No payouts for this month.
-      </p>
-    );
-  }
-
   return (
     <div className="space-y-3">
       {canMarkPaid && selected.size > 0 && (
@@ -123,15 +118,20 @@ export function EarningsTable({ rows, showSourcer, canMarkPaid }: Props) {
             {showSourcer && <TableHead>Sourcer</TableHead>}
             <TableHead>Published</TableHead>
             <TableHead>Payout</TableHead>
+            <TableHead>Commission</TableHead>
             <TableHead>Status</TableHead>
             <TableHead>Reference</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
           {rows.map((r) => (
-            <TableRow key={r.id}>
+            <TableRow
+              key={r.id}
+              className="cursor-pointer"
+              onClick={() => router.push(`/dashboard/orders/${r.id}`)}
+            >
               {canMarkPaid && (
-                <TableCell>
+                <TableCell onClick={(e) => e.stopPropagation()}>
                   <Checkbox
                     checked={selected.has(r.id)}
                     onCheckedChange={() => toggle(r.id)}
@@ -140,14 +140,7 @@ export function EarningsTable({ rows, showSourcer, canMarkPaid }: Props) {
                   />
                 </TableCell>
               )}
-              <TableCell>
-                <Link
-                  href={`/dashboard/orders/${r.id}`}
-                  className="font-medium hover:underline"
-                >
-                  {r.site_domain}
-                </Link>
-              </TableCell>
+              <TableCell className="font-medium">{r.site_domain}</TableCell>
               {showSourcer && (
                 <TableCell className="text-sm">
                   {r.sourcer_name ?? <span className="text-muted-foreground">—</span>}
@@ -160,6 +153,9 @@ export function EarningsTable({ rows, showSourcer, canMarkPaid }: Props) {
               </TableCell>
               <TableCell className="text-sm tabular-nums">
                 ${(r.payout_cents / 100).toFixed(2)}
+              </TableCell>
+              <TableCell className="text-sm tabular-nums text-muted-foreground">
+                ${(r.commission_cents / 100).toFixed(2)}
               </TableCell>
               <TableCell className="text-sm">
                 {r.paid_at ? (
@@ -179,6 +175,12 @@ export function EarningsTable({ rows, showSourcer, canMarkPaid }: Props) {
           ))}
         </TableBody>
       </Table>
+      {rows.length === 0 && (
+        <TableEmptyState
+          title="No payouts for this month."
+          description="Earnings appear here once orders on your sites are published. Try a different month from the filters above."
+        />
+      )}
 
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <DialogContent>

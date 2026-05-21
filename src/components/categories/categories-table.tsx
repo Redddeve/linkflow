@@ -32,6 +32,7 @@ import {
   editCategory,
   deleteCategory,
 } from '@/app/dashboard/categories/actions';
+import { TableEmptyState } from '@/components/ui/table-empty-state';
 
 interface Category {
   id: string;
@@ -102,16 +103,6 @@ export function CategoriesTable({ categories, siteCountMap }: Props) {
           </TableRow>
         </TableHeader>
         <TableBody>
-          {categories.length === 0 && (
-            <TableRow>
-              <TableCell
-                colSpan={2}
-                className="text-center text-muted-foreground py-8"
-              >
-                No categories yet.
-              </TableCell>
-            </TableRow>
-          )}
           {categories.map((cat) => (
             <TableRow key={cat.id}>
               <TableCell className="font-medium">{cat.name}</TableCell>
@@ -141,6 +132,12 @@ export function CategoriesTable({ categories, siteCountMap }: Props) {
           ))}
         </TableBody>
       </Table>
+      {categories.length === 0 && (
+        <TableEmptyState
+          title="No categories yet."
+          description="Add a category to organize sites in the catalog. Categories help clients filter by topic."
+        />
+      )}
 
       <Dialog
         open={!!editTarget}

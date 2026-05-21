@@ -622,7 +622,7 @@ export type Database = {
           organic_traffic_count: number
           price_cents: number
           requirements: string | null
-          sourcer_id: string | null
+          sourcer_id: string
           sourcer_notes: string | null
           sourcer_payout_cents: number
           status: Database["public"]["Enums"]["site_status"]
@@ -649,7 +649,7 @@ export type Database = {
           organic_traffic_count?: number
           price_cents?: number
           requirements?: string | null
-          sourcer_id?: string | null
+          sourcer_id: string
           sourcer_notes?: string | null
           sourcer_payout_cents?: number
           status?: Database["public"]["Enums"]["site_status"]
@@ -676,7 +676,7 @@ export type Database = {
           organic_traffic_count?: number
           price_cents?: number
           requirements?: string | null
-          sourcer_id?: string | null
+          sourcer_id?: string
           sourcer_notes?: string | null
           sourcer_payout_cents?: number
           status?: Database["public"]["Enums"]["site_status"]

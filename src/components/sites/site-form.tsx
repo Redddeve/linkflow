@@ -99,7 +99,7 @@ export function SiteForm({ mode, siteId, categories, actorRole, onSuccess, onCan
     },
   });
 
-  const showSourcerFields = actorRole === 'Sourcer' || actorRole === 'Admin' || actorRole === 'Manager';
+  const showSourcerFields = actorRole === 'Sourcer' || actorRole === 'Admin';
 
   async function onSubmit(data: FormValues) {
     const payload = {
@@ -285,10 +285,13 @@ export function SiteForm({ mode, siteId, categories, actorRole, onSuccess, onCan
             <Label htmlFor="sourcer-notes">Sourcer notes</Label>
             <Textarea id="sourcer-notes" rows={3} maxLength={2000} {...register('sourcer_notes')} />
           </div>
-          {(actorRole === 'Admin' || actorRole === 'Manager') && (
+          {(actorRole === 'Admin' || actorRole === 'Sourcer') && (
             <div className="grid gap-1.5 max-w-xs">
               <Label htmlFor="sourcer-payout">Sourcer payout (USD)</Label>
               <Input id="sourcer-payout" type="number" min={0} step="0.01" {...register('sourcer_payout_dollars')} />
+              <p className="text-xs text-muted-foreground">
+                Suggested: 95% of price. App keeps the remainder as commission.
+              </p>
             </div>
           )}
         </section>

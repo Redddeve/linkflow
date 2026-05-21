@@ -31,6 +31,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import { TableEmptyState } from '@/components/ui/table-empty-state';
 import type { UserRow } from '@/lib/auth';
 import {
   disableUser,
@@ -150,18 +151,12 @@ export function UsersTable({ users, currentUserId }: Props) {
           </TableRow>
         </TableHeader>
         <TableBody>
-          {users.length === 0 && (
-            <TableRow>
-              <TableCell
-                colSpan={5}
-                className="text-center text-muted-foreground py-8"
-              >
-                No users found.
-              </TableCell>
-            </TableRow>
-          )}
           {users.map((u) => (
-            <TableRow key={u.id}>
+            <TableRow
+              key={u.id}
+              className="cursor-pointer"
+              onClick={() => router.push(`/dashboard/users/${u.id}`)}
+            >
               <TableCell>
                 <div className="flex items-center gap-2">
                   <Avatar className="h-7 w-7 text-xs">
@@ -176,12 +171,9 @@ export function UsersTable({ users, currentUserId }: Props) {
                     </AvatarFallback>
                   </Avatar>
                   <div>
-                    <Link
-                      href={`/dashboard/users/${u.id}`}
-                      className="font-medium hover:underline"
-                    >
+                    <div className="font-medium">
                       {u.first_name} {u.last_name}
-                    </Link>
+                    </div>
                     <div className="text-xs text-muted-foreground">
                       {u.email}
                     </div>
@@ -201,7 +193,7 @@ export function UsersTable({ users, currentUserId }: Props) {
                   ? new Date(u.invited_at).toLocaleDateString('en-CA')
                   : '—'}
               </TableCell>
-              <TableCell>
+              <TableCell onClick={(e) => e.stopPropagation()}>
                 <DropdownMenu>
                   <DropdownMenuTrigger
                     className="inline-flex h-9 w-9 items-center justify-center rounded-md hover:bg-muted"
@@ -243,6 +235,12 @@ export function UsersTable({ users, currentUserId }: Props) {
           ))}
         </TableBody>
       </Table>
+      {users.length === 0 && (
+        <TableEmptyState
+          title="No users found."
+          description="Invite a teammate to get started. New users appear here once they accept their invitation."
+        />
+      )}
 
       <Dialog
         open={!!disableTarget && !blockingOrders}

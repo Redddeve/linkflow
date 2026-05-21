@@ -2,7 +2,9 @@
 
 import { useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
+import { Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Checkbox } from '@/components/ui/checkbox';
 import {
   Dialog,
   DialogContent,
@@ -14,9 +16,14 @@ import {
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { reassignOrders } from '../actions';
+import { Separator } from '@/components/ui/separator';
+import {
+  reassignOrders,
+  addOrdersToInvoice,
+  removeOrdersFromInvoice,
+} from '../actions';
 
-interface OrderInput {
+interface AttachedOrder {
   id: string;
   site_domain: string;
   publish_date: string | null;
@@ -24,8 +31,17 @@ interface OrderInput {
   billing_month: string;
 }
 
+interface AvailableOrder {
+  id: string;
+  site_domain: string;
+  publish_date: string | null;
+  price_cents: number;
+}
+
 interface Props {
-  orders: OrderInput[];
+  invoiceId: string;
+  orders: AttachedOrder[];
+  availableOrders: AvailableOrder[];
 }
 
 function toMonthInput(month: string): string {
@@ -36,33 +52,76 @@ function fromMonthInput(value: string): string {
   return `${value}-01`;
 }
 
-export function EditOrdersDialog({ orders }: Props) {
+function formatPrice(cents: number) {
+  return `$${(cents / 100).toFixed(2)}`;
+}
+
+export function EditOrdersDialog({ invoiceId, orders, availableOrders }: Props) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [drafts, setDrafts] = useState<Record<string, string>>(() =>
     Object.fromEntries(orders.map((o) => [o.id, toMonthInput(o.billing_month)])),
   );
+  const [toAdd, setToAdd] = useState<Set<string>>(new Set());
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
 
-  function handleSave() {
+  function close() {
+    setOpen(false);
+    setError(null);
+  }
+
+  function toggleAdd(id: string) {
+    setToAdd((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }
+
+  function handleRemove(orderId: string) {
+    setError(null);
+    startTransition(async () => {
+      try {
+        await removeOrdersFromInvoice({ invoiceId, orderIds: [orderId] });
+        router.refresh();
+      } catch (e) {
+        setError(e instanceof Error ? e.message : 'Something went wrong');
+      }
+    });
+  }
+
+  function handleAdd() {
+    if (toAdd.size === 0) return;
+    setError(null);
+    const ids = Array.from(toAdd);
+    startTransition(async () => {
+      try {
+        await addOrdersToInvoice({ invoiceId, orderIds: ids });
+        setToAdd(new Set());
+        router.refresh();
+      } catch (e) {
+        setError(e instanceof Error ? e.message : 'Something went wrong');
+      }
+    });
+  }
+
+  function handleSaveMonths() {
     setError(null);
     const changes = orders
       .filter((o) => fromMonthInput(drafts[o.id]) !== o.billing_month)
       .map((o) => ({ orderId: o.id, billing_month: fromMonthInput(drafts[o.id]) }));
 
     if (changes.length === 0) {
-      setOpen(false);
+      close();
       return;
     }
 
     startTransition(async () => {
       try {
-        // Single atomic batch — the server-side PL/pgSQL function does all moves,
-        // recomputes totals, creates any corrective Drafts, and deletes emptied
-        // source Drafts in one transaction.
         await reassignOrders({ changes });
-        setOpen(false);
+        close();
         router.refresh();
       } catch (e) {
         setError(e instanceof Error ? e.message : 'Something went wrong');
@@ -75,45 +134,108 @@ export function EditOrdersDialog({ orders }: Props) {
       <DialogTrigger render={<Button variant="outline" size="sm" />}>Edit orders</DialogTrigger>
       <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Edit order billing months</DialogTitle>
+          <DialogTitle>Manage invoice orders</DialogTitle>
           <DialogDescription>
-            Reassign individual orders to a different billing period. Moving an order into a month
-            whose invoice has already been Sent or Paid creates a new corrective Draft invoice for
-            that period (FR-INV-5). All changes are applied as a single transaction.
+            Add or remove Published orders from this Draft invoice, or move an order to a
+            different billing month. Moving into a Sent/Paid month creates a corrective Draft
+            (FR-INV-5).
           </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-3">
-          {orders.map((o) => (
-            <div key={o.id} className="grid grid-cols-[1fr_auto_auto] gap-3 items-end border-b pb-3">
-              <div>
-                <p className="text-sm font-medium">{o.site_domain}</p>
-                <p className="text-xs text-muted-foreground">
-                  Published {o.publish_date ?? '—'} · ${(o.price_cents / 100).toFixed(2)}
-                </p>
-              </div>
-              <div className="space-y-1">
-                <Label htmlFor={`bm-${o.id}`} className="text-xs">Billing month</Label>
-                <Input
-                  id={`bm-${o.id}`}
-                  type="month"
-                  value={drafts[o.id]}
-                  onChange={(e) => setDrafts({ ...drafts, [o.id]: e.target.value })}
-                  className="w-40"
-                />
-              </div>
+        <section className="space-y-2">
+          <h3 className="text-sm font-semibold">Attached orders ({orders.length})</h3>
+          {orders.length === 0 ? (
+            <p className="text-sm text-muted-foreground">No orders on this invoice yet.</p>
+          ) : (
+            <div className="space-y-3">
+              {orders.map((o) => (
+                <div
+                  key={o.id}
+                  className="grid grid-cols-[1fr_auto_auto] gap-3 items-end border-b pb-3"
+                >
+                  <div>
+                    <p className="text-sm font-medium">{o.site_domain}</p>
+                    <p className="text-xs text-muted-foreground">
+                      Published {o.publish_date ?? '—'} · {formatPrice(o.price_cents)}
+                    </p>
+                  </div>
+                  <div className="space-y-1">
+                    <Label htmlFor={`bm-${o.id}`} className="text-xs">Billing month</Label>
+                    <Input
+                      id={`bm-${o.id}`}
+                      type="month"
+                      value={drafts[o.id]}
+                      onChange={(e) => setDrafts({ ...drafts, [o.id]: e.target.value })}
+                      className="w-40"
+                    />
+                  </div>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => handleRemove(o.id)}
+                    disabled={isPending}
+                    aria-label={`Remove ${o.site_domain}`}
+                  >
+                    <Trash2 className="h-4 w-4 text-destructive" />
+                  </Button>
+                </div>
+              ))}
             </div>
-          ))}
-        </div>
+          )}
+        </section>
+
+        <Separator />
+
+        <section className="space-y-2">
+          <h3 className="text-sm font-semibold">
+            Available to add ({availableOrders.length})
+          </h3>
+          <p className="text-xs text-muted-foreground">
+            Published orders from the same client, same billing month, not yet attached to an
+            invoice.
+          </p>
+          {availableOrders.length === 0 ? (
+            <p className="text-sm text-muted-foreground">No eligible orders to add.</p>
+          ) : (
+            <div className="space-y-2">
+              {availableOrders.map((o) => (
+                <label
+                  key={o.id}
+                  className="flex items-center gap-3 rounded-md border border-border px-3 py-2 cursor-pointer hover:bg-muted/40"
+                >
+                  <Checkbox
+                    checked={toAdd.has(o.id)}
+                    onCheckedChange={() => toggleAdd(o.id)}
+                    aria-label={`Add ${o.site_domain}`}
+                  />
+                  <div className="flex-1">
+                    <p className="text-sm font-medium">{o.site_domain}</p>
+                    <p className="text-xs text-muted-foreground">
+                      Published {o.publish_date ?? '—'} · {formatPrice(o.price_cents)}
+                    </p>
+                  </div>
+                </label>
+              ))}
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleAdd}
+                disabled={isPending || toAdd.size === 0}
+              >
+                {isPending ? 'Adding…' : `Add ${toAdd.size || ''} selected`}
+              </Button>
+            </div>
+          )}
+        </section>
 
         {error && <p className="text-sm text-destructive">{error}</p>}
 
         <DialogFooter>
-          <Button variant="outline" onClick={() => setOpen(false)} disabled={isPending}>
-            Cancel
+          <Button variant="outline" onClick={close} disabled={isPending}>
+            Close
           </Button>
-          <Button onClick={handleSave} disabled={isPending}>
-            {isPending ? 'Saving…' : 'Save'}
+          <Button onClick={handleSaveMonths} disabled={isPending}>
+            {isPending ? 'Saving…' : 'Save month changes'}
           </Button>
         </DialogFooter>
       </DialogContent>

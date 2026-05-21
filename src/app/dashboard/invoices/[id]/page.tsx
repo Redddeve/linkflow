@@ -1,7 +1,11 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { requireUser } from '@/lib/auth';
-import { fetchInvoiceById, fetchInvoiceOrders } from '@/lib/data/invoices';
+import {
+  fetchInvoiceById,
+  fetchInvoiceOrders,
+  fetchUnattachedOrdersForInvoice,
+} from '@/lib/data/invoices';
 import { fetchUsersWithEmailByIds } from '@/lib/data/users';
 import { BackLink } from '@/components/ui/back-link';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -33,8 +37,12 @@ export default async function InvoiceDetailPage({ params }: PageProps) {
   const isManagerOrAdmin = actor.role === 'Manager' || actor.role === 'Admin';
   const isAdmin = actor.role === 'Admin';
 
-  // Load attached orders
+  // Load attached orders + (for Draft) candidates to add
   const orders = await fetchInvoiceOrders(invoice.id);
+  const availableOrders =
+    invoice.status === 'Draft'
+      ? await fetchUnattachedOrdersForInvoice(invoice.client_id, invoice.billing_month)
+      : [];
 
   // Load user records (client + sent_by + marked_as_paid_by)
   const userIds = [
@@ -67,6 +75,7 @@ export default async function InvoiceDetailPage({ params }: PageProps) {
         <div className="flex gap-2">
           {canEditOrders && (
             <EditOrdersDialog
+              invoiceId={invoice.id}
               orders={orders.map((o) => ({
                 id: o.id,
                 site_domain: o.site_domain,
@@ -74,6 +83,7 @@ export default async function InvoiceDetailPage({ params }: PageProps) {
                 price_cents: o.price_cents,
                 billing_month: o.billing_month ?? invoice.billing_month,
               }))}
+              availableOrders={availableOrders}
             />
           )}
           <Link

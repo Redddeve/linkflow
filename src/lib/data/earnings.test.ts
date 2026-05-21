@@ -108,6 +108,7 @@ describe('fetchEarningsTotals()', () => {
       earningsCents: 0,
       paidCents: 0,
       unpaidCents: 0,
+      commissionCents: 0,
       ordersCount: 0,
     });
   });

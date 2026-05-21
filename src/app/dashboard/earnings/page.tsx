@@ -66,6 +66,7 @@ export default async function EarningsPage({ searchParams }: PageProps) {
     published_at: r.published_at,
     publish_date: r.publish_date,
     payout_cents: r.sourcer_payout_cents,
+    commission_cents: r.commission_cents,
     paid_at: r.sourcer_paid_at,
     payout_reference: r.sourcer_payout_reference,
     sourcer_name: isSourcer ? null : sourcerNameMap[r.sourcer_id] ?? null,
@@ -78,7 +79,7 @@ export default async function EarningsPage({ searchParams }: PageProps) {
         description={`${isSourcer ? 'Your earnings' : 'All sourcer earnings'} — ${formatBillingMonth(month)}`}
       />
 
-      <div className="mb-6 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="mb-6 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-5">
         <div className="rounded-xl border border-border bg-card p-4 shadow-xs">
           <div className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
             Total earned
@@ -101,6 +102,14 @@ export default async function EarningsPage({ searchParams }: PageProps) {
           </div>
           <div className="mt-1 text-2xl font-semibold tabular-nums">
             {formatMoney(totals.unpaidCents)}
+          </div>
+        </div>
+        <div className="rounded-xl border border-border bg-card p-4 shadow-xs">
+          <div className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+            Commission
+          </div>
+          <div className="mt-1 text-2xl font-semibold tabular-nums">
+            {formatMoney(totals.commissionCents)}
           </div>
         </div>
         <div className="rounded-xl border border-border bg-card p-4 shadow-xs">
