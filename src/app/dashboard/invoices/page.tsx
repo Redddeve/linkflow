@@ -45,7 +45,12 @@ export default async function InvoicesPage({ searchParams }: PageProps) {
   const clientsData = await fetchUsersByIds(clientIds);
   const clientMap = Object.fromEntries(clientsData.map((u) => [u.id, u]));
 
-  let invoices = rawList.map((i) => ({
+  const visibleList = rawList.filter((i) => {
+    const c = clientMap[i.client_id];
+    return !c || c.status !== 'DISABLED';
+  });
+
+  let invoices = visibleList.map((i) => ({
     id: i.id,
     client_id: i.client_id,
     billing_month: i.billing_month,

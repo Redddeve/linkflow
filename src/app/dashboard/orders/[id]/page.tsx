@@ -90,6 +90,13 @@ export default async function OrderDetailPage({ params }: PageProps) {
     isManagerOrAdmin ||
     (isClient && order.created_by_id === actor.id) ||
     (isCopywriter && order.copywriter_id === actor.id);
+  const hasChatCounterpart = Boolean(order.copywriter_id || order.manager_id);
+  const canStartChat =
+    !!order.chat_id ||
+    ((isManagerOrAdmin ||
+      (isClient && order.created_by_id === actor.id) ||
+      (isCopywriter && order.copywriter_id === actor.id)) &&
+      hasChatCounterpart);
 
   const metrics: { label: string; value: React.ReactNode }[] = [];
   if (!isSourcer) {
@@ -122,27 +129,20 @@ export default async function OrderDetailPage({ params }: PageProps) {
     value: order.site_organic_traffic_count.toLocaleString(),
   });
 
-  const peopleRows: { label: string; value: React.ReactNode }[] = [];
-  if (isManagerOrAdmin && client) {
-    peopleRows.push({
-      label: 'Client',
-      value: `${client.first_name} ${client.last_name}`,
-    });
-  }
-  peopleRows.push({
-    label: 'Copywriter',
-    value: copywriter ? (
-      `${copywriter.first_name} ${copywriter.last_name}`
+  const renderPerson = (
+    user: { first_name: string; last_name: string; status: string } | null,
+  ): React.ReactNode =>
+    user && user.status !== 'DISABLED' ? (
+      `${user.first_name} ${user.last_name}`
     ) : (
       <span className="text-muted-foreground">Unassigned</span>
-    ),
-  });
-  if (isManagerOrAdmin && manager) {
-    peopleRows.push({
-      label: 'Manager',
-      value: `${manager.first_name} ${manager.last_name}`,
-    });
-  }
+    );
+
+  const peopleRows: { label: string; value: React.ReactNode }[] = [
+    { label: 'Client', value: renderPerson(client) },
+    { label: 'Copywriter', value: renderPerson(copywriter) },
+    { label: 'Manager', value: renderPerson(manager) },
+  ];
 
   const timelineRows: { label: string; value: React.ReactNode }[] = [
     { label: 'Link type', value: <span className="capitalize">{order.site_link_type}</span> },
@@ -206,7 +206,7 @@ export default async function OrderDetailPage({ params }: PageProps) {
               Publish
             </Link>
           )}
-          {canComment && (
+          {canStartChat && (
             <StartChatButton
               orderId={id}
               existingChatId={order.chat_id ?? null}

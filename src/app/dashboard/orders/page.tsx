@@ -47,14 +47,20 @@ export default async function OrdersPage({ searchParams }: PageProps) {
   const allUserIds = [
     ...new Set(
       rawList.flatMap(
-        (o) => [o.copywriter_id, o.manager_id].filter(Boolean) as string[],
+        (o) =>
+          [o.copywriter_id, o.manager_id, o.created_by_id].filter(Boolean) as string[],
       ),
     ),
   ];
   const usersData = await fetchUsersByIds(allUserIds);
   const userMap = Object.fromEntries(usersData.map((u) => [u.id, u]));
 
-  let orders = rawList.map((o) => ({
+  const visibleList = rawList.filter((o) => {
+    const c = userMap[o.created_by_id];
+    return !c || c.status !== 'DISABLED';
+  });
+
+  let orders = visibleList.map((o) => ({
     id: o.id,
     site_domain: o.site_domain,
     status: o.status,

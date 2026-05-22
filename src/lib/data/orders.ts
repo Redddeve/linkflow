@@ -19,6 +19,7 @@ export type OrdersListRow = {
   publish_date: string | null;
   published_at: string | null;
   created_at: string;
+  created_by_id: string;
   copywriter_id: string | null;
   manager_id: string | null;
   sourcer_payout_cents: number | null;
@@ -30,7 +31,7 @@ export async function fetchOrdersList(
 ): Promise<OrdersListRow[]> {
   const supabase = await createClient();
   const baseSelect =
-    'id, site_domain, status, price_cents, publish_date, published_at, created_at, copywriter_id, manager_id, sourcer_payout_cents, sourcer_paid_at';
+    'id, site_domain, status, price_cents, publish_date, published_at, created_at, created_by_id, copywriter_id, manager_id, sourcer_payout_cents, sourcer_paid_at';
   const select = filters.sourcerId
     ? `${baseSelect}, sites!inner(sourcer_id)`
     : baseSelect;

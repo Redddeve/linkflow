@@ -34,12 +34,18 @@ export async function fetchUserById(id: string) {
 
 export async function fetchUsersByIds(
   ids: string[],
-): Promise<{ id: string; first_name: string; last_name: string; role: UserRole | null }[]> {
+): Promise<{
+  id: string;
+  first_name: string;
+  last_name: string;
+  role: UserRole | null;
+  status: UserStatus;
+}[]> {
   if (!ids.length) return [];
   const supabase = await createClient();
   const { data } = await supabase
     .from('users')
-    .select('id, first_name, last_name, role')
+    .select('id, first_name, last_name, role, status')
     .in('id', ids);
   return data ?? [];
 }
