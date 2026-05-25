@@ -9,22 +9,35 @@ export interface UsersListFilters {
   role?: UserRole;
   status?: UserStatus;
   q?: string;
+  page?: number;
+  pageSize?: number;
 }
 
-export async function fetchUsersList(filters: UsersListFilters): Promise<UsersRow[]> {
+export async function fetchUsersList(
+  filters: UsersListFilters,
+): Promise<{ rows: UsersRow[]; total: number }> {
   const supabase = await createClient();
-  let query = supabase.from('users').select('*').order('first_name');
+  let query = supabase
+    .from('users')
+    .select('*', { count: 'exact' })
+    .order('first_name');
 
   if (filters.role) query = query.eq('role', filters.role);
   if (filters.status) query = query.eq('status', filters.status);
   if (filters.q) {
+    const escaped = filters.q.replace(/[\\%_]/g, (m) => `\\${m}`);
     query = query.or(
-      `first_name.ilike.%${filters.q}%,last_name.ilike.%${filters.q}%,email.ilike.%${filters.q}%`,
+      `first_name.ilike.%${escaped}%,last_name.ilike.%${escaped}%,email.ilike.%${escaped}%`,
     );
   }
 
-  const { data } = await query;
-  return data ?? [];
+  if (filters.page && filters.pageSize) {
+    const offset = (filters.page - 1) * filters.pageSize;
+    query = query.range(offset, offset + filters.pageSize - 1);
+  }
+
+  const { data, count } = await query;
+  return { rows: data ?? [], total: count ?? 0 };
 }
 
 export async function fetchUserById(id: string) {
@@ -32,21 +45,29 @@ export async function fetchUserById(id: string) {
   return supabase.from('users').select('*').eq('id', id).single();
 }
 
-export async function fetchUsersByIds(
-  ids: string[],
-): Promise<{ id: string; first_name: string; last_name: string; role: UserRole | null }[]> {
+export async function fetchUsersByIds(ids: string[]): Promise<
+  {
+    id: string;
+    first_name: string;
+    last_name: string;
+    role: UserRole | null;
+    status: UserStatus;
+  }[]
+> {
   if (!ids.length) return [];
   const supabase = await createClient();
   const { data } = await supabase
     .from('users')
-    .select('id, first_name, last_name, role')
+    .select('id, first_name, last_name, role, status')
     .in('id', ids);
   return data ?? [];
 }
 
 export async function fetchUsersWithEmailByIds(
   ids: string[],
-): Promise<{ id: string; first_name: string; last_name: string; email: string }[]> {
+): Promise<
+  { id: string; first_name: string; last_name: string; email: string }[]
+> {
   if (!ids.length) return [];
   const supabase = await createClient();
   const { data } = await supabase

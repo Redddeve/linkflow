@@ -4,6 +4,8 @@ import { OrderFilters } from './components/order-filters';
 import { OrdersTable } from './components/orders-table';
 import { OrdersKanban } from './components/orders-kanban';
 import { PageHeader } from '@/components/ui/page-header';
+import { Pagination } from '@/components/ui/pagination';
+import { parsePagination } from '@/lib/pagination';
 import { fetchOrdersList } from '@/lib/data/orders';
 import { fetchUsersByIds, fetchActiveByRole } from '@/lib/data/users';
 import type { Database } from '@/types/database.types';
@@ -23,15 +25,17 @@ export default async function OrdersPage({ searchParams }: PageProps) {
   const params = await searchParams;
   const statusFilter = params.status as OrderStatus | undefined;
   const copywriterFilter = params.copywriter;
-  const searchFilter = params.search?.toLowerCase();
+  const searchFilter = params.search?.trim() || undefined;
   const view = params.view ?? 'list';
+  const { page, pageSize } = parsePagination(params);
 
   const isManagerOrAdmin = actor.role === 'Manager' || actor.role === 'Admin';
   const isCopywriter = actor.role === 'Copywriter';
   const isClient = actor.role === 'Client';
   const isSourcer = actor.role === 'Sourcer';
+  const showKanban = isManagerOrAdmin && view === 'kanban';
 
-  const rawList = await fetchOrdersList({
+  const { rows: rawList, total } = await fetchOrdersList({
     createdById: isClient ? actor.id : undefined,
     copywriterId: isCopywriter
       ? actor.id
@@ -41,20 +45,26 @@ export default async function OrdersPage({ searchParams }: PageProps) {
     sourcerId: isSourcer ? actor.id : undefined,
     unassigned: params.assignee === 'unassigned' && isManagerOrAdmin,
     status: statusFilter,
+    search: searchFilter,
+    excludeDisabledCreators: true,
+    // Kanban needs the full filtered set; only paginate the list view.
+    page: showKanban ? undefined : page,
+    pageSize: showKanban ? undefined : pageSize,
   });
 
   // Resolve user names separately to avoid multi-FK Supabase type error
   const allUserIds = [
     ...new Set(
       rawList.flatMap(
-        (o) => [o.copywriter_id, o.manager_id].filter(Boolean) as string[],
+        (o) =>
+          [o.copywriter_id, o.manager_id, o.created_by_id].filter(Boolean) as string[],
       ),
     ),
   ];
   const usersData = await fetchUsersByIds(allUserIds);
   const userMap = Object.fromEntries(usersData.map((u) => [u.id, u]));
 
-  let orders = rawList.map((o) => ({
+  const orders = rawList.map((o) => ({
     id: o.id,
     site_domain: o.site_domain,
     status: o.status,
@@ -67,18 +77,11 @@ export default async function OrdersPage({ searchParams }: PageProps) {
     sourcer_paid_at: o.sourcer_paid_at,
   }));
 
-  if (searchFilter) {
-    orders = orders.filter((o) =>
-      o.site_domain.toLowerCase().includes(searchFilter),
-    );
-  }
-
   // Copywriters list for filter (manager/admin only)
   const copywriters = isManagerOrAdmin
     ? await fetchActiveByRole('Copywriter')
     : [];
 
-  const showKanban = isManagerOrAdmin && view === 'kanban';
   const checkedOut = params.checked_out ? Number(params.checked_out) : null;
 
   return (
@@ -137,13 +140,16 @@ export default async function OrdersPage({ searchParams }: PageProps) {
             orders={orders as Parameters<typeof OrdersKanban>[0]['orders']}
           />
         ) : (
-          <OrdersTable
-            orders={orders as Parameters<typeof OrdersTable>[0]['orders']}
-            showCopywriter={isManagerOrAdmin}
-            showManager={actor.role === 'Admin'}
-            showPrice={!isSourcer}
-            showPayout={isSourcer}
-          />
+          <>
+            <OrdersTable
+              orders={orders as Parameters<typeof OrdersTable>[0]['orders']}
+              showCopywriter={isManagerOrAdmin}
+              showManager={actor.role === 'Admin'}
+              showPrice={!isSourcer}
+              showPayout={isSourcer}
+            />
+            <Pagination total={total} page={page} pageSize={pageSize} />
+          </>
         )}
       </div>
     </div>

@@ -14,6 +14,20 @@ export async function fetchCategories(): Promise<Category[]> {
   return data ?? [];
 }
 
+export async function fetchCategoriesPage(
+  page: number,
+  pageSize: number,
+): Promise<{ rows: Category[]; total: number }> {
+  const supabase = await createClient();
+  const offset = (page - 1) * pageSize;
+  const { data, count } = await supabase
+    .from('categories')
+    .select('id, name', { count: 'exact' })
+    .order('name')
+    .range(offset, offset + pageSize - 1);
+  return { rows: data ?? [], total: count ?? 0 };
+}
+
 export async function fetchCategorySiteCountMap(): Promise<
   Record<string, number>
 > {

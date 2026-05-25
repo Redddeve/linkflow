@@ -6,6 +6,12 @@ type InvoiceStatus = Database['public']['Enums']['invoice_status'];
 export interface InvoicesListFilters {
   clientId?: string;
   status?: InvoiceStatus;
+  /** Substring match against client name (case-insensitive). */
+  search?: string;
+  /** When true, exclude invoices whose client is DISABLED. */
+  excludeDisabledClients?: boolean;
+  page?: number;
+  pageSize?: number;
 }
 
 export type InvoicesListRow = {
@@ -19,19 +25,42 @@ export type InvoicesListRow = {
 
 export async function fetchInvoicesList(
   filters: InvoicesListFilters,
-): Promise<InvoicesListRow[]> {
+): Promise<{ rows: InvoicesListRow[]; total: number }> {
   const supabase = await createClient();
+  const baseSelect =
+    'id, client_id, billing_month, status, total_price_cents, created_at';
+  const needsClientJoin = filters.excludeDisabledClients || !!filters.search;
+  const select = needsClientJoin
+    ? `${baseSelect}, client:users!invoices_client_id_fkey!inner(first_name, last_name, status)`
+    : baseSelect;
+
   let query = supabase
     .from('invoices')
-    .select('id, client_id, billing_month, status, total_price_cents, created_at')
+    .select(select, { count: 'exact' })
     .order('billing_month', { ascending: false })
     .order('created_at', { ascending: false });
 
   if (filters.clientId) query = query.eq('client_id', filters.clientId);
   if (filters.status) query = query.eq('status', filters.status);
+  if (filters.excludeDisabledClients) query = query.neq('client.status', 'DISABLED');
+  if (filters.search) {
+    const escaped = filters.search.replace(/[\\%_]/g, (m) => `\\${m}`);
+    query = query.or(
+      `first_name.ilike.%${escaped}%,last_name.ilike.%${escaped}%`,
+      { referencedTable: 'client' },
+    );
+  }
 
-  const { data } = await query;
-  return data ?? [];
+  if (filters.page && filters.pageSize) {
+    const offset = (filters.page - 1) * filters.pageSize;
+    query = query.range(offset, offset + filters.pageSize - 1);
+  }
+
+  const { data, count } = await query;
+  return {
+    rows: (data ?? []) as unknown as InvoicesListRow[],
+    total: count ?? 0,
+  };
 }
 
 export async function fetchInvoiceById(id: string) {

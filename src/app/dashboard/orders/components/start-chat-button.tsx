@@ -18,7 +18,10 @@ export function StartChatButton({ orderId, existingChatId }: Props) {
 
   if (existingChatId) {
     return (
-      <Link href={`/dashboard/chat/${existingChatId}`} className={buttonVariants({ size: 'sm', variant: 'outline' })}>
+      <Link
+        href={`/dashboard/chat/${existingChatId}`}
+        className={buttonVariants({ size: 'sm', variant: 'outline' })}
+      >
         Open chat
       </Link>
     );
@@ -38,7 +41,12 @@ export function StartChatButton({ orderId, existingChatId }: Props) {
 
   return (
     <div className="flex flex-col items-end gap-1">
-      <Button size="sm" variant="outline" onClick={handleClick} disabled={isPending}>
+      <Button
+        size="sm"
+        variant="outline"
+        onClick={handleClick}
+        disabled={isPending}
+      >
         {isPending ? 'Starting…' : 'Start chat'}
       </Button>
       {error && <p className="text-xs text-destructive">{error}</p>}
