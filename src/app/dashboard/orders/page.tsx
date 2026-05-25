@@ -3,6 +3,9 @@ import { requireUser } from '@/lib/auth';
 import { OrderFilters } from './components/order-filters';
 import { OrdersTable } from './components/orders-table';
 import { OrdersKanban } from './components/orders-kanban';
+import { ViewToggle } from './components/view-toggle';
+import { KANBAN_COLUMNS, type KanbanColumnStatus } from './components/kanban-columns';
+import { toOrderRow } from './components/order-row-mapper';
 import { PageHeader } from '@/components/ui/page-header';
 import { Pagination } from '@/components/ui/pagination';
 import { parsePagination } from '@/lib/pagination';
@@ -17,6 +20,8 @@ interface PageProps {
 export const metadata = { title: 'Orders' };
 
 type OrderStatus = Database['public']['Enums']['order_status'];
+
+const KANBAN_PAGE_SIZE = 25;
 
 export default async function OrdersPage({ searchParams }: PageProps) {
   const actor = await requireUser();
@@ -33,7 +38,97 @@ export default async function OrdersPage({ searchParams }: PageProps) {
   const isCopywriter = actor.role === 'Copywriter';
   const isClient = actor.role === 'Client';
   const isSourcer = actor.role === 'Sourcer';
-  const showKanban = isManagerOrAdmin && view === 'kanban';
+  const canKanban = isClient || isManagerOrAdmin;
+  const showKanban = canKanban && view === 'kanban';
+
+  const checkedOut = params.checked_out ? Number(params.checked_out) : null;
+
+  // Copywriters list for filter (manager/admin only)
+  const copywriters = isManagerOrAdmin
+    ? await fetchActiveByRole('Copywriter')
+    : [];
+
+  if (showKanban) {
+    // Fan out one query per column; skip the query for columns that don't
+    // match the active status filter and synthesize an empty result instead.
+    const columnResults = await Promise.all(
+      KANBAN_COLUMNS.map((status) => {
+        if (statusFilter && statusFilter !== status) {
+          return Promise.resolve({ rows: [], total: 0 });
+        }
+        return fetchOrdersList({
+          createdById: isClient ? actor.id : undefined,
+          copywriterId:
+            copywriterFilter && isManagerOrAdmin ? copywriterFilter : undefined,
+          unassigned: params.assignee === 'unassigned' && isManagerOrAdmin,
+          status,
+          search: searchFilter,
+          excludeDisabledCreators: true,
+          page: 1,
+          pageSize: KANBAN_PAGE_SIZE,
+        });
+      }),
+    );
+
+    const allUserIds = [
+      ...new Set(
+        columnResults.flatMap(({ rows }) =>
+          rows.flatMap(
+            (o) =>
+              [o.copywriter_id, o.manager_id, o.created_by_id].filter(Boolean) as string[],
+          ),
+        ),
+      ),
+    ];
+    const usersData = await fetchUsersByIds(allUserIds);
+    const userMap = Object.fromEntries(usersData.map((u) => [u.id, u]));
+
+    const initialColumns = Object.fromEntries(
+      KANBAN_COLUMNS.map((status, i) => [
+        status,
+        {
+          rows: columnResults[i].rows.map((o) => toOrderRow(o, userMap)),
+          total: columnResults[i].total,
+        },
+      ]),
+    ) as Parameters<typeof OrdersKanban>[0]['initialColumns'];
+
+    return (
+      <div>
+        <PageHeader
+          title="Orders"
+          description={isClient ? 'Your orders' : 'All orders'}
+          actions={canKanban && <ViewToggle current="kanban" />}
+        />
+
+        {checkedOut !== null && (
+          <div className="mb-4 rounded-lg border border-(--st-live-fg)/20 bg-(--st-live-bg) px-3 py-2 text-sm font-medium text-(--st-live-fg)">
+            {checkedOut} order{checkedOut !== 1 ? 's' : ''} created successfully.
+          </div>
+        )}
+
+        <div className="space-y-4">
+          <OrderFilters
+            copywriters={copywriters}
+            showCopywriterFilter={isManagerOrAdmin}
+          />
+
+          <OrdersKanban
+            initialColumns={initialColumns}
+            filters={{
+              copywriterId: copywriterFilter,
+              search: searchFilter,
+              unassigned: params.assignee === 'unassigned' && isManagerOrAdmin,
+              status: statusFilter && (KANBAN_COLUMNS as readonly string[]).includes(statusFilter)
+                ? (statusFilter as KanbanColumnStatus)
+                : undefined,
+            }}
+            pageSize={KANBAN_PAGE_SIZE}
+          />
+        </div>
+      </div>
+    );
+  }
 
   const { rows: rawList, total } = await fetchOrdersList({
     createdById: isClient ? actor.id : undefined,
@@ -47,12 +142,10 @@ export default async function OrdersPage({ searchParams }: PageProps) {
     status: statusFilter,
     search: searchFilter,
     excludeDisabledCreators: true,
-    // Kanban needs the full filtered set; only paginate the list view.
-    page: showKanban ? undefined : page,
-    pageSize: showKanban ? undefined : pageSize,
+    page,
+    pageSize,
   });
 
-  // Resolve user names separately to avoid multi-FK Supabase type error
   const allUserIds = [
     ...new Set(
       rawList.flatMap(
@@ -64,25 +157,7 @@ export default async function OrdersPage({ searchParams }: PageProps) {
   const usersData = await fetchUsersByIds(allUserIds);
   const userMap = Object.fromEntries(usersData.map((u) => [u.id, u]));
 
-  const orders = rawList.map((o) => ({
-    id: o.id,
-    site_domain: o.site_domain,
-    status: o.status,
-    price_cents: o.price_cents,
-    publish_date: o.publish_date,
-    created_at: o.created_at,
-    copywriter: o.copywriter_id ? (userMap[o.copywriter_id] ?? null) : null,
-    manager: o.manager_id ? (userMap[o.manager_id] ?? null) : null,
-    sourcer_payout_cents: o.sourcer_payout_cents,
-    sourcer_paid_at: o.sourcer_paid_at,
-  }));
-
-  // Copywriters list for filter (manager/admin only)
-  const copywriters = isManagerOrAdmin
-    ? await fetchActiveByRole('Copywriter')
-    : [];
-
-  const checkedOut = params.checked_out ? Number(params.checked_out) : null;
+  const orders = rawList.map((o) => toOrderRow(o, userMap));
 
   return (
     <div>
@@ -95,32 +170,7 @@ export default async function OrdersPage({ searchParams }: PageProps) {
               ? 'Your assigned orders'
               : 'All orders'
         }
-        // actions={
-        //   isManagerOrAdmin && (
-        //     <div className="inline-flex rounded-lg border border-border bg-card p-0.5 shadow-xs">
-        //       <Link
-        //         href="?view=list"
-        //         className={`rounded-md px-3 py-1 text-sm font-medium transition-colors ${
-        //           view !== 'kanban'
-        //             ? 'bg-primary text-primary-foreground shadow-xs'
-        //             : 'text-muted-foreground hover:text-foreground'
-        //         }`}
-        //       >
-        //         List
-        //       </Link>
-        //       <Link
-        //         href="?view=kanban"
-        //         className={`rounded-md px-3 py-1 text-sm font-medium transition-colors ${
-        //           view === 'kanban'
-        //             ? 'bg-primary text-primary-foreground shadow-xs'
-        //             : 'text-muted-foreground hover:text-foreground'
-        //         }`}
-        //       >
-        //         Kanban
-        //       </Link>
-        //     </div>
-        //   )
-        // }
+        actions={canKanban && <ViewToggle current="list" />}
       />
 
       {checkedOut !== null && (
@@ -135,22 +185,14 @@ export default async function OrdersPage({ searchParams }: PageProps) {
           showCopywriterFilter={isManagerOrAdmin}
         />
 
-        {showKanban ? (
-          <OrdersKanban
-            orders={orders as Parameters<typeof OrdersKanban>[0]['orders']}
-          />
-        ) : (
-          <>
-            <OrdersTable
-              orders={orders as Parameters<typeof OrdersTable>[0]['orders']}
-              showCopywriter={isManagerOrAdmin}
-              showManager={actor.role === 'Admin'}
-              showPrice={!isSourcer}
-              showPayout={isSourcer}
-            />
-            <Pagination total={total} page={page} pageSize={pageSize} />
-          </>
-        )}
+        <OrdersTable
+          orders={orders}
+          showCopywriter={isManagerOrAdmin}
+          showManager={actor.role === 'Admin'}
+          showPrice={!isSourcer}
+          showPayout={isSourcer}
+        />
+        <Pagination total={total} page={page} pageSize={pageSize} />
       </div>
     </div>
   );
