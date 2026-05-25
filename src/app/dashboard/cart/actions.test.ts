@@ -17,19 +17,40 @@ const mockSingle = vi.fn();
 const mockDeleteEq = vi.fn();
 const mockUpdateEq = vi.fn();
 const mockInsertSelectSingle = vi.fn();
+const mockOrdersLimit = vi.fn().mockResolvedValue({ data: [], error: null });
 
-const mockFrom = vi.fn(() => ({
-  select: vi.fn().mockReturnThis(),
-  eq: vi.fn().mockReturnThis(),
-  order: vi.fn().mockReturnThis(),
-  maybeSingle: mockMaybeSingle,
-  single: mockSingle,
-  delete: vi.fn(() => ({ eq: mockDeleteEq })),
-  update: vi.fn(() => ({ eq: mockUpdateEq })),
-  insert: vi.fn(() => ({
-    select: vi.fn(() => ({ single: mockInsertSelectSingle })),
-  })),
-}));
+function makeStandardChain() {
+  return {
+    select: vi.fn().mockReturnThis(),
+    eq: vi.fn().mockReturnThis(),
+    order: vi.fn().mockReturnThis(),
+    maybeSingle: mockMaybeSingle,
+    single: mockSingle,
+    delete: vi.fn(() => ({ eq: mockDeleteEq })),
+    update: vi.fn(() => ({ eq: mockUpdateEq })),
+    insert: vi.fn(() => ({
+      select: vi.fn(() => ({ single: mockInsertSelectSingle })),
+    })),
+  };
+}
+
+// orders chain: .from('orders').select('id').eq().eq().not('status', 'in', ...).limit(1)
+function makeOrdersChain() {
+  return {
+    select: vi.fn(() => ({
+      eq: vi.fn(() => ({
+        eq: vi.fn(() => ({
+          not: vi.fn(() => ({ limit: mockOrdersLimit })),
+        })),
+      })),
+    })),
+  };
+}
+
+const mockFrom = vi.fn((table?: string) => {
+  if (table === 'orders') return makeOrdersChain();
+  return makeStandardChain();
+});
 
 vi.mock('@/lib/supabase/server', () => ({
   createClient: vi.fn(async () => ({ from: mockFrom })),
@@ -100,28 +121,18 @@ describe('addToCart()', () => {
       data: { id: 'site-1', status: 'Active' },
       error: null,
     });
+    // no active order
+    mockOrdersLimit.mockResolvedValueOnce({ data: [], error: null });
     // cart = existing
     mockMaybeSingle.mockResolvedValueOnce({
       data: { id: 'cart-1' },
       error: null,
     });
     // insert → unique violation
-    mockInsertSelectSingle.mockResolvedValue({
+    mockInsertSelectSingle.mockResolvedValueOnce({
       data: null,
       error: { code: '23505', message: 'unique' },
     });
-    mockFrom.mockImplementation(() => ({
-      select: vi.fn().mockReturnThis(),
-      eq: vi.fn().mockReturnThis(),
-      order: vi.fn().mockReturnThis(),
-      maybeSingle: mockMaybeSingle,
-      single: mockSingle,
-      delete: vi.fn(() => ({ eq: mockDeleteEq })),
-      update: vi.fn(() => ({ eq: mockUpdateEq })),
-      insert: vi.fn(() => ({
-        select: vi.fn(() => ({ single: mockInsertSelectSingle })),
-      })),
-    }));
 
     await expect(
       addToCart({ siteId: 'a1b2c3d4-e5f6-4890-abcd-ef1234567890' }),

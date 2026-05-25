@@ -340,7 +340,9 @@ export function DashboardShell({
             </DropdownMenu>
           </div>
 
-          <main className="px-6 py-6 md:px-8 md:py-8">{children}</main>
+          <main className="min-h-[calc(100vh-56px)] px-6 py-6 md:px-8 md:py-8">
+            {children}
+          </main>
         </div>
       </div>
     </TooltipProvider>
