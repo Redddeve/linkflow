@@ -1,7 +1,7 @@
 'use client';
 
 import { useRouter, useSearchParams, usePathname } from 'next/navigation';
-import { useRef, useState, useCallback } from 'react';
+import { useEffect, useRef, useState, useCallback } from 'react';
 import { SlidersHorizontal, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -63,6 +63,16 @@ export function FilterBar({ searchKey, searchPlaceholder = 'Search…', fields, 
   const [values, setValues] = useState<Record<string, string>>(() =>
     Object.fromEntries(allKeys.map((k) => [k, searchParams.get(k) ?? ''])),
   );
+
+  // Keep local input state in sync when the URL changes from outside this
+  // component (e.g. a view toggle that resets all filters).
+  const paramsSignature = allKeys.map((k) => `${k}=${searchParams.get(k) ?? ''}`).join('&');
+  useEffect(() => {
+    setValues(Object.fromEntries(allKeys.map((k) => [k, searchParams.get(k) ?? ''])));
+    // allKeys is derived from props (stable across renders); the effect should
+    // re-run whenever the URL param values actually change.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [paramsSignature]);
 
   const hasFilters = filterKeys.some((k) => searchParams.has(k));
 

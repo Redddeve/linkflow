@@ -1,6 +1,6 @@
 'use client';
 
-import { useRouter, useSearchParams, usePathname } from 'next/navigation';
+import { useRouter, usePathname } from 'next/navigation';
 
 interface Props {
   current: 'list' | 'kanban';
@@ -9,22 +9,18 @@ interface Props {
 export function ViewToggle({ current }: Props) {
   const router = useRouter();
   const pathname = usePathname();
-  const searchParams = useSearchParams();
 
   function switchTo(target: 'list' | 'kanban') {
     if (target === current) return;
-    const qs = new URLSearchParams(searchParams.toString());
-    qs.set('view', target);
-    if (target === 'kanban') {
-      qs.delete('page');
-      qs.delete('limit');
-    }
-    const s = qs.toString();
-    router.push(s ? `${pathname}?${s}` : pathname);
+    // Persist the user's choice for future visits without a ?view= param.
+    // 1 year is long enough to feel sticky; SameSite=Lax so it travels with normal navigation.
+    document.cookie = `orders_view=${target}; path=/; max-age=31536000; SameSite=Lax`;
+    // Switching views always clears filters/pagination so the user starts fresh.
+    router.push(`${pathname}?view=${target}`);
   }
 
   const base =
-    'rounded-md px-3 py-1 text-sm font-medium transition-colors';
+    'cursor-pointer rounded-md px-3 py-1 text-sm font-medium transition-colors';
   const active = 'bg-primary text-primary-foreground shadow-xs';
   const inactive = 'text-muted-foreground hover:text-foreground';
 

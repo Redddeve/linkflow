@@ -13,7 +13,10 @@ import type { Database } from '@/types/database.types';
 type OrderStatus = Database['public']['Enums']['order_status'];
 
 export interface OrdersKanbanProps {
-  initialColumns: Record<KanbanColumnStatus, { rows: OrderRow[]; total: number }>;
+  initialColumns: Record<
+    KanbanColumnStatus,
+    { rows: OrderRow[]; total: number }
+  >;
   filters: {
     copywriterId?: string;
     search?: string;
@@ -30,19 +33,26 @@ interface ColumnState {
   loading: boolean;
 }
 
-export function OrdersKanban({ initialColumns, filters, pageSize = 25 }: OrdersKanbanProps) {
-  const [columns, setColumns] = useState<Record<KanbanColumnStatus, ColumnState>>(() =>
-    Object.fromEntries(
-      KANBAN_COLUMNS.map((s) => [
-        s,
-        {
-          rows: initialColumns[s]?.rows ?? [],
-          total: initialColumns[s]?.total ?? 0,
-          page: 1,
-          loading: false,
-        },
-      ]),
-    ) as Record<KanbanColumnStatus, ColumnState>,
+export function OrdersKanban({
+  initialColumns,
+  filters,
+  pageSize = 25,
+}: OrdersKanbanProps) {
+  const [columns, setColumns] = useState<
+    Record<KanbanColumnStatus, ColumnState>
+  >(
+    () =>
+      Object.fromEntries(
+        KANBAN_COLUMNS.map((s) => [
+          s,
+          {
+            rows: initialColumns[s]?.rows ?? [],
+            total: initialColumns[s]?.total ?? 0,
+            page: 1,
+            loading: false,
+          },
+        ]),
+      ) as Record<KanbanColumnStatus, ColumnState>,
   );
   const [, startTransition] = useTransition();
 
@@ -74,13 +84,16 @@ export function OrdersKanban({ initialColumns, filters, pageSize = 25 }: OrdersK
           },
         }));
       } catch {
-        setColumns((s) => ({ ...s, [status]: { ...s[status], loading: false } }));
+        setColumns((s) => ({
+          ...s,
+          [status]: { ...s[status], loading: false },
+        }));
       }
     });
   }
 
   return (
-    <div className="flex gap-4 overflow-x-auto pb-2 -mx-2 px-2 min-w-0">
+    <div className="flex gap-4 overflow-auto pb-2 -mx-2 px-2 h-full">
       {KANBAN_COLUMNS.map((status) => {
         const col = columns[status];
         const isFilteredOut = !!filters.status && filters.status !== status;
@@ -105,12 +118,16 @@ export function OrdersKanban({ initialColumns, filters, pageSize = 25 }: OrdersK
             </div>
             <div
               data-testid={`kanban-column-${status}`}
-              className="flex flex-col gap-2 max-h-[calc(100vh-260px)] overflow-y-auto pr-1"
+              className="flex flex-col gap-2 flex-1 rounded-md bg-muted/30 p-2"
             >
               {isFilteredOut ? (
-                <p className="text-xs text-muted-foreground text-center py-6">Filtered out</p>
+                <p className="text-xs text-muted-foreground text-center py-6">
+                  Filtered out
+                </p>
               ) : col.rows.length === 0 ? (
-                <p className="text-xs text-muted-foreground text-center py-6">Empty</p>
+                <p className="text-xs text-muted-foreground text-center py-6">
+                  Empty
+                </p>
               ) : (
                 col.rows.map((order) => (
                   <Link
@@ -120,7 +137,9 @@ export function OrdersKanban({ initialColumns, filters, pageSize = 25 }: OrdersK
                   >
                     <Card className="hover:border-ring transition-colors cursor-pointer">
                       <CardHeader className="pb-1 pt-3 px-3">
-                        <p className="text-sm font-medium truncate">{order.site_domain}</p>
+                        <p className="text-sm font-medium truncate">
+                          {order.site_domain}
+                        </p>
                       </CardHeader>
                       <CardContent className="px-3 pb-3 space-y-1">
                         {order.publish_date && (
@@ -130,7 +149,8 @@ export function OrdersKanban({ initialColumns, filters, pageSize = 25 }: OrdersK
                         )}
                         {order.copywriter && (
                           <p className="text-xs text-muted-foreground truncate">
-                            {order.copywriter.first_name} {order.copywriter.last_name}
+                            {order.copywriter.first_name}{' '}
+                            {order.copywriter.last_name}
                           </p>
                         )}
                         <p className="text-xs font-medium">
@@ -149,7 +169,9 @@ export function OrdersKanban({ initialColumns, filters, pageSize = 25 }: OrdersK
                   disabled={col.loading}
                   className="mt-1"
                 >
-                  {col.loading ? 'Loading…' : `Load more (${remaining} remaining)`}
+                  {col.loading
+                    ? 'Loading…'
+                    : `Load more (${remaining} remaining)`}
                 </Button>
               )}
             </div>

@@ -12,6 +12,7 @@ interface Copywriter {
 interface Props {
   copywriters?: Copywriter[];
   showCopywriterFilter?: boolean;
+  showStatusFilter?: boolean;
 }
 
 const STATUS_OPTIONS = [
@@ -24,17 +25,23 @@ const STATUS_OPTIONS = [
   { value: 'Canceled', label: 'Canceled' },
 ];
 
-export function OrderFilters({ copywriters = [], showCopywriterFilter = false }: Props) {
-  const fields: FilterField[] = [
-    {
+export function OrderFilters({
+  copywriters = [],
+  showCopywriterFilter = false,
+  showStatusFilter = true,
+}: Props) {
+  const fields: FilterField[] = [];
+
+  if (showStatusFilter) {
+    fields.push({
       type: 'select',
       key: 'status',
       placeholder: 'All statuses',
       allLabel: 'All statuses',
       options: STATUS_OPTIONS,
       className: 'w-44 h-9',
-    },
-  ];
+    });
+  }
 
   if (showCopywriterFilter && copywriters.length > 0) {
     fields.push({
@@ -50,7 +57,11 @@ export function OrderFilters({ copywriters = [], showCopywriterFilter = false }:
     });
   }
 
-  const filterKeys = ['search', 'status', ...(showCopywriterFilter ? ['copywriter'] : [])];
+  const filterKeys = [
+    'search',
+    ...(showStatusFilter ? ['status'] : []),
+    ...(showCopywriterFilter ? ['copywriter'] : []),
+  ];
 
   return (
     <FilterBar

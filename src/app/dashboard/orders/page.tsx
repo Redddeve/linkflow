@@ -1,10 +1,11 @@
 import { notFound } from 'next/navigation';
+import { cookies } from 'next/headers';
 import { requireUser } from '@/lib/auth';
 import { OrderFilters } from './components/order-filters';
 import { OrdersTable } from './components/orders-table';
 import { OrdersKanban } from './components/orders-kanban';
 import { ViewToggle } from './components/view-toggle';
-import { KANBAN_COLUMNS, type KanbanColumnStatus } from './components/kanban-columns';
+import { KANBAN_COLUMNS } from './components/kanban-columns';
 import { toOrderRow } from './components/order-row-mapper';
 import { PageHeader } from '@/components/ui/page-header';
 import { Pagination } from '@/components/ui/pagination';
@@ -31,7 +32,10 @@ export default async function OrdersPage({ searchParams }: PageProps) {
   const statusFilter = params.status as OrderStatus | undefined;
   const copywriterFilter = params.copywriter;
   const searchFilter = params.search?.trim() || undefined;
-  const view = params.view ?? 'list';
+  // URL wins; fall back to the user's saved preference cookie; default to list.
+  const cookieView = (await cookies()).get('orders_view')?.value;
+  const view =
+    params.view ?? (cookieView === 'kanban' || cookieView === 'list' ? cookieView : 'list');
   const { page, pageSize } = parsePagination(params);
 
   const isManagerOrAdmin = actor.role === 'Manager' || actor.role === 'Admin';
@@ -94,7 +98,7 @@ export default async function OrdersPage({ searchParams }: PageProps) {
     ) as Parameters<typeof OrdersKanban>[0]['initialColumns'];
 
     return (
-      <div>
+      <div className="flex h-full flex-col">
         <PageHeader
           title="Orders"
           description={isClient ? 'Your orders' : 'All orders'}
@@ -107,24 +111,25 @@ export default async function OrdersPage({ searchParams }: PageProps) {
           </div>
         )}
 
-        <div className="space-y-4">
+        <div className="flex flex-1 flex-col gap-4 min-h-0">
           <OrderFilters
             copywriters={copywriters}
             showCopywriterFilter={isManagerOrAdmin}
+            showStatusFilter={false}
           />
 
-          <OrdersKanban
-            initialColumns={initialColumns}
-            filters={{
-              copywriterId: copywriterFilter,
-              search: searchFilter,
-              unassigned: params.assignee === 'unassigned' && isManagerOrAdmin,
-              status: statusFilter && (KANBAN_COLUMNS as readonly string[]).includes(statusFilter)
-                ? (statusFilter as KanbanColumnStatus)
-                : undefined,
-            }}
-            pageSize={KANBAN_PAGE_SIZE}
-          />
+          <div className="flex-1 min-h-0">
+            <OrdersKanban
+              key={`${searchFilter ?? ''}|${copywriterFilter ?? ''}|${params.assignee ?? ''}`}
+              initialColumns={initialColumns}
+              filters={{
+                copywriterId: copywriterFilter,
+                search: searchFilter,
+                unassigned: params.assignee === 'unassigned' && isManagerOrAdmin,
+              }}
+              pageSize={KANBAN_PAGE_SIZE}
+            />
+          </div>
         </div>
       </div>
     );
