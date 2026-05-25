@@ -2,11 +2,16 @@
 
 import { revalidatePath } from 'next/cache';
 import { createClient } from '@/lib/supabase/server';
-import { requireRole } from '@/lib/auth';
+import { requireRole, requireUser } from '@/lib/auth';
 import { recordAudit } from '@/lib/audit';
 import { notify } from '@/lib/notify';
 import { AppError } from '@/lib/errors';
 import { firstOfMonth } from '@/lib/billing';
+import { fetchOrdersList } from '@/lib/data/orders';
+import { fetchUsersByIds } from '@/lib/data/users';
+import { isKanbanColumn } from './components/kanban-columns';
+import { toOrderRow } from './components/order-row-mapper';
+import type { OrderRow } from './components/orders-table';
 import {
   editOrderPublishDateSchema,
   cancelOrderSchema,
@@ -639,4 +644,77 @@ export async function publishOrder(input: PublishOrderInput): Promise<void> {
 
   revalidatePath('/dashboard/orders');
   revalidatePath(`/dashboard/orders/${orderId}`);
+}
+
+// ── Kanban load-more ───────────────────────────────────────────────────────────
+
+export interface FetchOrdersColumnInput {
+  status: OrderStatus;
+  page: number;
+  pageSize: number;
+  filters: {
+    copywriterId?: string | null;
+    search?: string;
+    unassigned?: boolean;
+  };
+}
+
+export interface FetchOrdersColumnResult {
+  rows: OrderRow[];
+  total: number;
+}
+
+export async function fetchOrdersColumn(
+  input: FetchOrdersColumnInput,
+): Promise<FetchOrdersColumnResult> {
+  const actor = await requireUser();
+
+  if (
+    !actor.role ||
+    actor.role === 'Sourcer' ||
+    actor.role === 'Copywriter'
+  ) {
+    throw new AppError('FORBIDDEN', 'You do not have permission to view the Kanban board');
+  }
+
+  if (!isKanbanColumn(input.status)) {
+    throw new AppError('VALIDATION', `Invalid Kanban status "${input.status}"`);
+  }
+
+  if (!Number.isInteger(input.page) || input.page < 1) {
+    throw new AppError('VALIDATION', 'page must be a positive integer');
+  }
+  if (!Number.isInteger(input.pageSize) || input.pageSize < 1 || input.pageSize > 100) {
+    throw new AppError('VALIDATION', 'pageSize must be between 1 and 100');
+  }
+
+  const isClient = actor.role === 'Client';
+  const isManagerOrAdmin = actor.role === 'Manager' || actor.role === 'Admin';
+
+  const { rows: rawRows, total } = await fetchOrdersList({
+    createdById: isClient ? actor.id : undefined,
+    copywriterId: isManagerOrAdmin ? input.filters.copywriterId ?? undefined : undefined,
+    unassigned: isManagerOrAdmin ? !!input.filters.unassigned : false,
+    status: input.status,
+    search: input.filters.search,
+    excludeDisabledCreators: true,
+    page: input.page,
+    pageSize: input.pageSize,
+  });
+
+  const userIds = [
+    ...new Set(
+      rawRows.flatMap(
+        (o) =>
+          [o.copywriter_id, o.manager_id, o.created_by_id].filter(Boolean) as string[],
+      ),
+    ),
+  ];
+  const users = await fetchUsersByIds(userIds);
+  const userMap = Object.fromEntries(users.map((u) => [u.id, u]));
+
+  return {
+    rows: rawRows.map((o) => toOrderRow(o, userMap)),
+    total,
+  };
 }

@@ -6,9 +6,16 @@ const mockIlike = vi.fn(() => ({ order: mockOrder }));
 const mockEq = vi.fn(() => ({ ilike: mockIlike, order: mockOrder, range: mockRange }));
 const mockSelect = vi.fn(() => ({ eq: mockEq }));
 const mockSelectCartItems = vi.fn(() => ({ eq: vi.fn().mockResolvedValue({ data: [], error: null }) }));
+// orders chain: .from('orders').select('site_id').eq('created_by_id', ...).not('status', 'in', ...)
+const mockSelectOrders = vi.fn(() => ({
+  eq: vi.fn(() => ({
+    not: vi.fn().mockResolvedValue({ data: [], error: null }),
+  })),
+}));
 
 const mockFrom = vi.fn((table: string) => {
   if (table === 'cart_items') return { select: mockSelectCartItems };
+  if (table === 'orders') return { select: mockSelectOrders };
   return { select: mockSelect };
 });
 
