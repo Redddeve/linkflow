@@ -36,7 +36,8 @@ export default async function OrderDetailPage({ params }: PageProps) {
   if (error || !order) notFound();
 
   if (actor.role === 'Client' && order.created_by_id !== actor.id) notFound();
-  if (actor.role === 'Copywriter' && order.copywriter_id !== actor.id) notFound();
+  if (actor.role === 'Copywriter' && order.copywriter_id !== actor.id)
+    notFound();
   if (actor.role === 'Sourcer') {
     const supabase = await createClient();
     const { data: site } = await supabase
@@ -66,7 +67,9 @@ export default async function OrderDetailPage({ params }: PageProps) {
   const relatedUsers = await fetchUsersByIds(uniqueIds);
 
   const userMap = Object.fromEntries(relatedUsers.map((u) => [u.id, u]));
-  const copywriter = order.copywriter_id ? (userMap[order.copywriter_id] ?? null) : null;
+  const copywriter = order.copywriter_id
+    ? (userMap[order.copywriter_id] ?? null)
+    : null;
   const manager = order.manager_id ? (userMap[order.manager_id] ?? null) : null;
   const client = userMap[order.created_by_id] ?? null;
 
@@ -83,7 +86,9 @@ export default async function OrderDetailPage({ params }: PageProps) {
     order.copywriter_id === actor.id &&
     (order.status === 'In Progress' || order.status === 'Needs changes');
   const canApprove =
-    isClient && order.status === 'Content Sent' && order.created_by_id === actor.id;
+    isClient &&
+    order.status === 'Content Sent' &&
+    order.created_by_id === actor.id;
   const canReject = canApprove;
   const canPublish = isManagerOrAdmin && order.status === 'Content Approved';
   const canComment =
@@ -145,13 +150,32 @@ export default async function OrderDetailPage({ params }: PageProps) {
   ];
 
   const timelineRows: { label: string; value: React.ReactNode }[] = [
-    { label: 'Link type', value: <span className="capitalize">{order.site_link_type}</span> },
+    {
+      label: 'Link type',
+      value: <span className="capitalize">{order.site_link_type}</span>,
+    },
     { label: 'Created', value: formatDate(order.created_at) },
   ];
-  if (order.sent_at) timelineRows.push({ label: 'Content sent', value: formatDate(order.sent_at) });
-  if (order.approved_at) timelineRows.push({ label: 'Approved', value: formatDate(order.approved_at) });
-  if (order.published_at) timelineRows.push({ label: 'Published', value: formatDate(order.published_at) });
-  if (order.canceled_at) timelineRows.push({ label: 'Canceled', value: formatDate(order.canceled_at) });
+  if (order.sent_at)
+    timelineRows.push({
+      label: 'Content sent',
+      value: formatDate(order.sent_at),
+    });
+  if (order.approved_at)
+    timelineRows.push({
+      label: 'Approved',
+      value: formatDate(order.approved_at),
+    });
+  if (order.published_at)
+    timelineRows.push({
+      label: 'Published',
+      value: formatDate(order.published_at),
+    });
+  if (order.canceled_at)
+    timelineRows.push({
+      label: 'Canceled',
+      value: formatDate(order.canceled_at),
+    });
 
   return (
     <div className="space-y-6">
@@ -327,7 +351,9 @@ export default async function OrderDetailPage({ params }: PageProps) {
                       className="flex items-start justify-between gap-3"
                     >
                       <dt className="text-muted-foreground">{r.label}</dt>
-                      <dd className="font-medium text-right text-base">{r.value}</dd>
+                      <dd className="font-medium text-right text-base">
+                        {r.value}
+                      </dd>
                     </div>
                   ))}
                 </dl>
@@ -347,7 +373,9 @@ export default async function OrderDetailPage({ params }: PageProps) {
                     className="flex items-start justify-between gap-3"
                   >
                     <dt className="text-muted-foreground">{r.label}</dt>
-                    <dd className="font-medium text-right text-base">{r.value}</dd>
+                    <dd className="font-medium text-right text-base">
+                      {r.value}
+                    </dd>
                   </div>
                 ))}
               </dl>

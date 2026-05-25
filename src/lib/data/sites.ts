@@ -10,6 +10,8 @@ export interface SitesListFilters {
   priceMinCents?: number;
   priceMaxCents?: number;
   search?: string;
+  page?: number;
+  pageSize?: number;
 }
 
 export type SitesListRow = {
@@ -27,12 +29,15 @@ export type SitesListRow = {
   categories: { name: string } | null;
 };
 
-export async function fetchSitesList(filters: SitesListFilters): Promise<SitesListRow[]> {
+export async function fetchSitesList(
+  filters: SitesListFilters,
+): Promise<{ rows: SitesListRow[]; total: number }> {
   const supabase = await createClient();
   let query = supabase
     .from('sites')
     .select(
       'id, domain, status, price_cents, link_type, category_id, created_at, dr, top_countries, countries, languages, categories(name)',
+      { count: 'exact' },
     )
     .order('created_at', { ascending: false });
 
@@ -46,8 +51,13 @@ export async function fetchSitesList(filters: SitesListFilters): Promise<SitesLi
     query = query.ilike('domain', `%${escaped}%`);
   }
 
-  const { data } = await query;
-  return (data ?? []) as SitesListRow[];
+  if (filters.page && filters.pageSize) {
+    const offset = (filters.page - 1) * filters.pageSize;
+    query = query.range(offset, offset + filters.pageSize - 1);
+  }
+
+  const { data, count } = await query;
+  return { rows: (data ?? []) as SitesListRow[], total: count ?? 0 };
 }
 
 export async function fetchSiteById(id: string) {

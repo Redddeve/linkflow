@@ -4,6 +4,8 @@ import { InvoiceFilters } from './components/invoice-filters';
 import { InvoicesTable } from './components/invoices-table';
 import { GenerateInvoicesDialog } from './components/generate-invoices-dialog';
 import { PageHeader } from '@/components/ui/page-header';
+import { Pagination } from '@/components/ui/pagination';
+import { parsePagination } from '@/lib/pagination';
 import { fetchInvoicesList } from '@/lib/data/invoices';
 import { fetchUsersByIds, fetchActiveByRole } from '@/lib/data/users';
 import type { Database } from '@/types/database.types';
@@ -28,29 +30,28 @@ export default async function InvoicesPage({ searchParams }: PageProps) {
   const params = await searchParams;
   const statusFilter = isInvoiceStatus(params.status) ? params.status : undefined;
   const clientFilter = params.client;
-  const searchFilter = params.search?.toLowerCase();
+  const searchFilter = params.search?.trim() || undefined;
+  const { page, pageSize } = parsePagination(params);
 
   const isManagerOrAdmin = actor.role === 'Manager' || actor.role === 'Admin';
   const isClient = actor.role === 'Client';
 
   if (!isManagerOrAdmin && !isClient) notFound();
 
-  const rawList = await fetchInvoicesList({
+  const { rows: rawList, total } = await fetchInvoicesList({
     clientId: isClient ? actor.id : clientFilter && isManagerOrAdmin ? clientFilter : undefined,
     status: statusFilter,
+    search: isManagerOrAdmin ? searchFilter : undefined,
+    excludeDisabledClients: true,
+    page,
+    pageSize,
   });
 
-  // Resolve client names separately (avoid multi-FK Supabase join typing issue)
   const clientIds = [...new Set(rawList.map((i) => i.client_id))];
   const clientsData = await fetchUsersByIds(clientIds);
   const clientMap = Object.fromEntries(clientsData.map((u) => [u.id, u]));
 
-  const visibleList = rawList.filter((i) => {
-    const c = clientMap[i.client_id];
-    return !c || c.status !== 'DISABLED';
-  });
-
-  let invoices = visibleList.map((i) => ({
+  const invoices = rawList.map((i) => ({
     id: i.id,
     client_id: i.client_id,
     billing_month: i.billing_month,
@@ -59,13 +60,6 @@ export default async function InvoicesPage({ searchParams }: PageProps) {
     created_at: i.created_at,
     client: clientMap[i.client_id] ?? null,
   }));
-
-  if (searchFilter && isManagerOrAdmin) {
-    invoices = invoices.filter((i) => {
-      const name = i.client ? `${i.client.first_name} ${i.client.last_name}` : '';
-      return name.toLowerCase().includes(searchFilter);
-    });
-  }
 
   // Clients list for filter (manager/admin only)
   const clients = isManagerOrAdmin ? await fetchActiveByRole('Client') : [];
@@ -80,6 +74,7 @@ export default async function InvoicesPage({ searchParams }: PageProps) {
       <div className="space-y-4">
         <InvoiceFilters clients={clients} showClientFilter={isManagerOrAdmin} />
         <InvoicesTable invoices={invoices} showClient={isManagerOrAdmin} />
+        <Pagination total={total} page={page} pageSize={pageSize} />
       </div>
     </div>
   );

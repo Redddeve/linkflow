@@ -10,6 +10,8 @@ import {
 } from '@/lib/billing';
 import { fetchEarningsList, fetchEarningsTotals } from '@/lib/data/earnings';
 import { fetchActiveByRole, fetchUsersByIds } from '@/lib/data/users';
+import { Pagination } from '@/components/ui/pagination';
+import { parsePagination } from '@/lib/pagination';
 import { EarningsFilters } from './components/earnings-filters';
 import { EarningsTable, type EarningsTableRow } from './components/earnings-table';
 
@@ -38,6 +40,7 @@ export default async function EarningsPage({ searchParams }: PageProps) {
   const isSourcer = actor.role === 'Sourcer';
   const isAdmin = actor.role === 'Admin';
   const sourcerId = isSourcer ? actor.id : params.sourcer || undefined;
+  const { page, pageSize } = parsePagination(params);
 
   const [totals, rows, sourcers] = await Promise.all([
     fetchEarningsTotals({ month, sourcerId }),
@@ -60,7 +63,7 @@ export default async function EarningsPage({ searchParams }: PageProps) {
     );
   }
 
-  const tableRows: EarningsTableRow[] = rows.map((r) => ({
+  const allTableRows: EarningsTableRow[] = rows.map((r) => ({
     id: r.id,
     site_domain: r.site_domain,
     published_at: r.published_at,
@@ -71,6 +74,9 @@ export default async function EarningsPage({ searchParams }: PageProps) {
     payout_reference: r.sourcer_payout_reference,
     sourcer_name: isSourcer ? null : sourcerNameMap[r.sourcer_id] ?? null,
   }));
+  const total = allTableRows.length;
+  const offset = (page - 1) * pageSize;
+  const tableRows = allTableRows.slice(offset, offset + pageSize);
 
   return (
     <div>
@@ -134,6 +140,7 @@ export default async function EarningsPage({ searchParams }: PageProps) {
           showSourcer={!isSourcer}
           canMarkPaid={isAdmin}
         />
+        <Pagination total={total} page={page} pageSize={pageSize} />
       </div>
     </div>
   );
