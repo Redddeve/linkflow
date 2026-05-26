@@ -84,6 +84,10 @@ export function EarningsFilters({
 
       {showSourcer && (
         <Select
+          items={{
+            __all__: 'All sourcers',
+            ...Object.fromEntries(sourcerOptions.map((o) => [o.value, o.label])),
+          }}
           value={currentSourcer || '__all__'}
           onValueChange={setSourcer}
         >

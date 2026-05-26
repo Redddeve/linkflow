@@ -90,6 +90,20 @@ export async function fetchActiveByRole(
   return data ?? [];
 }
 
+export async function fetchActiveClientsForManager(
+  managerId: string,
+): Promise<{ id: string; first_name: string; last_name: string }[]> {
+  const supabase = await createClient();
+  const { data } = await supabase
+    .from('users')
+    .select('id, first_name, last_name')
+    .eq('role', 'Client')
+    .eq('status', 'ACTIVE')
+    .eq('manager_id', managerId)
+    .order('first_name');
+  return data ?? [];
+}
+
 export async function countUsersByStatus(status: UserStatus): Promise<number> {
   const supabase = await createClient();
   const { count } = await supabase

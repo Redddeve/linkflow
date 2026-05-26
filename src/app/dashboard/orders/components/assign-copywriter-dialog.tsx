@@ -30,7 +30,7 @@ interface Props {
 
 export function AssignCopywriterDialog({ orderId, copywriters, isReassign = false, currentCopywriterId }: Props) {
   const [open, setOpen] = useState(false);
-  const [copywriterId, setCopywriterId] = useState('');
+  const [copywriterId, setCopywriterId] = useState(isReassign ? currentCopywriterId ?? '' : '');
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
 
@@ -45,16 +45,18 @@ export function AssignCopywriterDialog({ orderId, copywriters, isReassign = fals
           await assignCopywriter({ orderId, copywriterId });
         }
         setOpen(false);
-        setCopywriterId('');
+        setCopywriterId(isReassign ? currentCopywriterId ?? '' : '');
       } catch (e) {
         setError(e instanceof Error ? e.message : 'Something went wrong');
       }
     });
   }
 
-  const available = isReassign
-    ? copywriters.filter((c) => c.id !== currentCopywriterId)
-    : copywriters;
+  const copywriterLabels = Object.fromEntries(
+    copywriters.map((c) => [c.id, `${c.first_name} ${c.last_name}`]),
+  );
+
+  const isUnchanged = isReassign && copywriterId === currentCopywriterId;
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
@@ -72,14 +74,15 @@ export function AssignCopywriterDialog({ orderId, copywriters, isReassign = fals
         </DialogHeader>
         <div className="space-y-2">
           <Label htmlFor="copywriter-select">Copywriter</Label>
-          <Select value={copywriterId} onValueChange={(v) => setCopywriterId(v ?? '')}>
+          <Select items={copywriterLabels} value={copywriterId} onValueChange={(v) => setCopywriterId(v ?? '')}>
             <SelectTrigger id="copywriter-select">
               <SelectValue placeholder="Select copywriter…" />
             </SelectTrigger>
             <SelectContent>
-              {available.map((c) => (
+              {copywriters.map((c) => (
                 <SelectItem key={c.id} value={c.id}>
                   {c.first_name} {c.last_name}
+                  {c.id === currentCopywriterId ? ' (current)' : ''}
                 </SelectItem>
               ))}
             </SelectContent>
@@ -90,7 +93,7 @@ export function AssignCopywriterDialog({ orderId, copywriters, isReassign = fals
           <Button variant="outline" onClick={() => setOpen(false)} disabled={isPending}>
             Cancel
           </Button>
-          <Button onClick={handleSubmit} disabled={isPending || !copywriterId}>
+          <Button onClick={handleSubmit} disabled={isPending || !copywriterId || isUnchanged}>
             {isPending ? 'Saving…' : isReassign ? 'Reassign' : 'Assign'}
           </Button>
         </DialogFooter>

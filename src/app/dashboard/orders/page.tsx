@@ -11,7 +11,11 @@ import { PageHeader } from '@/components/ui/page-header';
 import { Pagination } from '@/components/ui/pagination';
 import { parsePagination } from '@/lib/pagination';
 import { fetchOrdersList } from '@/lib/data/orders';
-import { fetchUsersByIds, fetchActiveByRole } from '@/lib/data/users';
+import {
+  fetchUsersByIds,
+  fetchActiveByRole,
+  fetchActiveClientsForManager,
+} from '@/lib/data/users';
 import type { Database } from '@/types/database.types';
 
 interface PageProps {
@@ -31,6 +35,7 @@ export default async function OrdersPage({ searchParams }: PageProps) {
   const params = await searchParams;
   const statusFilter = params.status as OrderStatus | undefined;
   const copywriterFilter = params.copywriter;
+  const clientFilter = params.client;
   const searchFilter = params.search?.trim() || undefined;
   // URL wins; fall back to the user's saved preference cookie; default to list.
   const cookieView = (await cookies()).get('orders_view')?.value;
@@ -47,10 +52,22 @@ export default async function OrdersPage({ searchParams }: PageProps) {
 
   const checkedOut = params.checked_out ? Number(params.checked_out) : null;
 
-  // Copywriters list for filter (manager/admin only)
-  const copywriters = isManagerOrAdmin
-    ? await fetchActiveByRole('Copywriter')
-    : [];
+  // Copywriters & clients lists for filters (manager/admin only)
+  const [copywriters, clients] = isManagerOrAdmin
+    ? await Promise.all([
+        fetchActiveByRole('Copywriter'),
+        actor.role === 'Admin'
+          ? fetchActiveByRole('Client')
+          : fetchActiveClientsForManager(actor.id),
+      ])
+    : [[], []];
+
+  // For managers, restrict the client filter to their own clients to prevent
+  // URL-tampered filtering across other managers' clients.
+  const effectiveClientFilter =
+    clientFilter && isManagerOrAdmin && clients.some((c) => c.id === clientFilter)
+      ? clientFilter
+      : undefined;
 
   if (showKanban) {
     // Fan out one query per column; skip the query for columns that don't
@@ -61,7 +78,7 @@ export default async function OrdersPage({ searchParams }: PageProps) {
           return Promise.resolve({ rows: [], total: 0 });
         }
         return fetchOrdersList({
-          createdById: isClient ? actor.id : undefined,
+          createdById: isClient ? actor.id : effectiveClientFilter,
           copywriterId:
             copywriterFilter && isManagerOrAdmin ? copywriterFilter : undefined,
           unassigned: params.assignee === 'unassigned' && isManagerOrAdmin,
@@ -114,16 +131,19 @@ export default async function OrdersPage({ searchParams }: PageProps) {
         <div className="flex flex-1 flex-col gap-4 min-h-0">
           <OrderFilters
             copywriters={copywriters}
+            clients={clients}
             showCopywriterFilter={isManagerOrAdmin}
+            showClientFilter={isManagerOrAdmin}
             showStatusFilter={false}
           />
 
           <div className="flex-1 min-h-0">
             <OrdersKanban
-              key={`${searchFilter ?? ''}|${copywriterFilter ?? ''}|${params.assignee ?? ''}`}
+              key={`${searchFilter ?? ''}|${copywriterFilter ?? ''}|${effectiveClientFilter ?? ''}|${params.assignee ?? ''}`}
               initialColumns={initialColumns}
               filters={{
                 copywriterId: copywriterFilter,
+                createdById: effectiveClientFilter,
                 search: searchFilter,
                 unassigned: params.assignee === 'unassigned' && isManagerOrAdmin,
               }}
@@ -136,7 +156,7 @@ export default async function OrdersPage({ searchParams }: PageProps) {
   }
 
   const { rows: rawList, total } = await fetchOrdersList({
-    createdById: isClient ? actor.id : undefined,
+    createdById: isClient ? actor.id : effectiveClientFilter,
     copywriterId: isCopywriter
       ? actor.id
       : copywriterFilter && isManagerOrAdmin
@@ -187,7 +207,9 @@ export default async function OrdersPage({ searchParams }: PageProps) {
       <div className="space-y-4">
         <OrderFilters
           copywriters={copywriters}
+          clients={clients}
           showCopywriterFilter={isManagerOrAdmin}
+          showClientFilter={isManagerOrAdmin}
         />
 
         <OrdersTable

@@ -654,6 +654,7 @@ export interface FetchOrdersColumnInput {
   pageSize: number;
   filters: {
     copywriterId?: string | null;
+    createdById?: string | null;
     search?: string;
     unassigned?: boolean;
   };
@@ -691,8 +692,27 @@ export async function fetchOrdersColumn(
   const isClient = actor.role === 'Client';
   const isManagerOrAdmin = actor.role === 'Manager' || actor.role === 'Admin';
 
+  let createdByFilter: string | undefined;
+  if (isClient) {
+    createdByFilter = actor.id;
+  } else if (isManagerOrAdmin && input.filters.createdById) {
+    if (actor.role === 'Admin') {
+      createdByFilter = input.filters.createdById;
+    } else {
+      const supabase = await createClient();
+      const { data: client } = await supabase
+        .from('users')
+        .select('manager_id')
+        .eq('id', input.filters.createdById)
+        .single();
+      if (client?.manager_id === actor.id) {
+        createdByFilter = input.filters.createdById;
+      }
+    }
+  }
+
   const { rows: rawRows, total } = await fetchOrdersList({
-    createdById: isClient ? actor.id : undefined,
+    createdById: createdByFilter,
     copywriterId: isManagerOrAdmin ? input.filters.copywriterId ?? undefined : undefined,
     unassigned: isManagerOrAdmin ? !!input.filters.unassigned : false,
     status: input.status,

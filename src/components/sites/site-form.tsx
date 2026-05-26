@@ -99,6 +99,11 @@ export function SiteForm({ mode, siteId, categories, actorRole, onSuccess, onCan
 
   const showSourcerFields = actorRole === 'Sourcer' || actorRole === 'Admin';
 
+  const categoryLabels: Record<string, string> = {
+    '': 'No category',
+    ...Object.fromEntries(categories.map((c) => [c.id, c.name])),
+  };
+
   async function onSubmit(data: FormValues) {
     const priceCents = Math.round(parseFloat(data.price_dollars || '0') * 100);
     const payload = {
@@ -164,7 +169,7 @@ export function SiteForm({ mode, siteId, categories, actorRole, onSuccess, onCan
             control={control}
             name="category_id"
             render={({ field }) => (
-              <Select value={field.value} onValueChange={field.onChange}>
+              <Select items={categoryLabels} value={field.value} onValueChange={field.onChange}>
                 <SelectTrigger id="category">
                   <SelectValue placeholder="No category" />
                 </SelectTrigger>

@@ -3,15 +3,17 @@
 import { FilterBar } from '@/components/ui/filter-bar';
 import type { FilterField } from '@/components/ui/filter-bar';
 
-interface Copywriter {
+interface UserOption {
   id: string;
   first_name: string;
   last_name: string;
 }
 
 interface Props {
-  copywriters?: Copywriter[];
+  copywriters?: UserOption[];
+  clients?: UserOption[];
   showCopywriterFilter?: boolean;
+  showClientFilter?: boolean;
   showStatusFilter?: boolean;
 }
 
@@ -27,7 +29,9 @@ const STATUS_OPTIONS = [
 
 export function OrderFilters({
   copywriters = [],
+  clients = [],
   showCopywriterFilter = false,
+  showClientFilter = false,
   showStatusFilter = true,
 }: Props) {
   const fields: FilterField[] = [];
@@ -57,10 +61,25 @@ export function OrderFilters({
     });
   }
 
+  if (showClientFilter && clients.length > 0) {
+    fields.push({
+      type: 'select',
+      key: 'client',
+      placeholder: 'All clients',
+      allLabel: 'All clients',
+      options: clients.map((c) => ({
+        value: c.id,
+        label: `${c.first_name} ${c.last_name}`,
+      })),
+      className: 'w-48 h-9',
+    });
+  }
+
   const filterKeys = [
     'search',
     ...(showStatusFilter ? ['status'] : []),
     ...(showCopywriterFilter ? ['copywriter'] : []),
+    ...(showClientFilter ? ['client'] : []),
   ];
 
   return (

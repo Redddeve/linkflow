@@ -19,6 +19,7 @@ export interface OrdersKanbanProps {
   >;
   filters: {
     copywriterId?: string;
+    createdById?: string;
     search?: string;
     unassigned?: boolean;
     status?: OrderStatus;
@@ -70,6 +71,7 @@ export function OrdersKanban({
           pageSize,
           filters: {
             copywriterId: filters.copywriterId,
+            createdById: filters.createdById,
             search: filters.search,
             unassigned: filters.unassigned,
           },
