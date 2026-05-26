@@ -1,4 +1,4 @@
-import { requireUser } from '@/lib/auth';
+import { requireUser } from '@/lib/features/auth';
 import {
   ClientHome,
   ManagerHome,

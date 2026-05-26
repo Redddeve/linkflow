@@ -1,8 +1,8 @@
 import { notFound } from 'next/navigation';
-import { requireRole } from '@/lib/auth';
+import { requireRole } from '@/lib/features/auth';
 import { fetchOrderForPublish } from '@/lib/data/orders';
 import { BackLink } from '@/components/ui/back-link';
-import { PublishOrderForm } from '@/components/orders/components/publish-order-form';
+import { PublishOrderForm } from '@/components/orders/publish-order-form';
 
 interface PageProps {
   params: Promise<{ id: string }>;

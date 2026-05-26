@@ -1,5 +1,5 @@
 import { notFound } from 'next/navigation';
-import { requireUser } from '@/lib/auth';
+import { requireUser } from '@/lib/features/auth';
 import { PageHeader } from '@/components/ui/page-header';
 import {
   addMonths,
@@ -7,16 +7,16 @@ import {
   formatBillingMonth,
   isValidBillingMonth,
   type BillingMonth,
-} from '@/lib/billing';
+} from '@/lib/features/billing';
 import { fetchEarningsList, fetchEarningsTotals } from '@/lib/data/earnings';
 import { fetchActiveByRole, fetchUsersByIds } from '@/lib/data/users';
 import { Pagination } from '@/components/ui/pagination';
-import { parsePagination } from '@/lib/pagination';
-import { EarningsFilters } from '@/components/earnings/components/earnings-filters';
+import { parsePagination } from '@/lib/features/pagination';
+import { EarningsFilters } from '@/components/earnings/earnings-filters';
 import {
   EarningsTable,
   type EarningsTableRow,
-} from '@/components/earnings/components/earnings-table';
+} from '@/components/earnings/earnings-table';
 
 interface PageProps {
   searchParams: Promise<Record<string, string | undefined>>;

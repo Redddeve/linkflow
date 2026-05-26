@@ -1,5 +1,5 @@
 import { notFound } from 'next/navigation';
-import { requireUser } from '@/lib/auth';
+import { requireUser } from '@/lib/features/auth';
 import {
   fetchChatById,
   fetchChatsList,
@@ -9,7 +9,7 @@ import {
   fetchOrderByChatId,
 } from '@/lib/data/chat';
 import { fetchUsersByIds } from '@/lib/data/users';
-import { ChatShell } from '@/components/chat/components/chat-shell';
+import { ChatShell } from '@/components/chat/chat-shell';
 
 interface PageProps {
   params: Promise<{ id: string }>;

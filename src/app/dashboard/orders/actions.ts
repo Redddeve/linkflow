@@ -2,16 +2,16 @@
 
 import { revalidatePath } from 'next/cache';
 import { createClient } from '@/lib/supabase/server';
-import { requireRole, requireUser } from '@/lib/auth';
-import { recordAudit } from '@/lib/audit';
-import { notify } from '@/lib/notify';
+import { requireRole, requireUser } from '@/lib/features/auth';
+import { recordAudit } from '@/lib/features/audit';
+import { notify } from '@/lib/features/notify';
 import { AppError } from '@/lib/errors';
-import { firstOfMonth } from '@/lib/billing';
+import { firstOfMonth } from '@/lib/features/billing';
 import { fetchOrdersList } from '@/lib/data/orders';
 import { fetchUsersByIds } from '@/lib/data/users';
-import { isKanbanColumn } from '@/components/orders/components/kanban-columns';
-import { toOrderRow } from '@/components/orders/components/order-row-mapper';
-import type { OrderRow } from '@/components/orders/components/orders-table';
+import { isKanbanColumn } from '@/components/orders/kanban-columns';
+import { toOrderRow } from '@/components/orders/order-row-mapper';
+import type { OrderRow } from '@/components/orders/orders-table';
 import {
   editOrderPublishDateSchema,
   cancelOrderSchema,

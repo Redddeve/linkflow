@@ -1,7 +1,7 @@
 'use client';
 
 import { useRouter, useSearchParams, usePathname } from 'next/navigation';
-import { useEffect, useRef, useState, useCallback } from 'react';
+import { useRef, useState, useCallback } from 'react';
 import { SlidersHorizontal, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -47,7 +47,12 @@ interface Props {
   filterKeys: string[];
 }
 
-export function FilterBar({ searchKey, searchPlaceholder = 'Search…', fields, filterKeys }: Props) {
+export function FilterBar({
+  searchKey,
+  searchPlaceholder = 'Search…',
+  fields,
+  filterKeys,
+}: Props) {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -60,19 +65,23 @@ export function FilterBar({ searchKey, searchPlaceholder = 'Search…', fields, 
     ...(searchKey ? [searchKey] : []),
     ...fields.map((f) => f.key),
   ];
+  // Signature of the URL params we care about; used to reset local state when
+  // the URL changes from outside this component (e.g. a view toggle that
+  // clears filters). Resetting state during render avoids the cascading
+  // re-render that a setState-in-effect would cause.
+  const paramsSignature = allKeys
+    .map((k) => `${k}=${searchParams.get(k) ?? ''}`)
+    .join('&');
   const [values, setValues] = useState<Record<string, string>>(() =>
     Object.fromEntries(allKeys.map((k) => [k, searchParams.get(k) ?? ''])),
   );
-
-  // Keep local input state in sync when the URL changes from outside this
-  // component (e.g. a view toggle that resets all filters).
-  const paramsSignature = allKeys.map((k) => `${k}=${searchParams.get(k) ?? ''}`).join('&');
-  useEffect(() => {
-    setValues(Object.fromEntries(allKeys.map((k) => [k, searchParams.get(k) ?? ''])));
-    // allKeys is derived from props (stable across renders); the effect should
-    // re-run whenever the URL param values actually change.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [paramsSignature]);
+  const [prevSignature, setPrevSignature] = useState(paramsSignature);
+  if (paramsSignature !== prevSignature) {
+    setPrevSignature(paramsSignature);
+    setValues(
+      Object.fromEntries(allKeys.map((k) => [k, searchParams.get(k) ?? ''])),
+    );
+  }
 
   const hasFilters = filterKeys.some((k) => searchParams.has(k));
 
@@ -106,7 +115,9 @@ export function FilterBar({ searchKey, searchPlaceholder = 'Search…', fields, 
     const reset = Object.fromEntries(allKeys.map((k) => [k, '']));
     setValues(reset);
     const params = new URLSearchParams(searchParams.toString());
-    [...filterKeys, ...(searchKey ? [searchKey] : [])].forEach((k) => params.delete(k));
+    [...filterKeys, ...(searchKey ? [searchKey] : [])].forEach((k) =>
+      params.delete(k),
+    );
     params.delete('page');
     router.replace(`${pathname}?${params.toString()}`);
   }
@@ -117,7 +128,8 @@ export function FilterBar({ searchKey, searchPlaceholder = 'Search…', fields, 
       const selectedLabel =
         current === '__all__'
           ? field.allLabel
-          : (field.options.find((o) => o.value === current)?.label ?? field.allLabel);
+          : (field.options.find((o) => o.value === current)?.label ??
+            field.allLabel);
       return (
         <Select
           key={field.key}
@@ -170,7 +182,8 @@ export function FilterBar({ searchKey, searchPlaceholder = 'Search…', fields, 
           size="sm"
           className={cn(
             'gap-2',
-            open && 'border-primary text-primary bg-primary-soft hover:bg-primary-soft-2',
+            open &&
+              'border-primary text-primary bg-primary-soft hover:bg-primary-soft-2',
           )}
           onClick={() => setOpen((o) => !o)}
           aria-pressed={open}

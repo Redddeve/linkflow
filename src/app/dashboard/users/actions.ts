@@ -2,9 +2,9 @@
 
 import { createClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
-import { requireRole } from '@/lib/auth';
-import { recordAudit } from '@/lib/audit';
-import { notify } from '@/lib/notify';
+import { requireRole } from '@/lib/features/auth';
+import { recordAudit } from '@/lib/features/audit';
+import { notify } from '@/lib/features/notify';
 import { AppError } from '@/lib/errors';
 import {
   inviteUserSchema,
@@ -13,7 +13,7 @@ import {
   type InviteUserInput,
   type EditUserInput,
 } from '@/lib/schemas/users';
-import type { UserRole } from '@/lib/auth';
+import type { UserRole } from '@/lib/features/auth';
 
 export type BlockingOrder = {
   id: string;
@@ -32,16 +32,22 @@ export type EditUserResult =
 
 function mapForbidden(e: unknown): never {
   if (e instanceof Error && e.message.startsWith('FORBIDDEN')) {
-    throw new AppError('FORBIDDEN', 'You do not have permission to perform this action');
+    throw new AppError(
+      'FORBIDDEN',
+      'You do not have permission to perform this action',
+    );
   }
   throw e;
 }
 
-export async function inviteUser(input: InviteUserInput): Promise<{ userId: string }> {
+export async function inviteUser(
+  input: InviteUserInput,
+): Promise<{ userId: string }> {
   const actor = await requireRole(['Admin']).catch(mapForbidden);
 
   const parsed = inviteUserSchema.safeParse(input);
-  if (!parsed.success) throw new AppError('VALIDATION', parsed.error.issues[0].message);
+  if (!parsed.success)
+    throw new AppError('VALIDATION', parsed.error.issues[0].message);
 
   const { email, first_name, last_name, role, manager_id } = parsed.data;
 
@@ -54,17 +60,24 @@ export async function inviteUser(input: InviteUserInput): Promise<{ userId: stri
     .maybeSingle();
 
   if (existing) {
-    throw new AppError('EMAIL_EXISTS', `A user with that email already exists (${existing.status})`);
+    throw new AppError(
+      'EMAIL_EXISTS',
+      `A user with that email already exists (${existing.status})`,
+    );
   }
 
   const admin = createAdminClient();
-  const { data: authData, error: authError } = await admin.auth.admin.inviteUserByEmail(email, {
-    data: { role, manager_id: manager_id ?? null, first_name, last_name },
-  });
+  const { data: authData, error: authError } =
+    await admin.auth.admin.inviteUserByEmail(email, {
+      data: { role, manager_id: manager_id ?? null, first_name, last_name },
+    });
 
   if (authError || !authData.user) {
     console.error('[inviteUser] Auth error:', authError);
-    throw new AppError('INVITE_FAILED', authError?.message ?? 'Failed to send invitation');
+    throw new AppError(
+      'INVITE_FAILED',
+      authError?.message ?? 'Failed to send invitation',
+    );
   }
 
   const userId = authData.user.id;
@@ -102,7 +115,8 @@ export async function resendInvite(userId: string): Promise<void> {
     .single();
 
   if (error || !user) throw new AppError('NOT_FOUND', 'User not found');
-  if (user.status !== 'PENDING') throw new Error('User is not in PENDING status');
+  if (user.status !== 'PENDING')
+    throw new Error('User is not in PENDING status');
 
   const admin = createAdminClient();
   const { error: linkError } = await admin.auth.admin.generateLink({
@@ -138,7 +152,8 @@ export async function editUser(
   await requireRole(['Admin']).catch(mapForbidden);
 
   const parsed = editUserSchema.safeParse(patch);
-  if (!parsed.success) throw new AppError('VALIDATION', parsed.error.issues[0].message);
+  if (!parsed.success)
+    throw new AppError('VALIDATION', parsed.error.issues[0].message);
 
   const supabase = await createClient();
   const { data: current, error } = await supabase
@@ -150,7 +165,11 @@ export async function editUser(
   if (error || !current) throw new AppError('NOT_FOUND', 'User not found');
 
   // If changing role, check for active dependencies
-  if (parsed.data.role && parsed.data.role !== current.role && !opts.confirmRoleChange) {
+  if (
+    parsed.data.role &&
+    parsed.data.role !== current.role &&
+    !opts.confirmRoleChange
+  ) {
     const [ordersResult, sitesResult] = await Promise.all([
       supabase
         .from('orders')
@@ -196,11 +215,15 @@ export async function editUser(
   return { done: true };
 }
 
-export async function disableUser(userId: string, reason: string): Promise<DisableResult> {
+export async function disableUser(
+  userId: string,
+  reason: string,
+): Promise<DisableResult> {
   const actor = await requireRole(['Admin']).catch(mapForbidden);
 
   const parsed = disableUserSchema.safeParse({ reason });
-  if (!parsed.success) throw new AppError('VALIDATION', parsed.error.issues[0].message);
+  if (!parsed.success)
+    throw new AppError('VALIDATION', parsed.error.issues[0].message);
 
   // Cannot disable yourself
   if (actor.id === userId) {
@@ -303,7 +326,9 @@ export async function activateUser(userId: string): Promise<void> {
   });
 }
 
-export async function listManagers(): Promise<{ id: string; first_name: string; last_name: string }[]> {
+export async function listManagers(): Promise<
+  { id: string; first_name: string; last_name: string }[]
+> {
   await requireRole(['Admin']).catch(mapForbidden);
   const supabase = await createClient();
   const { data } = await supabase

@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
-import { requireUser } from '@/lib/auth';
+import { requireUser } from '@/lib/features/auth';
 import {
   fetchInvoiceById,
   fetchInvoiceOrders,
@@ -11,11 +11,11 @@ import { BackLink } from '@/components/ui/back-link';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import { buttonVariants } from '@/components/ui/button';
-import { formatBillingMonth } from '@/lib/billing';
-import { InvoiceStatusBadge } from '@/components/invoices/components/invoice-status-badge';
-import { SendInvoiceDialog } from '@/components/invoices/components/send-invoice-dialog';
-import { MarkPaidDialog } from '@/components/invoices/components/mark-paid-dialog';
-import { EditOrdersDialog } from '@/components/invoices/components/edit-orders-dialog';
+import { formatBillingMonth } from '@/lib/features/billing';
+import { InvoiceStatusBadge } from '@/components/invoices/invoice-status-badge';
+import { SendInvoiceDialog } from '@/components/invoices/send-invoice-dialog';
+import { MarkPaidDialog } from '@/components/invoices/mark-paid-dialog';
+import { EditOrdersDialog } from '@/components/invoices/edit-orders-dialog';
 
 interface PageProps {
   params: Promise<{ id: string }>;

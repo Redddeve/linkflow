@@ -1,9 +1,9 @@
 import { NextResponse } from 'next/server';
 import { renderToBuffer } from '@react-pdf/renderer';
-import { requireUser } from '@/lib/auth';
+import { requireUser } from '@/lib/features/auth';
 import { createClient } from '@/lib/supabase/server';
-import { InvoicePdf } from '@/components/invoices/components/invoice-pdf';
-import { formatBillingMonth } from '@/lib/billing';
+import { InvoicePdf } from '@/components/invoices/invoice-pdf';
+import { formatBillingMonth } from '@/lib/features/billing';
 
 export const runtime = 'nodejs';
 

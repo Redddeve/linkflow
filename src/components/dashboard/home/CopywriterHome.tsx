@@ -3,7 +3,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { StatCard } from './stat-card';
 import { DashboardHeader, SectionHeading } from './dashboard-header';
-import type { UserRow } from '@/lib/auth';
+import type { UserRow } from '@/lib/features/auth';
 import type { Database } from '@/types/database.types';
 import {
   countCopywriterOrders,
@@ -13,7 +13,12 @@ import {
 
 type OrderStatus = Database['public']['Enums']['order_status'];
 
-const COPYWRITER_ACTIVE: OrderStatus[] = ['New', 'In Progress', 'Needs changes', 'Content Sent'];
+const COPYWRITER_ACTIVE: OrderStatus[] = [
+  'New',
+  'In Progress',
+  'Needs changes',
+  'Content Sent',
+];
 const COPYWRITER_UPCOMING: OrderStatus[] = ['In Progress', 'Needs changes'];
 
 export async function CopywriterHome({ user }: { user: UserRow }) {
@@ -73,7 +78,9 @@ export async function CopywriterHome({ user }: { user: UserRow }) {
                     {o.site_domain}
                   </Link>
                   <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                    {o.publish_date && <span className="tabular-nums">{o.publish_date}</span>}
+                    {o.publish_date && (
+                      <span className="tabular-nums">{o.publish_date}</span>
+                    )}
                     <Badge variant="outline">{o.status}</Badge>
                   </div>
                 </li>

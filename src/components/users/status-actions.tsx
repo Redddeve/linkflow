@@ -13,8 +13,12 @@ import {
 } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { disableUser, activateUser, type BlockingOrder } from '@/app/dashboard/users/actions';
-import type { UserRow } from '@/lib/auth';
+import {
+  disableUser,
+  activateUser,
+  type BlockingOrder,
+} from '@/app/dashboard/users/actions';
+import type { UserRow } from '@/lib/features/auth';
 
 interface Props {
   user: UserRow;
@@ -28,7 +32,9 @@ export function StatusActions({ user, currentUserId }: Props) {
   const [showDisable, setShowDisable] = useState(false);
   const [disableReason, setDisableReason] = useState('');
   const [disableError, setDisableError] = useState('');
-  const [blockingOrders, setBlockingOrders] = useState<BlockingOrder[] | null>(null);
+  const [blockingOrders, setBlockingOrders] = useState<BlockingOrder[] | null>(
+    null,
+  );
 
   const [showActivate, setShowActivate] = useState(false);
 
@@ -71,7 +77,9 @@ export function StatusActions({ user, currentUserId }: Props) {
     });
   }
 
-  function handleDisableReasonChange(e: React.ChangeEvent<HTMLTextAreaElement>) {
+  function handleDisableReasonChange(
+    e: React.ChangeEvent<HTMLTextAreaElement>,
+  ) {
     setDisableReason(e.target.value);
   }
 
@@ -93,7 +101,11 @@ export function StatusActions({ user, currentUserId }: Props) {
     <>
       <div className="flex gap-2">
         {user.status !== 'DISABLED' && !isSelf && (
-          <Button variant="destructive" size="sm" onClick={() => setShowDisable(true)}>
+          <Button
+            variant="destructive"
+            size="sm"
+            onClick={() => setShowDisable(true)}
+          >
             Disable
           </Button>
         )}
@@ -107,7 +119,9 @@ export function StatusActions({ user, currentUserId }: Props) {
       <Dialog open={showDisable} onOpenChange={handleDisableDialogChange}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Disable {user.first_name} {user.last_name}?</DialogTitle>
+            <DialogTitle>
+              Disable {user.first_name} {user.last_name}?
+            </DialogTitle>
           </DialogHeader>
           <div className="grid gap-2">
             <Label htmlFor="status-disable-reason">Reason</Label>
@@ -118,10 +132,14 @@ export function StatusActions({ user, currentUserId }: Props) {
               onChange={handleDisableReasonChange}
               rows={3}
             />
-            {disableError && <p className="text-sm text-destructive">{disableError}</p>}
+            {disableError && (
+              <p className="text-sm text-destructive">{disableError}</p>
+            )}
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={resetDisable}>Cancel</Button>
+            <Button variant="outline" onClick={resetDisable}>
+              Cancel
+            </Button>
             <Button
               variant="destructive"
               disabled={isPending || disableReason.trim().length < 5}
@@ -133,13 +151,17 @@ export function StatusActions({ user, currentUserId }: Props) {
         </DialogContent>
       </Dialog>
 
-      <Dialog open={!!blockingOrders} onOpenChange={handleBlockingOrdersDialogChange}>
+      <Dialog
+        open={!!blockingOrders}
+        onOpenChange={handleBlockingOrdersDialogChange}
+      >
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Reassign active orders first</DialogTitle>
           </DialogHeader>
           <p className="text-sm text-muted-foreground">
-            This copywriter has active orders. Reassign each one before disabling.
+            This copywriter has active orders. Reassign each one before
+            disabling.
           </p>
           <ul className="mt-2 space-y-1">
             {blockingOrders?.map((o) => (
@@ -148,13 +170,16 @@ export function StatusActions({ user, currentUserId }: Props) {
                   href={`/dashboard/orders/${o.id}`}
                   className="text-sm hover:underline text-primary"
                 >
-                  {o.site_domain} — <span className="text-muted-foreground">{o.status}</span>
+                  {o.site_domain} —{' '}
+                  <span className="text-muted-foreground">{o.status}</span>
                 </Link>
               </li>
             ))}
           </ul>
           <DialogFooter>
-            <Button variant="outline" onClick={resetDisable}>Close</Button>
+            <Button variant="outline" onClick={resetDisable}>
+              Close
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -162,13 +187,18 @@ export function StatusActions({ user, currentUserId }: Props) {
       <Dialog open={showActivate} onOpenChange={handleActivateDialogChange}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Activate {user.first_name} {user.last_name}?</DialogTitle>
+            <DialogTitle>
+              Activate {user.first_name} {user.last_name}?
+            </DialogTitle>
           </DialogHeader>
           <p className="text-sm text-muted-foreground">
-            Their account will be set to Active. Previously archived sites will not be automatically restored.
+            Their account will be set to Active. Previously archived sites will
+            not be automatically restored.
           </p>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setShowActivate(false)}>Cancel</Button>
+            <Button variant="outline" onClick={() => setShowActivate(false)}>
+              Cancel
+            </Button>
             <Button disabled={isPending} onClick={handleActivate}>
               {isPending ? 'Activating…' : 'Activate'}
             </Button>

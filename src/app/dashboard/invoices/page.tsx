@@ -1,11 +1,11 @@
 import { notFound } from 'next/navigation';
-import { requireUser } from '@/lib/auth';
-import { InvoiceFilters } from '@/components/invoices/components/invoice-filters';
-import { InvoicesTable } from '@/components/invoices/components/invoices-table';
-import { GenerateInvoicesDialog } from '@/components/invoices/components/generate-invoices-dialog';
+import { requireUser } from '@/lib/features/auth';
+import { InvoiceFilters } from '@/components/invoices/invoice-filters';
+import { InvoicesTable } from '@/components/invoices/invoices-table';
+import { GenerateInvoicesDialog } from '@/components/invoices/generate-invoices-dialog';
 import { PageHeader } from '@/components/ui/page-header';
 import { Pagination } from '@/components/ui/pagination';
-import { parsePagination } from '@/lib/pagination';
+import { parsePagination } from '@/lib/features/pagination';
 import { fetchInvoicesList } from '@/lib/data/invoices';
 import { fetchUsersByIds, fetchActiveByRole } from '@/lib/data/users';
 import type { Database } from '@/types/database.types';

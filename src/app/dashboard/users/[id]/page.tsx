@@ -1,5 +1,5 @@
 import { notFound } from 'next/navigation';
-import { requireRole } from '@/lib/auth';
+import { requireRole } from '@/lib/features/auth';
 import { BackLink } from '@/components/ui/back-link';
 import { fetchUserById } from '@/lib/data/users';
 import { listManagers } from '../actions';

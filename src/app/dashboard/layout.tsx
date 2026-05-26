@@ -1,15 +1,15 @@
-import { requireUser } from '@/lib/auth'
-import { DashboardShell } from '@/components/dashboard/shell'
-import { ensureAutoChats } from '@/app/dashboard/chat/actions'
+import { requireUser } from '@/lib/features/auth';
+import { DashboardShell } from '@/components/dashboard/shell';
+import { ensureAutoChats } from '@/app/dashboard/chat/actions';
 
 export default async function DashboardLayout({
   children,
 }: {
-  children: React.ReactNode
+  children: React.ReactNode;
 }) {
-  const user = await requireUser()
+  const user = await requireUser();
   if (user.role === 'Client') {
-    await ensureAutoChats()
+    await ensureAutoChats();
   }
-  return <DashboardShell user={user}>{children}</DashboardShell>
+  return <DashboardShell user={user}>{children}</DashboardShell>;
 }

@@ -22,7 +22,7 @@ import {
   DialogTrigger,
 } from '@/components/ui/dialog';
 import { editUser } from '@/app/dashboard/users/actions';
-import type { UserRow } from '@/lib/auth';
+import type { UserRow } from '@/lib/features/auth';
 import type { EditUserInput } from '@/lib/schemas/users';
 
 interface Props {

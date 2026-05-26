@@ -1,15 +1,15 @@
 import { notFound } from 'next/navigation';
 import { cookies } from 'next/headers';
-import { requireUser } from '@/lib/auth';
-import { OrderFilters } from '@/components/orders/components/order-filters';
-import { OrdersTable } from '@/components/orders/components/orders-table';
-import { OrdersKanban } from '@/components/orders/components/orders-kanban';
-import { ViewToggle } from '@/components/orders/components/view-toggle';
-import { KANBAN_COLUMNS } from '@/components/orders/components/kanban-columns';
-import { toOrderRow } from '@/components/orders/components/order-row-mapper';
+import { requireUser } from '@/lib/features/auth';
+import { OrderFilters } from '@/components/orders/order-filters';
+import { OrdersTable } from '@/components/orders/orders-table';
+import { OrdersKanban } from '@/components/orders/orders-kanban';
+import { ViewToggle } from '@/components/orders/view-toggle';
+import { KANBAN_COLUMNS } from '@/components/orders/kanban-columns';
+import { toOrderRow } from '@/components/orders/order-row-mapper';
 import { PageHeader } from '@/components/ui/page-header';
 import { Pagination } from '@/components/ui/pagination';
-import { parsePagination } from '@/lib/pagination';
+import { parsePagination } from '@/lib/features/pagination';
 import { fetchOrdersList } from '@/lib/data/orders';
 import {
   fetchUsersByIds,

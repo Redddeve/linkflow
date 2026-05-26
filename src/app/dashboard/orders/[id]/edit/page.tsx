@@ -1,9 +1,9 @@
 import { notFound } from 'next/navigation';
-import { requireRole } from '@/lib/auth';
+import { requireRole } from '@/lib/features/auth';
 import { fetchOrderForEdit } from '@/lib/data/orders';
 import { BackLink } from '@/components/ui/back-link';
-import { OrderStatusBadge } from '@/components/orders/components/order-status-badge';
-import { ContentEditorForm } from '@/components/orders/components/content-editor-form';
+import { OrderStatusBadge } from '@/components/orders/order-status-badge';
+import { ContentEditorForm } from '@/components/orders/content-editor-form';
 
 interface PageProps {
   params: Promise<{ id: string }>;

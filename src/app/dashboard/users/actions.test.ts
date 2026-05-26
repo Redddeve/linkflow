@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import type { UserRow } from '@/lib/auth';
+import type { UserRow } from '@/lib/features/auth';
 
 // ── Shared mock state ──────────────────────────────────────────────────────────
 
@@ -50,7 +50,7 @@ const makeAdminUser = (overrides: Partial<UserRow> = {}): UserRow => ({
 });
 
 vi.mock('@/lib/auth', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('@/lib/auth')>();
+  const actual = await importOriginal<typeof import('@/lib/features/auth')>();
   return {
     ...actual,
     requireRole: vi.fn(async () => makeAdminUser()),
@@ -62,7 +62,7 @@ vi.mock('@/lib/auth', async (importOriginal) => {
 const { inviteUser, resendInvite, editUser, disableUser, activateUser } =
   await import('./actions');
 
-const { requireRole } = await import('@/lib/auth');
+const { requireRole } = await import('@/lib/features/auth');
 
 // ── Fluent Supabase stub builder ───────────────────────────────────────────────
 

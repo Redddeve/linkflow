@@ -1,8 +1,8 @@
-import { requireUser } from '@/lib/auth';
+import { requireUser } from '@/lib/features/auth';
 import { PageHeader } from '@/components/ui/page-header';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { avatarPublicUrl } from '@/lib/avatar';
+import { avatarPublicUrl } from '@/lib/features/avatar';
 import { EditProfileDialog } from '@/components/profile/edit-profile-dialog';
 import { ChangeCredentialsDialog } from '@/components/profile/change-credentials-dialog';
 

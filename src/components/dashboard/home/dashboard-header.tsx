@@ -1,7 +1,13 @@
 import { PageHeader } from '@/components/ui/page-header';
-import type { UserRow } from '@/lib/auth';
+import type { UserRow } from '@/lib/features/auth';
 
-export function DashboardHeader({ user, title = 'Dashboard' }: { user: UserRow; title?: string }) {
+export function DashboardHeader({
+  user,
+  title = 'Dashboard',
+}: {
+  user: UserRow;
+  title?: string;
+}) {
   return (
     <PageHeader
       title={title}
@@ -20,7 +26,9 @@ export function SectionHeading({
   return (
     <div className="mb-2.5">
       <div className="text-sm font-medium">{title}</div>
-      {description && <div className="text-xs text-muted-foreground">{description}</div>}
+      {description && (
+        <div className="text-xs text-muted-foreground">{description}</div>
+      )}
     </div>
   );
 }

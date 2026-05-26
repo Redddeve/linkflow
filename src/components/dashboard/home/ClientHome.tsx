@@ -2,21 +2,23 @@ import Link from 'next/link';
 import { Card, CardContent } from '@/components/ui/card';
 import { buttonVariants } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
-import { countByStatus } from '@/lib/dashboard/counts';
+import { countByStatus } from '@/lib/features/dashboard/counts';
 import { StatCard } from './stat-card';
 import { DashboardHeader } from './dashboard-header';
-import type { UserRow } from '@/lib/auth';
+import type { UserRow } from '@/lib/features/auth';
 import { fetchClientActiveOrders } from '@/lib/data/orders';
-import {
-  fetchClientCart,
-  fetchCartItemsWithPrice,
-} from '@/lib/data/cart';
+import { fetchClientCart, fetchCartItemsWithPrice } from '@/lib/data/cart';
 import {
   fetchLatestInvoiceForClient,
   sumClientInvoicesByStatus,
 } from '@/lib/data/invoices';
 
-const CLIENT_ACTIVE_STATUSES = ['New', 'In Progress', 'Needs changes', 'Content Sent'] as const;
+const CLIENT_ACTIVE_STATUSES = [
+  'New',
+  'In Progress',
+  'Needs changes',
+  'Content Sent',
+] as const;
 type ClientActiveStatus = (typeof CLIENT_ACTIVE_STATUSES)[number];
 
 function formatCurrency(cents: number) {
@@ -41,7 +43,10 @@ export async function ClientHome({ user }: { user: UserRow }) {
   if (cart) {
     const items = await fetchCartItemsWithPrice(cart.id);
     cartCount = items.length;
-    cartTotalCents = items.reduce((sum, i) => sum + (i.sites?.price_cents ?? 0), 0);
+    cartTotalCents = items.reduce(
+      (sum, i) => sum + (i.sites?.price_cents ?? 0),
+      0,
+    );
   }
 
   const counts = countByStatus(
@@ -54,7 +59,11 @@ export async function ClientHome({ user }: { user: UserRow }) {
       <DashboardHeader user={user} />
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-        <StatCard label="New" value={counts['New']} href="/dashboard/orders?status=New" />
+        <StatCard
+          label="New"
+          value={counts['New']}
+          href="/dashboard/orders?status=New"
+        />
         <StatCard
           label="In Progress"
           value={counts['In Progress']}
@@ -84,7 +93,9 @@ export async function ClientHome({ user }: { user: UserRow }) {
                 {cartCount} item{cartCount !== 1 ? 's' : ''}
               </div>
               <div className="mt-1 text-sm text-muted-foreground">
-                {cartCount > 0 ? formatCurrency(cartTotalCents) : 'Cart is empty'}
+                {cartCount > 0
+                  ? formatCurrency(cartTotalCents)
+                  : 'Cart is empty'}
               </div>
             </div>
             <Separator />
@@ -117,11 +128,14 @@ export async function ClientHome({ user }: { user: UserRow }) {
                     {formatCurrency(latestInvoice.total_price_cents)}
                   </div>
                   <div className="mt-1 text-sm text-muted-foreground">
-                    {formatBillingMonth(latestInvoice.billing_month)} · {latestInvoice.status}
+                    {formatBillingMonth(latestInvoice.billing_month)} ·{' '}
+                    {latestInvoice.status}
                   </div>
                 </>
               ) : (
-                <div className="mt-1 text-sm text-muted-foreground">No invoices yet</div>
+                <div className="mt-1 text-sm text-muted-foreground">
+                  No invoices yet
+                </div>
               )}
             </div>
             <Separator />

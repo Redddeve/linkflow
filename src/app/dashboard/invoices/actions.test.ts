@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import type { UserRow } from '@/lib/auth';
+import type { UserRow } from '@/lib/features/auth';
 
 // ── Shared mock state ──────────────────────────────────────────────────────────
 
@@ -39,7 +39,7 @@ const makeUser = (overrides: Partial<UserRow> = {}): UserRow => ({
 const mockRequireRole = vi.fn(async () => makeUser());
 
 vi.mock('@/lib/auth', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('@/lib/auth')>();
+  const actual = await importOriginal<typeof import('@/lib/features/auth')>();
   return { ...actual, requireRole: mockRequireRole };
 });
 
@@ -57,7 +57,18 @@ type ChainResult = { data: unknown; error: unknown; count?: number };
 
 function makeChain(result: ChainResult) {
   const chain: Record<string, unknown> = {};
-  const methods = ['select', 'insert', 'update', 'delete', 'eq', 'in', 'is', 'maybeSingle', 'single', 'order'];
+  const methods = [
+    'select',
+    'insert',
+    'update',
+    'delete',
+    'eq',
+    'in',
+    'is',
+    'maybeSingle',
+    'single',
+    'order',
+  ];
   methods.forEach((m) => {
     chain[m] = vi.fn(() => chain);
   });
@@ -101,12 +112,20 @@ describe('sendInvoice()', () => {
   });
 
   it('marks Draft invoice as Sent, audits and notifies client', async () => {
-    mockRequireRole.mockResolvedValueOnce(makeUser({ id: MGR_1, role: 'Manager' }));
+    mockRequireRole.mockResolvedValueOnce(
+      makeUser({ id: MGR_1, role: 'Manager' }),
+    );
     mockFrom.mockImplementation(
       makeFromQueue([
         // 1. Load invoice
         {
-          data: { id: INV_1, status: 'Draft', client_id: CLIENT_1, billing_month: '2026-04-01', total_price_cents: 12345 },
+          data: {
+            id: INV_1,
+            status: 'Draft',
+            client_id: CLIENT_1,
+            billing_month: '2026-04-01',
+            total_price_cents: 12345,
+          },
           error: null,
         },
         // 2. Count attached orders
@@ -119,7 +138,11 @@ describe('sendInvoice()', () => {
     await sendInvoice({ invoiceId: INV_1 });
 
     expect(mockRecordAudit).toHaveBeenCalledWith(
-      expect.objectContaining({ action: 'invoice.sent', entityId: INV_1, entityType: 'invoice' }),
+      expect.objectContaining({
+        action: 'invoice.sent',
+        entityId: INV_1,
+        entityType: 'invoice',
+      }),
     );
     expect(mockNotify).toHaveBeenCalledWith(
       expect.objectContaining({ recipientId: CLIENT_1, type: 'invoice.sent' }),
@@ -127,43 +150,75 @@ describe('sendInvoice()', () => {
   });
 
   it('throws FORBIDDEN when caller is Client', async () => {
-    mockRequireRole.mockRejectedValueOnce(new Error('FORBIDDEN: requires role Manager or Admin'));
-    await expect(sendInvoice({ invoiceId: INV_1 })).rejects.toThrow('permission');
+    mockRequireRole.mockRejectedValueOnce(
+      new Error('FORBIDDEN: requires role Manager or Admin'),
+    );
+    await expect(sendInvoice({ invoiceId: INV_1 })).rejects.toThrow(
+      'permission',
+    );
   });
 
   it('refuses to send a Draft with $0 total', async () => {
-    mockRequireRole.mockResolvedValueOnce(makeUser({ id: MGR_1, role: 'Manager' }));
+    mockRequireRole.mockResolvedValueOnce(
+      makeUser({ id: MGR_1, role: 'Manager' }),
+    );
     mockFrom.mockImplementation(
       makeFromQueue([
         {
-          data: { id: INV_1, status: 'Draft', client_id: CLIENT_1, billing_month: '2026-04-01', total_price_cents: 0 },
+          data: {
+            id: INV_1,
+            status: 'Draft',
+            client_id: CLIENT_1,
+            billing_month: '2026-04-01',
+            total_price_cents: 0,
+          },
           error: null,
         },
       ]),
     );
-    await expect(sendInvoice({ invoiceId: INV_1 })).rejects.toThrow('empty invoice');
+    await expect(sendInvoice({ invoiceId: INV_1 })).rejects.toThrow(
+      'empty invoice',
+    );
   });
 
   it('refuses to send a Draft with zero attached orders', async () => {
-    mockRequireRole.mockResolvedValueOnce(makeUser({ id: MGR_1, role: 'Manager' }));
+    mockRequireRole.mockResolvedValueOnce(
+      makeUser({ id: MGR_1, role: 'Manager' }),
+    );
     mockFrom.mockImplementation(
       makeFromQueue([
         {
-          data: { id: INV_1, status: 'Draft', client_id: CLIENT_1, billing_month: '2026-04-01', total_price_cents: 100 },
+          data: {
+            id: INV_1,
+            status: 'Draft',
+            client_id: CLIENT_1,
+            billing_month: '2026-04-01',
+            total_price_cents: 100,
+          },
           error: null,
         },
         { data: null, error: null, count: 0 },
       ]),
     );
-    await expect(sendInvoice({ invoiceId: INV_1 })).rejects.toThrow('no attached orders');
+    await expect(sendInvoice({ invoiceId: INV_1 })).rejects.toThrow(
+      'no attached orders',
+    );
   });
 
   it('throws VALIDATION when invoice is not Draft', async () => {
-    mockRequireRole.mockResolvedValueOnce(makeUser({ id: MGR_1, role: 'Manager' }));
+    mockRequireRole.mockResolvedValueOnce(
+      makeUser({ id: MGR_1, role: 'Manager' }),
+    );
     mockFrom.mockImplementation(
       makeFromQueue([
         {
-          data: { id: INV_1, status: 'Sent', client_id: CLIENT_1, billing_month: '2026-04-01', total_price_cents: 100 },
+          data: {
+            id: INV_1,
+            status: 'Sent',
+            client_id: CLIENT_1,
+            billing_month: '2026-04-01',
+            total_price_cents: 100,
+          },
           error: null,
         },
       ]),
@@ -183,9 +238,16 @@ describe('markInvoicePaid()', () => {
   });
 
   it('marks Sent invoice as Paid, audits and notifies client', async () => {
-    mockRequireRole.mockResolvedValueOnce(makeUser({ id: ADMIN_1, role: 'Admin' }));
+    mockRequireRole.mockResolvedValueOnce(
+      makeUser({ id: ADMIN_1, role: 'Admin' }),
+    );
     const selectChain = makeChain({
-      data: { id: INV_1, status: 'Sent', client_id: CLIENT_1, billing_month: '2026-04-01' },
+      data: {
+        id: INV_1,
+        status: 'Sent',
+        client_id: CLIENT_1,
+        billing_month: '2026-04-01',
+      },
       error: null,
     });
     const updateChain = makeChain({ data: null, error: null });
@@ -194,7 +256,10 @@ describe('markInvoicePaid()', () => {
     await markInvoicePaid({ invoiceId: INV_1 });
 
     expect(updateChain.update).toHaveBeenCalledWith(
-      expect.objectContaining({ status: 'Paid', marked_as_paid_by_id: ADMIN_1 }),
+      expect.objectContaining({
+        status: 'Paid',
+        marked_as_paid_by_id: ADMIN_1,
+      }),
     );
     expect(updateChain.eq).toHaveBeenCalledWith('status', 'Sent');
     expect(mockRecordAudit).toHaveBeenCalledWith(
@@ -203,18 +268,31 @@ describe('markInvoicePaid()', () => {
   });
 
   it('throws FORBIDDEN when caller is Manager (Admin-only)', async () => {
-    mockRequireRole.mockRejectedValueOnce(new Error('FORBIDDEN: requires role Admin'));
-    await expect(markInvoicePaid({ invoiceId: INV_1 })).rejects.toThrow('permission');
+    mockRequireRole.mockRejectedValueOnce(
+      new Error('FORBIDDEN: requires role Admin'),
+    );
+    await expect(markInvoicePaid({ invoiceId: INV_1 })).rejects.toThrow(
+      'permission',
+    );
   });
 
   it('throws VALIDATION when invoice is Draft', async () => {
-    mockRequireRole.mockResolvedValueOnce(makeUser({ id: ADMIN_1, role: 'Admin' }));
+    mockRequireRole.mockResolvedValueOnce(
+      makeUser({ id: ADMIN_1, role: 'Admin' }),
+    );
     const selectChain = makeChain({
-      data: { id: INV_1, status: 'Draft', client_id: CLIENT_1, billing_month: '2026-04-01' },
+      data: {
+        id: INV_1,
+        status: 'Draft',
+        client_id: CLIENT_1,
+        billing_month: '2026-04-01',
+      },
       error: null,
     });
     mockFrom.mockReturnValue(selectChain);
-    await expect(markInvoicePaid({ invoiceId: INV_1 })).rejects.toThrow('Draft');
+    await expect(markInvoicePaid({ invoiceId: INV_1 })).rejects.toThrow(
+      'Draft',
+    );
   });
 });
 
@@ -229,7 +307,9 @@ describe('reassignOrders()', () => {
   });
 
   it('delegates to the reassign_order_billing_months RPC with snake_case payload', async () => {
-    mockRequireRole.mockResolvedValueOnce(makeUser({ id: MGR_1, role: 'Manager' }));
+    mockRequireRole.mockResolvedValueOnce(
+      makeUser({ id: MGR_1, role: 'Manager' }),
+    );
     mockRpc.mockResolvedValueOnce({
       data: { sources_touched: [INV_1], targets_touched: [INV_2] },
       error: null,
@@ -249,35 +329,51 @@ describe('reassignOrders()', () => {
   });
 
   it('returns early without RPC call when changes is empty', async () => {
-    mockRequireRole.mockResolvedValueOnce(makeUser({ id: MGR_1, role: 'Manager' }));
+    mockRequireRole.mockResolvedValueOnce(
+      makeUser({ id: MGR_1, role: 'Manager' }),
+    );
     // The Zod schema requires min(1), so an empty array fails validation
     // before reaching the early-return. Confirm the error.
-    await expect(reassignOrders({ changes: [] })).rejects.toThrow('At least one');
+    await expect(reassignOrders({ changes: [] })).rejects.toThrow(
+      'At least one',
+    );
     expect(mockRpc).not.toHaveBeenCalled();
   });
 
   it('throws FORBIDDEN when caller is Client', async () => {
-    mockRequireRole.mockRejectedValueOnce(new Error('FORBIDDEN: requires role Manager or Admin'));
+    mockRequireRole.mockRejectedValueOnce(
+      new Error('FORBIDDEN: requires role Manager or Admin'),
+    );
     await expect(
-      reassignOrders({ changes: [{ orderId: ORD_1, billing_month: '2026-05-01' }] }),
+      reassignOrders({
+        changes: [{ orderId: ORD_1, billing_month: '2026-05-01' }],
+      }),
     ).rejects.toThrow('permission');
   });
 
   it('maps RPC source_invoice_not_draft error to a friendly VALIDATION error', async () => {
-    mockRequireRole.mockResolvedValueOnce(makeUser({ id: MGR_1, role: 'Manager' }));
+    mockRequireRole.mockResolvedValueOnce(
+      makeUser({ id: MGR_1, role: 'Manager' }),
+    );
     mockRpc.mockResolvedValueOnce({
       data: null,
       error: { message: 'source_invoice_not_draft:abc' },
     });
     await expect(
-      reassignOrders({ changes: [{ orderId: ORD_1, billing_month: '2026-05-01' }] }),
+      reassignOrders({
+        changes: [{ orderId: ORD_1, billing_month: '2026-05-01' }],
+      }),
     ).rejects.toThrow('Only Draft invoices');
   });
 
   it('rejects malformed billing_month strings at the Zod boundary', async () => {
-    mockRequireRole.mockResolvedValueOnce(makeUser({ id: MGR_1, role: 'Manager' }));
+    mockRequireRole.mockResolvedValueOnce(
+      makeUser({ id: MGR_1, role: 'Manager' }),
+    );
     await expect(
-      reassignOrders({ changes: [{ orderId: ORD_1, billing_month: '2026-05-15' }] }),
+      reassignOrders({
+        changes: [{ orderId: ORD_1, billing_month: '2026-05-15' }],
+      }),
     ).rejects.toThrow('first day');
   });
 });
@@ -299,7 +395,10 @@ describe('reassignOrderBillingMonth() — single wrapper', () => {
       error: null,
     });
 
-    await reassignOrderBillingMonth({ orderId: ORD_1, billing_month: '2026-05-01' });
+    await reassignOrderBillingMonth({
+      orderId: ORD_1,
+      billing_month: '2026-05-01',
+    });
 
     expect(mockRpc).toHaveBeenCalledWith('reassign_order_billing_months', {
       p_changes: [{ order_id: ORD_1, new_billing_month: '2026-05-01' }],
@@ -318,10 +417,17 @@ describe('generateInvoicesForMonth()', () => {
   });
 
   it('returns the RPC result and skips notification lookup when nothing was created', async () => {
-    mockRequireRole.mockResolvedValueOnce(makeUser({ id: ADMIN_1, role: 'Admin' }));
-    mockRpc.mockResolvedValueOnce({ data: { created: 0, updated: 0 }, error: null });
+    mockRequireRole.mockResolvedValueOnce(
+      makeUser({ id: ADMIN_1, role: 'Admin' }),
+    );
+    mockRpc.mockResolvedValueOnce({
+      data: { created: 0, updated: 0 },
+      error: null,
+    });
 
-    const result = await generateInvoicesForMonth({ billing_month: '2026-04-01' });
+    const result = await generateInvoicesForMonth({
+      billing_month: '2026-04-01',
+    });
 
     expect(result).toEqual({ created: 0, updated: 0 });
     expect(mockFrom).not.toHaveBeenCalled();
@@ -329,52 +435,78 @@ describe('generateInvoicesForMonth()', () => {
   });
 
   it('looks up newly-created Drafts and notifies each client', async () => {
-    mockRequireRole.mockResolvedValueOnce(makeUser({ id: ADMIN_1, role: 'Admin' }));
-    mockRpc.mockResolvedValueOnce({ data: { created: 2, updated: 0 }, error: null });
+    mockRequireRole.mockResolvedValueOnce(
+      makeUser({ id: ADMIN_1, role: 'Admin' }),
+    );
+    mockRpc.mockResolvedValueOnce({
+      data: { created: 2, updated: 0 },
+      error: null,
+    });
 
     const freshResult: ChainResult = {
       data: [
         { id: INV_1, client_id: CLIENT_1, total_price_cents: 8000 },
-        { id: INV_2, client_id: 'd0000002-0000-4000-8000-000000000002', total_price_cents: 7000 },
+        {
+          id: INV_2,
+          client_id: 'd0000002-0000-4000-8000-000000000002',
+          total_price_cents: 7000,
+        },
       ],
       error: null,
     };
     const freshChain = makeChain(freshResult) as Record<string, unknown>;
     // The production code does `.select(...).eq(...).eq(...)` and awaits
     // directly — make the chain thenable so the awaited value is the result.
-    freshChain.then = (resolve: (v: ChainResult) => unknown) => resolve(freshResult);
+    freshChain.then = (resolve: (v: ChainResult) => unknown) =>
+      resolve(freshResult);
     mockFrom.mockReturnValueOnce(freshChain);
 
-    const result = await generateInvoicesForMonth({ billing_month: '2026-04-01' });
+    const result = await generateInvoicesForMonth({
+      billing_month: '2026-04-01',
+    });
 
     expect(result.created).toBe(2);
     expect(mockNotify).toHaveBeenCalledTimes(2);
     expect(mockNotify).toHaveBeenCalledWith(
-      expect.objectContaining({ recipientId: CLIENT_1, type: 'invoice.generated' }),
+      expect.objectContaining({
+        recipientId: CLIENT_1,
+        type: 'invoice.generated',
+      }),
     );
   });
 
   it('counts updated Drafts (orders attached to existing invoice)', async () => {
-    mockRequireRole.mockResolvedValueOnce(makeUser({ id: ADMIN_1, role: 'Admin' }));
-    mockRpc.mockResolvedValueOnce({ data: { created: 0, updated: 1 }, error: null });
+    mockRequireRole.mockResolvedValueOnce(
+      makeUser({ id: ADMIN_1, role: 'Admin' }),
+    );
+    mockRpc.mockResolvedValueOnce({
+      data: { created: 0, updated: 1 },
+      error: null,
+    });
 
-    const result = await generateInvoicesForMonth({ billing_month: '2026-04-01' });
+    const result = await generateInvoicesForMonth({
+      billing_month: '2026-04-01',
+    });
 
     expect(result.updated).toBe(1);
     expect(mockNotify).not.toHaveBeenCalled();
   });
 
   it('throws FORBIDDEN when caller is not Admin', async () => {
-    mockRequireRole.mockRejectedValueOnce(new Error('FORBIDDEN: requires role Admin'));
-    await expect(generateInvoicesForMonth({ billing_month: '2026-04-01' })).rejects.toThrow(
-      'permission',
+    mockRequireRole.mockRejectedValueOnce(
+      new Error('FORBIDDEN: requires role Admin'),
     );
+    await expect(
+      generateInvoicesForMonth({ billing_month: '2026-04-01' }),
+    ).rejects.toThrow('permission');
   });
 
   it('rejects malformed billing_month strings', async () => {
-    mockRequireRole.mockResolvedValueOnce(makeUser({ id: ADMIN_1, role: 'Admin' }));
-    await expect(generateInvoicesForMonth({ billing_month: '2026-04-15' })).rejects.toThrow(
-      'first day',
+    mockRequireRole.mockResolvedValueOnce(
+      makeUser({ id: ADMIN_1, role: 'Admin' }),
     );
+    await expect(
+      generateInvoicesForMonth({ billing_month: '2026-04-15' }),
+    ).rejects.toThrow('first day');
   });
 });

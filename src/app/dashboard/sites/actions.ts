@@ -1,9 +1,9 @@
 'use server';
 
 import { createClient } from '@/lib/supabase/server';
-import { requireRole } from '@/lib/auth';
-import { recordAudit } from '@/lib/audit';
-import { notify } from '@/lib/notify';
+import { requireRole } from '@/lib/features/auth';
+import { recordAudit } from '@/lib/features/audit';
+import { notify } from '@/lib/features/notify';
 import { AppError } from '@/lib/errors';
 import {
   createSiteSchema,
@@ -82,9 +82,7 @@ export async function editSite(
   id: string,
   patch: EditSiteInput,
 ): Promise<void> {
-  const actor = await requireRole(['Sourcer', 'Admin']).catch(
-    mapForbidden,
-  );
+  const actor = await requireRole(['Sourcer', 'Admin']).catch(mapForbidden);
 
   const parsed = editSiteSchema.safeParse(patch);
   if (!parsed.success)

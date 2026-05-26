@@ -1,6 +1,6 @@
 import { createClient } from '@/lib/supabase/server';
 import type { Database } from '@/types/database.types';
-import type { UserRole } from '@/lib/auth';
+import type { UserRole } from '@/lib/features/auth';
 
 type UserStatus = Database['public']['Enums']['user_status'];
 type UsersRow = Database['public']['Tables']['users']['Row'];

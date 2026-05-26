@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { requireRole } from '@/lib/auth';
+import { requireRole } from '@/lib/features/auth';
 import { notFound } from 'next/navigation';
 import { Separator } from '@/components/ui/separator';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -30,7 +30,8 @@ export default async function CartPage() {
   if (items.length === 0) disabledReason = 'Cart is empty';
   else if (hasUnavailable) disabledReason = 'Remove unavailable sites first';
   else if (hasMissingDates) disabledReason = 'Set a publish date for all items';
-  else if (hasPastDates) disabledReason = 'Publish dates must be today or later';
+  else if (hasPastDates)
+    disabledReason = 'Publish dates must be today or later';
 
   const total = items.reduce((sum, i) => sum + (i.sites.price_cents ?? 0), 0);
 
