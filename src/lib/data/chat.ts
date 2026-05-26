@@ -154,6 +154,24 @@ export async function fetchOrderChatId(orderId: string): Promise<string | null> 
   return data?.chat_id ?? null;
 }
 
+export interface RelatedOrderSummary {
+  id: string;
+  site_domain: string;
+  status: Database['public']['Enums']['order_status'];
+}
+
+export async function fetchOrderByChatId(
+  chatId: string,
+): Promise<RelatedOrderSummary | null> {
+  const supabase = await createClient();
+  const { data } = await supabase
+    .from('orders')
+    .select('id, site_domain, status')
+    .eq('chat_id', chatId)
+    .maybeSingle();
+  return data ?? null;
+}
+
 export async function fetchActiveUsers(): Promise<ChatParticipant[]> {
   const supabase = await createClient();
   const { data } = await supabase

@@ -69,17 +69,19 @@ export async function editChat(input: EditChatInput): Promise<void> {
   if (!chat) throw new AppError('NOT_FOUND', 'Chat not found');
   if (chat.category !== 'Standard') throw new AppError('FORBIDDEN', 'Only Standard chats can be edited');
 
+  const isCreator = chat.created_by_id === actor.id;
+  const isAdmin = actor.role === 'Admin';
+  if (!isCreator && !isAdmin) {
+    throw new AppError('FORBIDDEN', 'Only the chat creator or an admin can edit this chat');
+  }
+
   const { data: participants } = await adminDb
     .from('chat_participants')
     .select('user_id')
     .eq('chat_id', chatId);
 
   const currentIds = new Set((participants ?? []).map((p) => p.user_id));
-  const isParticipant = currentIds.has(actor.id);
-  const isManagerOrAdmin = actor.role === 'Manager' || actor.role === 'Admin';
-  if (!isParticipant && !isManagerOrAdmin) throw new AppError('FORBIDDEN', 'Access denied');
-
-  const newIds = [...new Set([...userIds, actor.id])];
+  const newIds = [...new Set([...userIds, chat.created_by_id])];
 
   await adminDb.from('chats').update({ title }).eq('id', chatId);
 
@@ -126,15 +128,10 @@ export async function archiveChat(input: ChangeChatStatusInput): Promise<void> {
   if (chat.category !== 'Standard') throw new AppError('FORBIDDEN', 'Only Standard chats can be archived');
   if (chat.status !== 'Active') throw new AppError('VALIDATION', 'Chat is not active');
 
-  const { data: participant } = await adminDb
-    .from('chat_participants')
-    .select('user_id')
-    .eq('chat_id', chatId)
-    .eq('user_id', actor.id)
-    .single();
-
-  if (!participant && actor.role !== 'Manager' && actor.role !== 'Admin') {
-    throw new AppError('FORBIDDEN', 'Access denied');
+  const isCreator = chat.created_by_id === actor.id;
+  const isAdmin = actor.role === 'Admin';
+  if (!isCreator && !isAdmin) {
+    throw new AppError('FORBIDDEN', 'Only the chat creator or an admin can archive this chat');
   }
 
   await adminDb.from('chats').update({ status: 'Archived' }).eq('id', chatId);
@@ -156,15 +153,10 @@ export async function unarchiveChat(input: ChangeChatStatusInput): Promise<void>
   if (!chat) throw new AppError('NOT_FOUND', 'Chat not found');
   if (chat.status !== 'Archived') throw new AppError('VALIDATION', 'Chat is not archived');
 
-  const { data: participant } = await adminDb
-    .from('chat_participants')
-    .select('user_id')
-    .eq('chat_id', chatId)
-    .eq('user_id', actor.id)
-    .single();
-
-  if (!participant && actor.role !== 'Manager' && actor.role !== 'Admin') {
-    throw new AppError('FORBIDDEN', 'Access denied');
+  const isCreator = chat.created_by_id === actor.id;
+  const isAdmin = actor.role === 'Admin';
+  if (!isCreator && !isAdmin) {
+    throw new AppError('FORBIDDEN', 'Only the chat creator or an admin can unarchive this chat');
   }
 
   await adminDb.from('chats').update({ status: 'Active' }).eq('id', chatId);
@@ -181,6 +173,16 @@ export async function sendMessage(input: SendMessageInput): Promise<void> {
 
   const { chatId, content } = parsed.data;
   const adminDb = createAdminClient();
+
+  const { data: chat } = await adminDb
+    .from('chats')
+    .select('status')
+    .eq('id', chatId)
+    .single();
+  if (!chat) throw new AppError('NOT_FOUND', 'Chat not found');
+  if (chat.status === 'Archived') {
+    throw new AppError('FORBIDDEN', 'This chat is archived. Unarchive it to send messages.');
+  }
 
   const { data: participant } = await adminDb
     .from('chat_participants')

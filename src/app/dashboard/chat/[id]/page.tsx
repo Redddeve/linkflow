@@ -6,6 +6,7 @@ import {
   fetchChatParticipants,
   fetchChatMessages,
   fetchActiveUsers,
+  fetchOrderByChatId,
 } from '@/lib/data/chat';
 import { fetchUsersByIds } from '@/lib/data/users';
 import { ChatShell } from '../components/chat-shell';
@@ -26,11 +27,12 @@ export default async function ChatDetailPage({
   const { data: chat, error } = await fetchChatById(id);
   if (error || !chat) notFound();
 
-  const [participants, messages, allUsers, chats] = await Promise.all([
+  const [participants, messages, allUsers, chats, relatedOrder] = await Promise.all([
     fetchChatParticipants(id),
     fetchChatMessages(id),
     fetchActiveUsers(),
     fetchChatsList({ q, status, category }, { id: actor.id, role: actor.role }),
+    fetchOrderByChatId(id),
   ]);
 
   const isParticipant = participants.some((p) => p.id === actor.id);
@@ -58,6 +60,7 @@ export default async function ChatDetailPage({
         messages,
         userMap,
         isParticipant,
+        relatedOrder,
       }}
     />
   );

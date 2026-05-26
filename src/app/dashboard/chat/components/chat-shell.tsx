@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import clsx from 'clsx';
-import { LifeBuoy, MessageSquare, Sparkles } from 'lucide-react';
+import { LifeBuoy, MessageSquare, Sparkles, Users } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { PageHeader } from '@/components/ui/page-header';
 import { Card } from '@/components/ui/card';
@@ -10,14 +10,14 @@ import { MessageThread } from './message-thread';
 import { MessageInputForm } from './message-input-form';
 import { MarkReadOnMount } from './mark-read-on-mount';
 import { ChatPoller } from './chat-poller';
-import { EditChatDialog } from './edit-chat-dialog';
-import { ChangeChatStatusDialog } from './change-chat-status-dialog';
 import { OptimisticMessagesProvider } from './optimistic-messages';
+import { RoomDetailsPanel } from './room-details-panel';
 import type {
   ChatsListRow,
   ChatParticipant,
   MessageRow,
   ChatCategory,
+  RelatedOrderSummary,
 } from '@/lib/data/chat';
 import type { UserRole } from '@/lib/auth';
 import type { Database } from '@/types/database.types';
@@ -36,6 +36,7 @@ interface SelectedChat {
   messages: MessageRow[];
   userMap: Record<string, UserInfo>;
   isParticipant: boolean;
+  relatedOrder: RelatedOrderSummary | null;
 }
 
 interface Props {
@@ -54,7 +55,10 @@ interface MaskedParticipant {
   masked: boolean;
 }
 
-function shouldMaskCategory(viewerRole: UserRole | null, category: ChatCategory) {
+function shouldMaskCategory(
+  viewerRole: UserRole | null,
+  category: ChatCategory,
+) {
   return (
     viewerRole === 'Client' && (category === 'Support' || category === 'Sales')
   );
@@ -68,8 +72,18 @@ function maskParticipants(
 ): MaskedParticipant[] {
   const mask = shouldMaskCategory(viewerRole, category);
   return participants.map((p) => {
-    if (mask && p.id !== actorId && (p.role === 'Admin' || p.role === 'Manager')) {
-      return { id: p.id, displayName: 'Support', initials: 'S', role: null, masked: true };
+    if (
+      mask &&
+      p.id !== actorId &&
+      (p.role === 'Admin' || p.role === 'Manager')
+    ) {
+      return {
+        id: p.id,
+        displayName: 'Support',
+        initials: 'S',
+        role: null,
+        masked: true,
+      };
     }
     return {
       id: p.id,
@@ -81,7 +95,13 @@ function maskParticipants(
   });
 }
 
-export function ChatShell({ chats, allUsers, actorId, viewerRole, selected }: Props) {
+export function ChatShell({
+  chats,
+  allUsers,
+  actorId,
+  viewerRole,
+  selected,
+}: Props) {
   return (
     <div className="flex flex-col gap-4 h-[calc(100vh-9rem)] min-h-150">
       <PageHeader
@@ -93,14 +113,11 @@ export function ChatShell({ chats, allUsers, actorId, viewerRole, selected }: Pr
 
       <ChatFilters />
 
-      <Card
-        className="flex-1 min-h-0 overflow-hidden p-0 gap-0"
-        size="sm"
-      >
+      <Card className="flex-1 min-h-0 overflow-hidden p-0! gap-0" size="sm">
         <div className="grid h-full grid-cols-1 md:grid-cols-[300px_1fr]">
           <aside className="flex min-h-0 flex-col border-b md:border-b-0 md:border-r">
-            <div className="border-b px-4 py-3">
-              <h2 className="font-semibold text-sm">Conversations</h2>
+            <div className="flex h-14 shrink-0 flex-col justify-center border-b px-4">
+              <h2 className="font-semibold leading-tight">Conversations</h2>
               <p className="text-xs text-muted-foreground mt-0.5">
                 {chats.length} chat{chats.length !== 1 ? 's' : ''}
               </p>
@@ -113,7 +130,7 @@ export function ChatShell({ chats, allUsers, actorId, viewerRole, selected }: Pr
             />
           </aside>
 
-          <section className="flex min-h-0 flex-col bg-background">
+          <section className="flex min-h-0 flex-col">
             {selected ? (
               <ChatConversationPane
                 selected={selected}
@@ -133,10 +150,20 @@ export function ChatShell({ chats, allUsers, actorId, viewerRole, selected }: Pr
 
 function CategoryIcon({ category }: { category: ChatCategory }) {
   if (category === 'Support') {
-    return <LifeBuoy className="h-3.5 w-3.5 shrink-0 text-primary" aria-label="Support chat" />;
+    return (
+      <LifeBuoy
+        className="h-3.5 w-3.5 shrink-0 text-primary"
+        aria-label="Support chat"
+      />
+    );
   }
   if (category === 'Sales') {
-    return <Sparkles className="h-3.5 w-3.5 shrink-0 text-primary" aria-label="Sales chat" />;
+    return (
+      <Sparkles
+        className="h-3.5 w-3.5 shrink-0 text-primary"
+        aria-label="Sales chat"
+      />
+    );
   }
   return null;
 }
@@ -167,7 +194,12 @@ function ChatListPane({
       <ul className="divide-y">
         {chats.map((chat) => {
           const isSelected = chat.id === selectedId;
-          const masked = maskParticipants(chat.participants, chat.category, viewerRole, actorId);
+          const masked = maskParticipants(
+            chat.participants,
+            chat.category,
+            viewerRole,
+            actorId,
+          );
           const seen = new Set<string>();
           const subtitle =
             masked
@@ -230,56 +262,41 @@ function ChatConversationPane({
   actorId: string;
   viewerRole: UserRole | null;
 }) {
-  const { chat, participants, messages, userMap, isParticipant } = selected;
-  const isStandard = chat.category === 'Standard';
-  const isActive = chat.status === 'Active';
-  const isArchived = chat.status === 'Archived';
+  const { chat, participants, messages, userMap, isParticipant, relatedOrder } =
+    selected;
 
-  const masked = maskParticipants(participants, chat.category, viewerRole, actorId);
+  const masked = maskParticipants(
+    participants,
+    chat.category,
+    viewerRole,
+    actorId,
+  );
+  const visibleCount = masked.filter((p) => !p.masked).length;
   const hasMasked = masked.some((p) => p.masked);
-  const visibleBadges = masked.filter((p) => !p.masked);
+  const memberCount = visibleCount + (hasMasked ? 1 : 0);
 
   return (
     <>
-      <header className="flex items-start justify-between gap-3 border-b px-4 py-3">
+      <header className="flex h-14 shrink-0 items-center justify-between gap-3 border-b px-4">
         <div className="min-w-0 flex-1">
           <h2 className="truncate font-semibold leading-tight">{chat.title}</h2>
-          <div className="mt-1 flex flex-wrap items-center gap-1.5">
-            {visibleBadges.map((p) => (
-              <Badge key={p.id} variant="outline" className="text-[10px] font-normal">
-                {p.displayName}
-                {p.role && <span className="ml-1 text-muted-foreground">· {p.role}</span>}
-              </Badge>
-            ))}
-            {hasMasked && (
-              <Badge variant="secondary" className="text-[10px] font-normal">
-                Support
-              </Badge>
-            )}
-            <span className="text-xs text-muted-foreground">
-              · {participants.length} member{participants.length !== 1 ? 's' : ''}
+          <div className="mt-0.5 flex items-center gap-1.5 text-xs text-muted-foreground">
+            <Users className="h-3.5 w-3.5" aria-hidden />
+            <span>
+              {memberCount} member{memberCount !== 1 ? 's' : ''}
             </span>
           </div>
         </div>
         <div className="flex shrink-0 items-center gap-2">
           <Badge variant="outline">{chat.category}</Badge>
-          <Badge variant={isActive ? 'default' : 'secondary'}>
-            {chat.status}
-          </Badge>
-          {isStandard && (
-            <EditChatDialog
-              chatId={chat.id}
-              currentTitle={chat.title}
-              currentParticipants={participants}
-              allUsers={allUsers}
-            />
-          )}
-          {isStandard && isActive && (
-            <ChangeChatStatusDialog chatId={chat.id} action="archive" />
-          )}
-          {isStandard && isArchived && (
-            <ChangeChatStatusDialog chatId={chat.id} action="unarchive" />
-          )}
+          <RoomDetailsPanel
+            chat={chat}
+            participants={participants}
+            allUsers={allUsers}
+            actorId={actorId}
+            viewerRole={viewerRole}
+            relatedOrder={relatedOrder}
+          />
         </div>
       </header>
 
@@ -295,10 +312,16 @@ function ChatConversationPane({
           />
         </div>
 
-        {isParticipant && (
-          <div className="border-t bg-muted/30 px-4 py-3">
-            <MessageInputForm chatId={chat.id} />
+        {chat.status === 'Archived' ? (
+          <div className="border-t bg-muted/30 px-4 py-3 text-center text-xs text-muted-foreground">
+            This chat is archived. Unarchive it to send new messages.
           </div>
+        ) : (
+          isParticipant && (
+            <div className="border-t bg-muted/30 px-4 py-3">
+              <MessageInputForm chatId={chat.id} />
+            </div>
+          )
         )}
       </OptimisticMessagesProvider>
 
