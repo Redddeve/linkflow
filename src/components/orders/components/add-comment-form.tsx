@@ -3,7 +3,7 @@
 import { useState, useTransition } from 'react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
-import { addComment } from '../actions';
+import { addComment } from '../../../app/dashboard/orders/actions';
 
 interface Props {
   orderId: string;

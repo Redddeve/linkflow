@@ -13,7 +13,7 @@ import {
 } from '@/components/ui/dialog';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
-import { rejectOrder } from '../actions';
+import { rejectOrder } from '../../../app/dashboard/orders/actions';
 
 interface Props {
   orderId: string;
@@ -45,7 +45,13 @@ export function RejectOrderDialog({ orderId }: Props) {
   }
 
   return (
-    <Dialog open={open} onOpenChange={(v) => { setOpen(v); if (!v) setComment(''); }}>
+    <Dialog
+      open={open}
+      onOpenChange={(v) => {
+        setOpen(v);
+        if (!v) setComment('');
+      }}
+    >
       <DialogTrigger render={<Button variant="outline" size="sm" />}>
         Request changes
       </DialogTrigger>
@@ -74,7 +80,11 @@ export function RejectOrderDialog({ orderId }: Props) {
           {error && <p className="text-sm text-destructive">{error}</p>}
         </div>
         <DialogFooter>
-          <Button variant="outline" onClick={() => setOpen(false)} disabled={isPending}>
+          <Button
+            variant="outline"
+            onClick={() => setOpen(false)}
+            disabled={isPending}
+          >
             Cancel
           </Button>
           <Button onClick={handleSubmit} disabled={isPending || !isValid}>

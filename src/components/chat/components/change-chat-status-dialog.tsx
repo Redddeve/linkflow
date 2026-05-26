@@ -11,7 +11,10 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog';
-import { archiveChat, unarchiveChat } from '../actions';
+import {
+  archiveChat,
+  unarchiveChat,
+} from '../../../app/dashboard/chat/actions';
 
 interface Props {
   chatId: string;
@@ -48,7 +51,9 @@ export function ChangeChatStatusDialog({ chatId, action }: Props) {
       </DialogTrigger>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>{isArchive ? 'Archive chat' : 'Unarchive chat'}</DialogTitle>
+          <DialogTitle>
+            {isArchive ? 'Archive chat' : 'Unarchive chat'}
+          </DialogTitle>
           <DialogDescription>
             {isArchive
               ? 'This chat will be archived and moved out of your active chats. You can unarchive it at any time.'
@@ -57,11 +62,21 @@ export function ChangeChatStatusDialog({ chatId, action }: Props) {
         </DialogHeader>
         {error && <p className="text-sm text-destructive">{error}</p>}
         <DialogFooter>
-          <Button variant="outline" onClick={() => setOpen(false)} disabled={isPending}>
+          <Button
+            variant="outline"
+            onClick={() => setOpen(false)}
+            disabled={isPending}
+          >
             Cancel
           </Button>
           <Button onClick={handleConfirm} disabled={isPending}>
-            {isPending ? (isArchive ? 'Archiving…' : 'Unarchiving…') : (isArchive ? 'Archive' : 'Unarchive')}
+            {isPending
+              ? isArchive
+                ? 'Archiving…'
+                : 'Unarchiving…'
+              : isArchive
+                ? 'Archive'
+                : 'Unarchive'}
           </Button>
         </DialogFooter>
       </DialogContent>

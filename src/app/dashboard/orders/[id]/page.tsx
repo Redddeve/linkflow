@@ -6,17 +6,17 @@ import { fetchOrderById, fetchOrderComments } from '@/lib/data/orders';
 import { fetchUsersByIds } from '@/lib/data/users';
 import { buttonVariants } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { OrderStatusBadge } from '../components/order-status-badge';
-import { CancelOrderDialog } from '../components/cancel-order-dialog';
-import { EditPublishDateDialog } from '../components/edit-publish-date-dialog';
-import { AssignCopywriterDialog } from '../components/assign-copywriter-dialog';
-import { ApproveOrderDialog } from '../components/approve-order-dialog';
-import { RejectOrderDialog } from '../components/reject-order-dialog';
-import { CommentsTimeline } from '../components/comments-timeline';
-import { AddCommentForm } from '../components/add-comment-form';
+import { OrderStatusBadge } from '../../../../components/orders/components/order-status-badge';
+import { CancelOrderDialog } from '../../../../components/orders/components/cancel-order-dialog';
+import { EditPublishDateDialog } from '../../../../components/orders/components/edit-publish-date-dialog';
+import { AssignCopywriterDialog } from '../../../../components/orders/components/assign-copywriter-dialog';
+import { ApproveOrderDialog } from '../../../../components/orders/components/approve-order-dialog';
+import { RejectOrderDialog } from '../../../../components/orders/components/reject-order-dialog';
+import { CommentsTimeline } from '../../../../components/orders/components/comments-timeline';
+import { AddCommentForm } from '../../../../components/orders/components/add-comment-form';
 import { listCopywriters } from '../actions';
 import { BackLink } from '@/components/ui/back-link';
-import { StartChatButton } from '../components/start-chat-button';
+import { StartChatButton } from '../../../../components/orders/components/start-chat-button';
 
 interface PageProps {
   params: Promise<{ id: string }>;

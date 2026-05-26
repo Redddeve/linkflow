@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { publishOrder } from '../actions';
+import { publishOrder } from '../../../app/dashboard/orders/actions';
 
 interface Props {
   orderId: string;
@@ -24,7 +24,11 @@ export function PublishOrderForm({ orderId, defaultPublishDate }: Props) {
     setError(null);
     startTransition(async () => {
       try {
-        await publishOrder({ orderId, published_url: url.trim(), publish_date: date });
+        await publishOrder({
+          orderId,
+          published_url: url.trim(),
+          publish_date: date,
+        });
         router.push(`/dashboard/orders/${orderId}`);
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Something went wrong');
@@ -63,7 +67,12 @@ export function PublishOrderForm({ orderId, defaultPublishDate }: Props) {
       {error && <p className="text-sm text-destructive">{error}</p>}
 
       <div className="flex gap-3">
-        <Button type="button" variant="outline" onClick={() => router.back()} disabled={isPending}>
+        <Button
+          type="button"
+          variant="outline"
+          onClick={() => router.back()}
+          disabled={isPending}
+        >
           Cancel
         </Button>
         <Button type="submit" disabled={isPending || !url.trim()}>

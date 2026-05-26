@@ -1,9 +1,7 @@
 'use client';
 
 import { useMemo, useState, useTransition } from 'react';
-import { useRouter } from 'next/navigation';
 import { X } from 'lucide-react';
-import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -16,11 +14,16 @@ import {
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { createChat } from '../actions';
+import { Badge } from '@/components/ui/badge';
+import { editChat } from '../../../app/dashboard/chat/actions';
 import type { ChatParticipant } from '@/lib/data/chat';
 
 interface Props {
-  users: ChatParticipant[];
+  chatId: string;
+  currentTitle: string;
+  currentParticipants: ChatParticipant[];
+  allUsers: ChatParticipant[];
+  creatorId: string;
   actorId: string;
 }
 
@@ -28,18 +31,26 @@ function displayName(u: ChatParticipant) {
   return `${u.first_name} ${u.last_name}`;
 }
 
-export function CreateChatDialog({ users, actorId }: Props) {
-  const router = useRouter();
+export function EditChatDialog({
+  chatId,
+  currentTitle,
+  currentParticipants,
+  allUsers,
+  creatorId,
+  actorId,
+}: Props) {
   const [open, setOpen] = useState(false);
-  const [title, setTitle] = useState('');
-  const [selectedIds, setSelectedIds] = useState<string[]>([actorId]);
+  const [title, setTitle] = useState(currentTitle);
+  const [selectedIds, setSelectedIds] = useState<string[]>(
+    currentParticipants.map((p) => p.id),
+  );
   const [query, setQuery] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
 
   const usersById = useMemo(
-    () => Object.fromEntries(users.map((u) => [u.id, u])),
-    [users],
+    () => Object.fromEntries(allUsers.map((u) => [u.id, u])),
+    [allUsers],
   );
 
   const selectedUsers = selectedIds
@@ -49,11 +60,11 @@ export function CreateChatDialog({ users, actorId }: Props) {
   const suggestions = useMemo(() => {
     const q = query.trim().toLowerCase();
     if (!q) return [];
-    return users
+    return allUsers
       .filter((u) => !selectedIds.includes(u.id))
       .filter((u) => displayName(u).toLowerCase().includes(q))
       .slice(0, 6);
-  }, [users, selectedIds, query]);
+  }, [allUsers, selectedIds, query]);
 
   function addUser(id: string) {
     setSelectedIds((prev) => (prev.includes(id) ? prev : [...prev, id]));
@@ -61,31 +72,27 @@ export function CreateChatDialog({ users, actorId }: Props) {
   }
 
   function removeUser(id: string) {
-    if (id === actorId) return;
+    if (id === creatorId) return;
     setSelectedIds((prev) => prev.filter((x) => x !== id));
   }
 
-  function getTitle() {
-    return (
-      title.trim() ||
-      selectedUsers.map(displayName).join(', ')
-    );
-  }
-
   function handleSubmit() {
-    if (selectedIds.length < 2) {
-      setError('Select at least 2 participants');
+    const userIds = selectedIds.includes(creatorId)
+      ? selectedIds
+      : [creatorId, ...selectedIds];
+    if (userIds.length < 2) {
+      setError('At least 2 participants required');
+      return;
+    }
+    if (!title.trim()) {
+      setError('Title is required');
       return;
     }
     setError(null);
     startTransition(async () => {
       try {
-        const { chatId } = await createChat({
-          title: getTitle(),
-          userIds: selectedIds,
-        });
+        await editChat({ chatId, title: title.trim(), userIds });
         setOpen(false);
-        router.push(`/dashboard/chat/${chatId}`);
       } catch (e) {
         setError(e instanceof Error ? e.message : 'Something went wrong');
       }
@@ -94,8 +101,8 @@ export function CreateChatDialog({ users, actorId }: Props) {
 
   function handleOpenChange(val: boolean) {
     if (!val) {
-      setTitle('');
-      setSelectedIds([actorId]);
+      setTitle(currentTitle);
+      setSelectedIds(currentParticipants.map((p) => p.id));
       setQuery('');
       setError(null);
     }
@@ -104,22 +111,21 @@ export function CreateChatDialog({ users, actorId }: Props) {
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogTrigger render={<Button />}>New chat</DialogTrigger>
+      <DialogTrigger render={<Button size="sm" variant="outline" />}>
+        Edit
+      </DialogTrigger>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Create Chat</DialogTitle>
+          <DialogTitle>Edit Chat</DialogTitle>
           <DialogDescription>
-            Select participants and a title for the new chat.
+            Update the title or participants.
           </DialogDescription>
         </DialogHeader>
         <div className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="chat-title">Title</Label>
+            <Label htmlFor="edit-chat-title">Title</Label>
             <Input
-              id="chat-title"
-              placeholder={
-                selectedUsers.map(displayName).join(', ') || 'Chat title…'
-              }
+              id="edit-chat-title"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               maxLength={200}
@@ -131,7 +137,8 @@ export function CreateChatDialog({ users, actorId }: Props) {
             {selectedUsers.length > 0 && (
               <div className="flex flex-wrap gap-1.5">
                 {selectedUsers.map((u) => {
-                  const isCreator = u.id === actorId;
+                  const isCreator = u.id === creatorId;
+                  const isSelf = u.id === actorId;
                   return (
                     <Badge
                       key={u.id}
@@ -141,7 +148,7 @@ export function CreateChatDialog({ users, actorId }: Props) {
                       {displayName(u)}
                       {isCreator ? (
                         <span className="ml-1 text-muted-foreground">
-                          (you)
+                          {isSelf ? '(you, creator)' : '(creator)'}
                         </span>
                       ) : (
                         <button
@@ -198,11 +205,8 @@ export function CreateChatDialog({ users, actorId }: Props) {
           >
             Cancel
           </Button>
-          <Button
-            onClick={handleSubmit}
-            disabled={isPending || selectedIds.length < 2}
-          >
-            {isPending ? 'Creating…' : 'Create'}
+          <Button onClick={handleSubmit} disabled={isPending}>
+            {isPending ? 'Saving…' : 'Save'}
           </Button>
         </DialogFooter>
       </DialogContent>

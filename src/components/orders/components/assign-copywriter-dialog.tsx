@@ -11,9 +11,18 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { Label } from '@/components/ui/label';
-import { assignCopywriter, reassignCopywriter } from '../actions';
+import {
+  assignCopywriter,
+  reassignCopywriter,
+} from '../../../app/dashboard/orders/actions';
 
 interface Copywriter {
   id: string;
@@ -28,9 +37,16 @@ interface Props {
   currentCopywriterId?: string | null;
 }
 
-export function AssignCopywriterDialog({ orderId, copywriters, isReassign = false, currentCopywriterId }: Props) {
+export function AssignCopywriterDialog({
+  orderId,
+  copywriters,
+  isReassign = false,
+  currentCopywriterId,
+}: Props) {
   const [open, setOpen] = useState(false);
-  const [copywriterId, setCopywriterId] = useState(isReassign ? currentCopywriterId ?? '' : '');
+  const [copywriterId, setCopywriterId] = useState(
+    isReassign ? (currentCopywriterId ?? '') : '',
+  );
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
 
@@ -45,7 +61,7 @@ export function AssignCopywriterDialog({ orderId, copywriters, isReassign = fals
           await assignCopywriter({ orderId, copywriterId });
         }
         setOpen(false);
-        setCopywriterId(isReassign ? currentCopywriterId ?? '' : '');
+        setCopywriterId(isReassign ? (currentCopywriterId ?? '') : '');
       } catch (e) {
         setError(e instanceof Error ? e.message : 'Something went wrong');
       }
@@ -60,12 +76,18 @@ export function AssignCopywriterDialog({ orderId, copywriters, isReassign = fals
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger render={<Button size="sm" variant={isReassign ? 'outline' : 'default'} />}>
+      <DialogTrigger
+        render={
+          <Button size="sm" variant={isReassign ? 'outline' : 'default'} />
+        }
+      >
         {isReassign ? 'Reassign copywriter' : 'Assign copywriter'}
       </DialogTrigger>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>{isReassign ? 'Reassign copywriter' : 'Assign copywriter'}</DialogTitle>
+          <DialogTitle>
+            {isReassign ? 'Reassign copywriter' : 'Assign copywriter'}
+          </DialogTitle>
           <DialogDescription>
             {isReassign
               ? 'Select a different copywriter. The current one will be notified.'
@@ -74,7 +96,11 @@ export function AssignCopywriterDialog({ orderId, copywriters, isReassign = fals
         </DialogHeader>
         <div className="space-y-2">
           <Label htmlFor="copywriter-select">Copywriter</Label>
-          <Select items={copywriterLabels} value={copywriterId} onValueChange={(v) => setCopywriterId(v ?? '')}>
+          <Select
+            items={copywriterLabels}
+            value={copywriterId}
+            onValueChange={(v) => setCopywriterId(v ?? '')}
+          >
             <SelectTrigger id="copywriter-select">
               <SelectValue placeholder="Select copywriter…" />
             </SelectTrigger>
@@ -90,10 +116,17 @@ export function AssignCopywriterDialog({ orderId, copywriters, isReassign = fals
           {error && <p className="text-sm text-destructive">{error}</p>}
         </div>
         <DialogFooter>
-          <Button variant="outline" onClick={() => setOpen(false)} disabled={isPending}>
+          <Button
+            variant="outline"
+            onClick={() => setOpen(false)}
+            disabled={isPending}
+          >
             Cancel
           </Button>
-          <Button onClick={handleSubmit} disabled={isPending || !copywriterId || isUnchanged}>
+          <Button
+            onClick={handleSubmit}
+            disabled={isPending || !copywriterId || isUnchanged}
+          >
             {isPending ? 'Saving…' : isReassign ? 'Reassign' : 'Assign'}
           </Button>
         </DialogFooter>

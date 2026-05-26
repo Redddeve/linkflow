@@ -12,8 +12,11 @@ import { fetchEarningsList, fetchEarningsTotals } from '@/lib/data/earnings';
 import { fetchActiveByRole, fetchUsersByIds } from '@/lib/data/users';
 import { Pagination } from '@/components/ui/pagination';
 import { parsePagination } from '@/lib/pagination';
-import { EarningsFilters } from './components/earnings-filters';
-import { EarningsTable, type EarningsTableRow } from './components/earnings-table';
+import { EarningsFilters } from '@/components/earnings/components/earnings-filters';
+import {
+  EarningsTable,
+  type EarningsTableRow,
+} from '@/components/earnings/components/earnings-table';
 
 interface PageProps {
   searchParams: Promise<Record<string, string | undefined>>;
@@ -72,7 +75,7 @@ export default async function EarningsPage({ searchParams }: PageProps) {
     commission_cents: r.commission_cents,
     paid_at: r.sourcer_paid_at,
     payout_reference: r.sourcer_payout_reference,
-    sourcer_name: isSourcer ? null : sourcerNameMap[r.sourcer_id] ?? null,
+    sourcer_name: isSourcer ? null : (sourcerNameMap[r.sourcer_id] ?? null),
   }));
   const total = allTableRows.length;
   const offset = (page - 1) * pageSize;

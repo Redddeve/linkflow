@@ -2,7 +2,7 @@ import { notFound } from 'next/navigation';
 import { requireRole } from '@/lib/auth';
 import { fetchOrderForPublish } from '@/lib/data/orders';
 import { BackLink } from '@/components/ui/back-link';
-import { PublishOrderForm } from '../../components/publish-order-form';
+import { PublishOrderForm } from '@/components/orders/components/publish-order-form';
 
 interface PageProps {
   params: Promise<{ id: string }>;
@@ -22,7 +22,9 @@ export default async function PublishOrderPage({ params }: PageProps) {
       <BackLink href={`/dashboard/orders/${id}`} label="Back to order" />
       <div>
         <h1 className="text-2xl font-semibold">Publish order</h1>
-        <p className="text-sm text-muted-foreground mt-1">{order.site_domain}</p>
+        <p className="text-sm text-muted-foreground mt-1">
+          {order.site_domain}
+        </p>
       </div>
 
       <PublishOrderForm orderId={id} defaultPublishDate={order.publish_date} />

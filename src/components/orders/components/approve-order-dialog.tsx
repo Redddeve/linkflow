@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useTransition } from 'react';
-import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -12,25 +11,23 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog';
-import { sendInvoice } from '../actions';
+import { approveOrder } from '../../../app/dashboard/orders/actions';
 
 interface Props {
-  invoiceId: string;
+  orderId: string;
 }
 
-export function SendInvoiceDialog({ invoiceId }: Props) {
-  const router = useRouter();
+export function ApproveOrderDialog({ orderId }: Props) {
   const [open, setOpen] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
 
-  function handleConfirm() {
+  function handleApprove() {
     setError(null);
     startTransition(async () => {
       try {
-        await sendInvoice({ invoiceId });
+        await approveOrder({ orderId });
         setOpen(false);
-        router.refresh();
       } catch (e) {
         setError(e instanceof Error ? e.message : 'Something went wrong');
       }
@@ -39,21 +36,26 @@ export function SendInvoiceDialog({ invoiceId }: Props) {
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger render={<Button size="sm" />}>Send invoice</DialogTrigger>
+      <DialogTrigger render={<Button size="sm" />}>Approve</DialogTrigger>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Send invoice to client?</DialogTitle>
+          <DialogTitle>Approve content</DialogTitle>
           <DialogDescription>
-            The invoice will move from Draft to Sent. The client will be notified.
+            Confirm that the content meets your requirements. The manager will
+            be notified to publish.
           </DialogDescription>
         </DialogHeader>
         {error && <p className="text-sm text-destructive">{error}</p>}
         <DialogFooter>
-          <Button variant="outline" onClick={() => setOpen(false)} disabled={isPending}>
+          <Button
+            variant="outline"
+            onClick={() => setOpen(false)}
+            disabled={isPending}
+          >
             Cancel
           </Button>
-          <Button onClick={handleConfirm} disabled={isPending}>
-            {isPending ? 'Sending…' : 'Send'}
+          <Button onClick={handleApprove} disabled={isPending}>
+            {isPending ? 'Approving…' : 'Approve content'}
           </Button>
         </DialogFooter>
       </DialogContent>

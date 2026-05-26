@@ -4,7 +4,10 @@ import { useState, useTransition } from 'react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
-import { saveOrderContent, submitOrderContent } from '../actions';
+import {
+  saveOrderContent,
+  submitOrderContent,
+} from '../../../app/dashboard/orders/actions';
 
 interface Props {
   orderId: string;
@@ -21,7 +24,8 @@ export function ContentEditorForm({ orderId, initialBody, status }: Props) {
   const [isSubmitting, startSubmit] = useTransition();
 
   const charCount = body.length;
-  const canSubmit = charCount >= 50 && (status === 'In Progress' || status === 'Needs changes');
+  const canSubmit =
+    charCount >= 50 && (status === 'In Progress' || status === 'Needs changes');
 
   function handleSave() {
     setSaveError(null);
@@ -52,8 +56,11 @@ export function ContentEditorForm({ orderId, initialBody, status }: Props) {
       <div className="space-y-2">
         <div className="flex items-center justify-between">
           <Label htmlFor="content-body">Content</Label>
-          <span className={`text-xs tabular-nums ${charCount < 50 ? 'text-destructive' : 'text-muted-foreground'}`}>
-            {charCount.toLocaleString()} chars{charCount < 50 ? ` (${50 - charCount} more needed)` : ''}
+          <span
+            className={`text-xs tabular-nums ${charCount < 50 ? 'text-destructive' : 'text-muted-foreground'}`}
+          >
+            {charCount.toLocaleString()} chars
+            {charCount < 50 ? ` (${50 - charCount} more needed)` : ''}
           </span>
         </div>
         <Textarea
@@ -81,12 +88,18 @@ export function ContentEditorForm({ orderId, initialBody, status }: Props) {
         <Button
           onClick={handleSubmit}
           disabled={!canSubmit || isSaving || isSubmitting}
-          title={!canSubmit ? 'Content must be at least 50 characters and status must be In Progress' : undefined}
+          title={
+            !canSubmit
+              ? 'Content must be at least 50 characters and status must be In Progress'
+              : undefined
+          }
         >
           {isSubmitting ? 'Submitting…' : 'Submit for review'}
         </Button>
         {savedAt && (
-          <span className="text-xs text-muted-foreground ml-auto">Saved at {savedAt}</span>
+          <span className="text-xs text-muted-foreground ml-auto">
+            Saved at {savedAt}
+          </span>
         )}
       </div>
     </div>

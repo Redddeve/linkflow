@@ -10,6 +10,7 @@ Before writing any code, always check `docs/` for standards:
 
 - `docs/routing.md` — Route structure, protection, auth helpers
 - `docs/ui.md` — UI standards (component library, styling, layout patterns)
+- `docs/components.md` — Where components live (`src/components/<feature>/`, never in `src/app/`)
 - `docs/validation.md` — react-hook-form, Zod, error display
 
 ## Commands

@@ -15,7 +15,10 @@ import {
   DialogTrigger,
 } from '@/components/ui/dialog';
 import { Separator } from '@/components/ui/separator';
-import { addOrdersToInvoice, removeOrdersFromInvoice } from '../actions';
+import {
+  addOrdersToInvoice,
+  removeOrdersFromInvoice,
+} from '../../../app/dashboard/invoices/actions';
 
 interface AttachedOrder {
   id: string;
@@ -41,7 +44,11 @@ function formatPrice(cents: number) {
   return `$${(cents / 100).toFixed(2)}`;
 }
 
-export function EditOrdersDialog({ invoiceId, orders, availableOrders }: Props) {
+export function EditOrdersDialog({
+  invoiceId,
+  orders,
+  availableOrders,
+}: Props) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [toAdd, setToAdd] = useState<Set<string>>(new Set());
@@ -91,7 +98,9 @@ export function EditOrdersDialog({ invoiceId, orders, availableOrders }: Props) 
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger render={<Button variant="outline" size="sm" />}>Edit orders</DialogTrigger>
+      <DialogTrigger render={<Button variant="outline" size="sm" />}>
+        Edit orders
+      </DialogTrigger>
       <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Manage invoice orders</DialogTitle>
@@ -101,9 +110,13 @@ export function EditOrdersDialog({ invoiceId, orders, availableOrders }: Props) 
         </DialogHeader>
 
         <section className="space-y-2">
-          <h3 className="text-sm font-semibold">Attached orders ({orders.length})</h3>
+          <h3 className="text-sm font-semibold">
+            Attached orders ({orders.length})
+          </h3>
           {orders.length === 0 ? (
-            <p className="text-sm text-muted-foreground">No orders on this invoice yet.</p>
+            <p className="text-sm text-muted-foreground">
+              No orders on this invoice yet.
+            </p>
           ) : (
             <div className="space-y-3">
               {orders.map((o) => (
@@ -114,7 +127,8 @@ export function EditOrdersDialog({ invoiceId, orders, availableOrders }: Props) 
                   <div>
                     <p className="text-sm font-medium">{o.site_domain}</p>
                     <p className="text-xs text-muted-foreground">
-                      Published {o.publish_date ?? '—'} · {formatPrice(o.price_cents)}
+                      Published {o.publish_date ?? '—'} ·{' '}
+                      {formatPrice(o.price_cents)}
                     </p>
                   </div>
                   <Button
@@ -139,11 +153,13 @@ export function EditOrdersDialog({ invoiceId, orders, availableOrders }: Props) 
             Available to add ({availableOrders.length})
           </h3>
           <p className="text-xs text-muted-foreground">
-            Published orders from the same client, same billing month, not yet attached to an
-            invoice.
+            Published orders from the same client, same billing month, not yet
+            attached to an invoice.
           </p>
           {availableOrders.length === 0 ? (
-            <p className="text-sm text-muted-foreground">No eligible orders to add.</p>
+            <p className="text-sm text-muted-foreground">
+              No eligible orders to add.
+            </p>
           ) : (
             <div className="space-y-2">
               {availableOrders.map((o) => (
@@ -159,7 +175,8 @@ export function EditOrdersDialog({ invoiceId, orders, availableOrders }: Props) 
                   <div className="flex-1">
                     <p className="text-sm font-medium">{o.site_domain}</p>
                     <p className="text-xs text-muted-foreground">
-                      Published {o.publish_date ?? '—'} · {formatPrice(o.price_cents)}
+                      Published {o.publish_date ?? '—'} ·{' '}
+                      {formatPrice(o.price_cents)}
                     </p>
                   </div>
                 </label>

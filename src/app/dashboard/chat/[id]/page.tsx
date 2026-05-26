@@ -9,7 +9,7 @@ import {
   fetchOrderByChatId,
 } from '@/lib/data/chat';
 import { fetchUsersByIds } from '@/lib/data/users';
-import { ChatShell } from '../components/chat-shell';
+import { ChatShell } from '@/components/chat/components/chat-shell';
 
 interface PageProps {
   params: Promise<{ id: string }>;
@@ -27,13 +27,17 @@ export default async function ChatDetailPage({
   const { data: chat, error } = await fetchChatById(id);
   if (error || !chat) notFound();
 
-  const [participants, messages, allUsers, chats, relatedOrder] = await Promise.all([
-    fetchChatParticipants(id),
-    fetchChatMessages(id),
-    fetchActiveUsers(),
-    fetchChatsList({ q, status, category }, { id: actor.id, role: actor.role }),
-    fetchOrderByChatId(id),
-  ]);
+  const [participants, messages, allUsers, chats, relatedOrder] =
+    await Promise.all([
+      fetchChatParticipants(id),
+      fetchChatMessages(id),
+      fetchActiveUsers(),
+      fetchChatsList(
+        { q, status, category },
+        { id: actor.id, role: actor.role },
+      ),
+      fetchOrderByChatId(id),
+    ]);
 
   const isParticipant = participants.some((p) => p.id === actor.id);
   const isManagerOrAdmin = actor.role === 'Manager' || actor.role === 'Admin';

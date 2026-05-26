@@ -1,6 +1,6 @@
 import { requireUser } from '@/lib/auth';
 import { fetchChatsList, fetchActiveUsers } from '@/lib/data/chat';
-import { ChatShell } from './components/chat-shell';
+import { ChatShell } from '@/components/chat/components/chat-shell';
 
 export const metadata = { title: 'Chats' };
 

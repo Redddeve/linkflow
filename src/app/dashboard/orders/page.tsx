@@ -1,12 +1,12 @@
 import { notFound } from 'next/navigation';
 import { cookies } from 'next/headers';
 import { requireUser } from '@/lib/auth';
-import { OrderFilters } from './components/order-filters';
-import { OrdersTable } from './components/orders-table';
-import { OrdersKanban } from './components/orders-kanban';
-import { ViewToggle } from './components/view-toggle';
-import { KANBAN_COLUMNS } from './components/kanban-columns';
-import { toOrderRow } from './components/order-row-mapper';
+import { OrderFilters } from '@/components/orders/components/order-filters';
+import { OrdersTable } from '@/components/orders/components/orders-table';
+import { OrdersKanban } from '@/components/orders/components/orders-kanban';
+import { ViewToggle } from '@/components/orders/components/view-toggle';
+import { KANBAN_COLUMNS } from '@/components/orders/components/kanban-columns';
+import { toOrderRow } from '@/components/orders/components/order-row-mapper';
 import { PageHeader } from '@/components/ui/page-header';
 import { Pagination } from '@/components/ui/pagination';
 import { parsePagination } from '@/lib/pagination';
@@ -40,7 +40,8 @@ export default async function OrdersPage({ searchParams }: PageProps) {
   // URL wins; fall back to the user's saved preference cookie; default to list.
   const cookieView = (await cookies()).get('orders_view')?.value;
   const view =
-    params.view ?? (cookieView === 'kanban' || cookieView === 'list' ? cookieView : 'list');
+    params.view ??
+    (cookieView === 'kanban' || cookieView === 'list' ? cookieView : 'list');
   const { page, pageSize } = parsePagination(params);
 
   const isManagerOrAdmin = actor.role === 'Manager' || actor.role === 'Admin';
@@ -65,7 +66,9 @@ export default async function OrdersPage({ searchParams }: PageProps) {
   // For managers, restrict the client filter to their own clients to prevent
   // URL-tampered filtering across other managers' clients.
   const effectiveClientFilter =
-    clientFilter && isManagerOrAdmin && clients.some((c) => c.id === clientFilter)
+    clientFilter &&
+    isManagerOrAdmin &&
+    clients.some((c) => c.id === clientFilter)
       ? clientFilter
       : undefined;
 
@@ -96,7 +99,9 @@ export default async function OrdersPage({ searchParams }: PageProps) {
         columnResults.flatMap(({ rows }) =>
           rows.flatMap(
             (o) =>
-              [o.copywriter_id, o.manager_id, o.created_by_id].filter(Boolean) as string[],
+              [o.copywriter_id, o.manager_id, o.created_by_id].filter(
+                Boolean,
+              ) as string[],
           ),
         ),
       ),
@@ -124,7 +129,8 @@ export default async function OrdersPage({ searchParams }: PageProps) {
 
         {checkedOut !== null && (
           <div className="mb-4 rounded-lg border border-(--st-live-fg)/20 bg-(--st-live-bg) px-3 py-2 text-sm font-medium text-(--st-live-fg)">
-            {checkedOut} order{checkedOut !== 1 ? 's' : ''} created successfully.
+            {checkedOut} order{checkedOut !== 1 ? 's' : ''} created
+            successfully.
           </div>
         )}
 
@@ -145,7 +151,8 @@ export default async function OrdersPage({ searchParams }: PageProps) {
                 copywriterId: copywriterFilter,
                 createdById: effectiveClientFilter,
                 search: searchFilter,
-                unassigned: params.assignee === 'unassigned' && isManagerOrAdmin,
+                unassigned:
+                  params.assignee === 'unassigned' && isManagerOrAdmin,
               }}
               pageSize={KANBAN_PAGE_SIZE}
             />
@@ -175,7 +182,9 @@ export default async function OrdersPage({ searchParams }: PageProps) {
     ...new Set(
       rawList.flatMap(
         (o) =>
-          [o.copywriter_id, o.manager_id, o.created_by_id].filter(Boolean) as string[],
+          [o.copywriter_id, o.manager_id, o.created_by_id].filter(
+            Boolean,
+          ) as string[],
       ),
     ),
   ];

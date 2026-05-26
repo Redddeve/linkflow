@@ -1,7 +1,9 @@
 'use client';
 
 import { useMemo, useState, useTransition } from 'react';
+import { useRouter } from 'next/navigation';
 import { X } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -14,16 +16,11 @@ import {
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Badge } from '@/components/ui/badge';
-import { editChat } from '../actions';
+import { createChat } from '../../../app/dashboard/chat/actions';
 import type { ChatParticipant } from '@/lib/data/chat';
 
 interface Props {
-  chatId: string;
-  currentTitle: string;
-  currentParticipants: ChatParticipant[];
-  allUsers: ChatParticipant[];
-  creatorId: string;
+  users: ChatParticipant[];
   actorId: string;
 }
 
@@ -31,26 +28,18 @@ function displayName(u: ChatParticipant) {
   return `${u.first_name} ${u.last_name}`;
 }
 
-export function EditChatDialog({
-  chatId,
-  currentTitle,
-  currentParticipants,
-  allUsers,
-  creatorId,
-  actorId,
-}: Props) {
+export function CreateChatDialog({ users, actorId }: Props) {
+  const router = useRouter();
   const [open, setOpen] = useState(false);
-  const [title, setTitle] = useState(currentTitle);
-  const [selectedIds, setSelectedIds] = useState<string[]>(
-    currentParticipants.map((p) => p.id),
-  );
+  const [title, setTitle] = useState('');
+  const [selectedIds, setSelectedIds] = useState<string[]>([actorId]);
   const [query, setQuery] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
 
   const usersById = useMemo(
-    () => Object.fromEntries(allUsers.map((u) => [u.id, u])),
-    [allUsers],
+    () => Object.fromEntries(users.map((u) => [u.id, u])),
+    [users],
   );
 
   const selectedUsers = selectedIds
@@ -60,11 +49,11 @@ export function EditChatDialog({
   const suggestions = useMemo(() => {
     const q = query.trim().toLowerCase();
     if (!q) return [];
-    return allUsers
+    return users
       .filter((u) => !selectedIds.includes(u.id))
       .filter((u) => displayName(u).toLowerCase().includes(q))
       .slice(0, 6);
-  }, [allUsers, selectedIds, query]);
+  }, [users, selectedIds, query]);
 
   function addUser(id: string) {
     setSelectedIds((prev) => (prev.includes(id) ? prev : [...prev, id]));
@@ -72,27 +61,28 @@ export function EditChatDialog({
   }
 
   function removeUser(id: string) {
-    if (id === creatorId) return;
+    if (id === actorId) return;
     setSelectedIds((prev) => prev.filter((x) => x !== id));
   }
 
+  function getTitle() {
+    return title.trim() || selectedUsers.map(displayName).join(', ');
+  }
+
   function handleSubmit() {
-    const userIds = selectedIds.includes(creatorId)
-      ? selectedIds
-      : [creatorId, ...selectedIds];
-    if (userIds.length < 2) {
-      setError('At least 2 participants required');
-      return;
-    }
-    if (!title.trim()) {
-      setError('Title is required');
+    if (selectedIds.length < 2) {
+      setError('Select at least 2 participants');
       return;
     }
     setError(null);
     startTransition(async () => {
       try {
-        await editChat({ chatId, title: title.trim(), userIds });
+        const { chatId } = await createChat({
+          title: getTitle(),
+          userIds: selectedIds,
+        });
         setOpen(false);
+        router.push(`/dashboard/chat/${chatId}`);
       } catch (e) {
         setError(e instanceof Error ? e.message : 'Something went wrong');
       }
@@ -101,8 +91,8 @@ export function EditChatDialog({
 
   function handleOpenChange(val: boolean) {
     if (!val) {
-      setTitle(currentTitle);
-      setSelectedIds(currentParticipants.map((p) => p.id));
+      setTitle('');
+      setSelectedIds([actorId]);
       setQuery('');
       setError(null);
     }
@@ -111,21 +101,22 @@ export function EditChatDialog({
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogTrigger render={<Button size="sm" variant="outline" />}>
-        Edit
-      </DialogTrigger>
+      <DialogTrigger render={<Button />}>New chat</DialogTrigger>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Edit Chat</DialogTitle>
+          <DialogTitle>Create Chat</DialogTitle>
           <DialogDescription>
-            Update the title or participants.
+            Select participants and a title for the new chat.
           </DialogDescription>
         </DialogHeader>
         <div className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="edit-chat-title">Title</Label>
+            <Label htmlFor="chat-title">Title</Label>
             <Input
-              id="edit-chat-title"
+              id="chat-title"
+              placeholder={
+                selectedUsers.map(displayName).join(', ') || 'Chat title…'
+              }
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               maxLength={200}
@@ -137,8 +128,7 @@ export function EditChatDialog({
             {selectedUsers.length > 0 && (
               <div className="flex flex-wrap gap-1.5">
                 {selectedUsers.map((u) => {
-                  const isCreator = u.id === creatorId;
-                  const isSelf = u.id === actorId;
+                  const isCreator = u.id === actorId;
                   return (
                     <Badge
                       key={u.id}
@@ -148,7 +138,7 @@ export function EditChatDialog({
                       {displayName(u)}
                       {isCreator ? (
                         <span className="ml-1 text-muted-foreground">
-                          {isSelf ? '(you, creator)' : '(creator)'}
+                          (you)
                         </span>
                       ) : (
                         <button
@@ -205,8 +195,11 @@ export function EditChatDialog({
           >
             Cancel
           </Button>
-          <Button onClick={handleSubmit} disabled={isPending}>
-            {isPending ? 'Saving…' : 'Save'}
+          <Button
+            onClick={handleSubmit}
+            disabled={isPending || selectedIds.length < 2}
+          >
+            {isPending ? 'Creating…' : 'Create'}
           </Button>
         </DialogFooter>
       </DialogContent>

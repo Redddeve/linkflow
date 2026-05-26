@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect } from 'react';
-import { markChatRead } from '../actions';
+import { markChatRead } from '../../../app/dashboard/chat/actions';
 
 interface Props {
   chatId: string;

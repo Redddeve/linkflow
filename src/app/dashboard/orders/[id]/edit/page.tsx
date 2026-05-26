@@ -2,8 +2,8 @@ import { notFound } from 'next/navigation';
 import { requireRole } from '@/lib/auth';
 import { fetchOrderForEdit } from '@/lib/data/orders';
 import { BackLink } from '@/components/ui/back-link';
-import { OrderStatusBadge } from '../../components/order-status-badge';
-import { ContentEditorForm } from '../../components/content-editor-form';
+import { OrderStatusBadge } from '@/components/orders/components/order-status-badge';
+import { ContentEditorForm } from '@/components/orders/components/content-editor-form';
 
 interface PageProps {
   params: Promise<{ id: string }>;
@@ -21,7 +21,8 @@ export default async function ContentEditorPage({ params }: PageProps) {
   if (order.copywriter_id !== actor.id) notFound();
 
   // Only editable statuses
-  if (order.status !== 'In Progress' && order.status !== 'Needs changes') notFound();
+  if (order.status !== 'In Progress' && order.status !== 'Needs changes')
+    notFound();
 
   return (
     <div className="space-y-6 max-w-4xl">
@@ -31,20 +32,26 @@ export default async function ContentEditorPage({ params }: PageProps) {
         <OrderStatusBadge status={order.status} />
       </div>
       {order.publish_date && (
-        <p className="-mt-4 text-sm text-muted-foreground">Publish date: {order.publish_date}</p>
+        <p className="-mt-4 text-sm text-muted-foreground">
+          Publish date: {order.publish_date}
+        </p>
       )}
 
       {order.site_requirements && (
         <div className="rounded-md border bg-muted/40 p-4 space-y-1">
           <h2 className="text-sm font-semibold">Requirements</h2>
-          <p className="text-sm whitespace-pre-wrap">{order.site_requirements}</p>
+          <p className="text-sm whitespace-pre-wrap">
+            {order.site_requirements}
+          </p>
         </div>
       )}
 
       {order.site_description && (
         <div className="rounded-md border bg-muted/40 p-4 space-y-1">
           <h2 className="text-sm font-semibold">Site description</h2>
-          <p className="text-sm whitespace-pre-wrap">{order.site_description}</p>
+          <p className="text-sm whitespace-pre-wrap">
+            {order.site_description}
+          </p>
         </div>
       )}
 

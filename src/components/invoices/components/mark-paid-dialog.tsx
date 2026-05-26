@@ -12,7 +12,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog';
-import { markInvoicePaid } from '../actions';
+import { markInvoicePaid } from '../../../app/dashboard/invoices/actions';
 
 interface Props {
   invoiceId: string;
@@ -39,17 +39,24 @@ export function MarkPaidDialog({ invoiceId }: Props) {
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger render={<Button variant="outline" size="sm" />}>Mark as paid</DialogTrigger>
+      <DialogTrigger render={<Button variant="outline" size="sm" />}>
+        Mark as paid
+      </DialogTrigger>
       <DialogContent>
         <DialogHeader>
           <DialogTitle>Mark invoice as paid?</DialogTitle>
           <DialogDescription>
-            This records the payment timestamp. The invoice moves from Sent to Paid.
+            This records the payment timestamp. The invoice moves from Sent to
+            Paid.
           </DialogDescription>
         </DialogHeader>
         {error && <p className="text-sm text-destructive">{error}</p>}
         <DialogFooter>
-          <Button variant="outline" onClick={() => setOpen(false)} disabled={isPending}>
+          <Button
+            variant="outline"
+            onClick={() => setOpen(false)}
+            disabled={isPending}
+          >
             Cancel
           </Button>
           <Button onClick={handleConfirm} disabled={isPending}>

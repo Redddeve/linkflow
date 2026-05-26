@@ -11,17 +11,18 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog';
-import { Textarea } from '@/components/ui/textarea';
+import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { cancelOrder } from '../actions';
+import { editOrderPublishDate } from '../../../app/dashboard/orders/actions';
 
 interface Props {
   orderId: string;
+  currentDate: string;
 }
 
-export function CancelOrderDialog({ orderId }: Props) {
+export function EditPublishDateDialog({ orderId, currentDate }: Props) {
   const [open, setOpen] = useState(false);
-  const [reason, setReason] = useState('');
+  const [date, setDate] = useState(currentDate);
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
 
@@ -29,7 +30,7 @@ export function CancelOrderDialog({ orderId }: Props) {
     setError(null);
     startTransition(async () => {
       try {
-        await cancelOrder({ orderId, reason: reason.trim() || undefined });
+        await editOrderPublishDate({ orderId, publish_date: date });
         setOpen(false);
       } catch (e) {
         setError(e instanceof Error ? e.message : 'Something went wrong');
@@ -37,36 +38,41 @@ export function CancelOrderDialog({ orderId }: Props) {
     });
   }
 
+  const today = new Date().toISOString().split('T')[0];
+
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger render={<Button variant="destructive" size="sm" />}>
-        Cancel order
+      <DialogTrigger render={<Button variant="outline" size="sm" />}>
+        Edit publish date
       </DialogTrigger>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Cancel order</DialogTitle>
+          <DialogTitle>Edit publish date</DialogTitle>
           <DialogDescription>
-            This order will be permanently canceled. This action cannot be undone.
+            Choose a new publish date. Must be today or a future date.
           </DialogDescription>
         </DialogHeader>
         <div className="space-y-2">
-          <Label htmlFor="cancel-reason">Reason (optional)</Label>
-          <Textarea
-            id="cancel-reason"
-            placeholder="Why are you canceling this order?"
-            value={reason}
-            onChange={(e) => setReason(e.target.value)}
-            rows={3}
-            maxLength={500}
+          <Label htmlFor="publish-date">Publish date</Label>
+          <Input
+            id="publish-date"
+            type="date"
+            min={today}
+            value={date}
+            onChange={(e) => setDate(e.target.value)}
           />
           {error && <p className="text-sm text-destructive">{error}</p>}
         </div>
         <DialogFooter>
-          <Button variant="outline" onClick={() => setOpen(false)} disabled={isPending}>
-            Keep order
+          <Button
+            variant="outline"
+            onClick={() => setOpen(false)}
+            disabled={isPending}
+          >
+            Cancel
           </Button>
-          <Button variant="destructive" onClick={handleSubmit} disabled={isPending}>
-            {isPending ? 'Canceling…' : 'Cancel order'}
+          <Button onClick={handleSubmit} disabled={isPending || !date}>
+            {isPending ? 'Saving…' : 'Save'}
           </Button>
         </DialogFooter>
       </DialogContent>

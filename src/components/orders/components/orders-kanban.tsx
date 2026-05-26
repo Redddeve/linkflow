@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { OrderStatusBadge } from './order-status-badge';
 import { KANBAN_COLUMNS, type KanbanColumnStatus } from './kanban-columns';
-import { fetchOrdersColumn } from '../actions';
+import { fetchOrdersColumn } from '../../../app/dashboard/orders/actions';
 import type { OrderRow } from './orders-table';
 import type { Database } from '@/types/database.types';
 
