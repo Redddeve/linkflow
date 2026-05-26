@@ -17,6 +17,7 @@ export interface OrderRow {
   created_at: string;
   copywriter?: { first_name: string; last_name: string } | null;
   manager?: { first_name: string; last_name: string } | null;
+  client?: { first_name: string; last_name: string } | null;
   sourcer_payout_cents?: number | null;
   sourcer_paid_at?: string | null;
 }

@@ -16,6 +16,7 @@ export function toOrderRow(
     created_at: o.created_at,
     copywriter: o.copywriter_id ? (userMap[o.copywriter_id] ?? null) : null,
     manager: o.manager_id ? (userMap[o.manager_id] ?? null) : null,
+    client: o.created_by_id ? (userMap[o.created_by_id] ?? null) : null,
     sourcer_payout_cents: o.sourcer_payout_cents,
     sourcer_paid_at: o.sourcer_paid_at,
   };

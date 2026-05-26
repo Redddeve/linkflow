@@ -155,6 +155,7 @@ export default async function OrdersPage({ searchParams }: PageProps) {
                   params.assignee === 'unassigned' && isManagerOrAdmin,
               }}
               pageSize={KANBAN_PAGE_SIZE}
+              viewerRole={actor.role}
             />
           </div>
         </div>

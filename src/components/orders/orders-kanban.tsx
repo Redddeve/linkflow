@@ -2,8 +2,10 @@
 
 import { useState, useTransition } from 'react';
 import Link from 'next/link';
+import { CalendarDays, User2 } from 'lucide-react';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { OrderStatusBadge } from './order-status-badge';
 import { KANBAN_COLUMNS, type KanbanColumnStatus } from './kanban-columns';
 import { fetchOrdersColumn } from '@/app/dashboard/orders/actions';
@@ -11,6 +13,7 @@ import type { OrderRow } from './orders-table';
 import type { Database } from '@/types/database.types';
 
 type OrderStatus = Database['public']['Enums']['order_status'];
+type ViewerRole = Database['public']['Enums']['user_role'];
 
 export interface OrdersKanbanProps {
   initialColumns: Record<
@@ -25,6 +28,15 @@ export interface OrdersKanbanProps {
     status?: OrderStatus;
   };
   pageSize?: number;
+  viewerRole?: ViewerRole;
+}
+
+function initials(user: { first_name: string; last_name: string }) {
+  return `${user.first_name[0] ?? ''}${user.last_name[0] ?? ''}`.toUpperCase();
+}
+
+function fullName(user: { first_name: string; last_name: string }) {
+  return `${user.first_name} ${user.last_name}`.trim();
 }
 
 interface ColumnState {
@@ -38,7 +50,9 @@ export function OrdersKanban({
   initialColumns,
   filters,
   pageSize = 25,
+  viewerRole,
 }: OrdersKanbanProps) {
+  const showClient = viewerRole !== 'Client';
   const [columns, setColumns] = useState<
     Record<KanbanColumnStatus, ColumnState>
   >(
@@ -136,28 +150,67 @@ export function OrdersKanban({
                     key={order.id}
                     href={`/dashboard/orders/${order.id}`}
                     data-testid="kanban-card"
+                    className="group/card rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                   >
-                    <Card className="hover:border-ring transition-colors cursor-pointer">
-                      <CardHeader className="pb-1 pt-3 px-3">
-                        <p className="text-sm font-medium truncate">
-                          {order.site_domain}
-                        </p>
+                    <Card className="gap-0 py-0 shadow-sm transition-all group-hover/card:border-ring group-hover/card:shadow-md cursor-pointer">
+                      <CardHeader className="px-3 pt-3 pb-2 gap-1.5">
+                        <div className="flex items-start justify-between gap-2">
+                          <p
+                            className="text-sm font-semibold leading-tight truncate"
+                            title={order.site_domain}
+                          >
+                            {order.site_domain}
+                          </p>
+                          <span className="text-sm font-semibold tabular-nums text-foreground shrink-0">
+                            ${(order.price_cents / 100).toFixed(2)}
+                          </span>
+                        </div>
+                        {showClient && order.client && (
+                          <div className="flex items-center gap-1.5 min-w-0">
+                            <Avatar size="sm" className="size-5">
+                              <AvatarFallback className="text-[9px]">
+                                {initials(order.client)}
+                              </AvatarFallback>
+                            </Avatar>
+                            <span
+                              className="text-xs text-muted-foreground truncate"
+                              title={fullName(order.client)}
+                            >
+                              {fullName(order.client)}
+                            </span>
+                          </div>
+                        )}
                       </CardHeader>
-                      <CardContent className="px-3 pb-3 space-y-1">
-                        {order.publish_date && (
-                          <p className="text-xs text-muted-foreground">
-                            Publish: {order.publish_date}
-                          </p>
+                      <CardContent className="px-3 pb-3 pt-2 border-t border-border/60 flex items-center justify-between gap-2">
+                        {order.publish_date ? (
+                          <span
+                            className="inline-flex items-center gap-1 text-xs text-muted-foreground tabular-nums"
+                            title="Publish date"
+                          >
+                            <CalendarDays className="size-3.5" aria-hidden />
+                            {order.publish_date}
+                          </span>
+                        ) : (
+                          <span className="text-xs text-muted-foreground">
+                            No date
+                          </span>
                         )}
-                        {order.copywriter && (
-                          <p className="text-xs text-muted-foreground truncate">
-                            {order.copywriter.first_name}{' '}
-                            {order.copywriter.last_name}
-                          </p>
+                        {order.copywriter ? (
+                          <span
+                            className="inline-flex items-center gap-1 text-xs text-muted-foreground truncate max-w-[55%]"
+                            title={`Copywriter: ${fullName(order.copywriter)}`}
+                          >
+                            <User2 className="size-3.5 shrink-0" aria-hidden />
+                            <span className="truncate">
+                              {fullName(order.copywriter)}
+                            </span>
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center gap-1 text-xs text-muted-foreground/70">
+                            <User2 className="size-3.5" aria-hidden />
+                            Unassigned
+                          </span>
                         )}
-                        <p className="text-xs font-medium">
-                          ${(order.price_cents / 100).toFixed(2)}
-                        </p>
                       </CardContent>
                     </Card>
                   </Link>

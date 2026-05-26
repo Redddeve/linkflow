@@ -3,20 +3,21 @@ import { notFound } from 'next/navigation';
 import { requireUser } from '@/lib/features/auth';
 import { createClient } from '@/lib/supabase/server';
 import { fetchOrderById, fetchOrderComments } from '@/lib/data/orders';
+import { fetchChatParticipants } from '@/lib/data/chat';
 import { fetchUsersByIds } from '@/lib/data/users';
 import { buttonVariants } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { OrderStatusBadge } from '../../../../components/orders/order-status-badge';
-import { CancelOrderDialog } from '../../../../components/orders/cancel-order-dialog';
-import { EditPublishDateDialog } from '../../../../components/orders/edit-publish-date-dialog';
-import { AssignCopywriterDialog } from '../../../../components/orders/assign-copywriter-dialog';
-import { ApproveOrderDialog } from '../../../../components/orders/approve-order-dialog';
-import { RejectOrderDialog } from '../../../../components/orders/reject-order-dialog';
-import { CommentsTimeline } from '../../../../components/orders/comments-timeline';
-import { AddCommentForm } from '../../../../components/orders/add-comment-form';
+import { OrderStatusBadge } from '@/components/orders/order-status-badge';
+import { CancelOrderDialog } from '@/components/orders/cancel-order-dialog';
+import { EditPublishDateDialog } from '@/components/orders/edit-publish-date-dialog';
+import { AssignCopywriterDialog } from '@/components/orders/assign-copywriter-dialog';
+import { ApproveOrderDialog } from '@/components/orders/approve-order-dialog';
+import { RejectOrderDialog } from '@/components/orders/reject-order-dialog';
+import { CommentsTimeline } from '@/components/orders/comments-timeline';
+import { AddCommentForm } from '@/components/orders/add-comment-form';
 import { listCopywriters } from '../actions';
 import { BackLink } from '@/components/ui/back-link';
-import { StartChatButton } from '../../../../components/orders/start-chat-button';
+import { StartChatButton } from '@/components/orders/start-chat-button';
 
 interface PageProps {
   params: Promise<{ id: string }>;
@@ -96,12 +97,15 @@ export default async function OrderDetailPage({ params }: PageProps) {
     (isClient && order.created_by_id === actor.id) ||
     (isCopywriter && order.copywriter_id === actor.id);
   const hasChatCounterpart = Boolean(order.copywriter_id || order.manager_id);
-  const canStartChat =
-    !!order.chat_id ||
-    ((isManagerOrAdmin ||
-      (isClient && order.created_by_id === actor.id) ||
-      (isCopywriter && order.copywriter_id === actor.id)) &&
-      hasChatCounterpart);
+  const isChatParticipant = order.chat_id
+    ? (await fetchChatParticipants(order.chat_id)).some((p) => p.id === actor.id)
+    : false;
+  const canStartChat = order.chat_id
+    ? isChatParticipant
+    : (isManagerOrAdmin ||
+        (isClient && order.created_by_id === actor.id) ||
+        (isCopywriter && order.copywriter_id === actor.id)) &&
+      hasChatCounterpart;
 
   const metrics: { label: string; value: React.ReactNode }[] = [];
   if (!isSourcer) {

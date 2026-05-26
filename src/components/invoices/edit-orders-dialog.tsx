@@ -18,7 +18,7 @@ import { Separator } from '@/components/ui/separator';
 import {
   addOrdersToInvoice,
   removeOrdersFromInvoice,
-} from '../../app/dashboard/invoices/actions';
+} from '@/app/dashboard/invoices/actions';
 
 interface AttachedOrder {
   id: string;
