@@ -17,12 +17,12 @@ type ViewerRole = Database['public']['Enums']['user_role'];
 
 const COLUMN_TINTS: Record<KanbanColumnStatus, string> = {
   New: 'var(--card)',
-  'In Progress': '#eef2ff70',
-  'Content Sent': '#fffbeb',
-  'Needs changes': 'var(--st-assign-bg)',
-  'Content Approved': 'var(--st-pub-bg)',
-  Published: 'var(--st-live-bg)',
-  Canceled: 'color-mix(in srgb, var(--destructive) 10%, transparent)',
+  'In Progress': 'var(--kc-in-progress)',
+  'Content Sent': 'var(--kc-content-sent)',
+  'Needs changes': 'var(--kc-needs-changes)',
+  'Content Approved': 'var(--kc-content-approved)',
+  Published: 'var(--kc-published)',
+  Canceled: 'var(--kc-canceled)',
 };
 
 const COLUMN_TEXT: Record<KanbanColumnStatus, string> = {
@@ -31,18 +31,18 @@ const COLUMN_TEXT: Record<KanbanColumnStatus, string> = {
   'Content Sent': '#b45309',
   'Needs changes': 'var(--st-assign-fg)',
   'Content Approved': 'var(--st-pub-fg)',
-  Published: 'var(--st-live-fg)',
+  Published: '#166534',
   Canceled: 'var(--destructive)',
 };
 
 const BADGE_BG: Record<KanbanColumnStatus, string> = {
-  New: '#fafafa',
+  New: 'var(--surface-2)',
   'In Progress': '#d5dcf5',
-  'Content Sent': 'color-mix(in srgb, #fffbeb 88%, black)',
-  'Needs changes': 'color-mix(in srgb, var(--st-assign-bg) 88%, black)',
-  'Content Approved': 'var(--st-pub-bg)',
-  Published: 'color-mix(in srgb, var(--st-live-bg) 88%, black)',
-  Canceled: 'color-mix(in srgb, var(--destructive) 10%, transparent)',
+  'Content Sent': 'var(--kb-content-sent)',
+  'Needs changes': 'var(--kb-needs-changes)',
+  'Content Approved': 'var(--kb-content-approved)',
+  Published: 'var(--kb-published)',
+  Canceled: 'var(--kb-canceled)',
 };
 
 export interface OrdersKanbanProps {

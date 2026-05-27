@@ -135,15 +135,13 @@ export default async function OrdersPage({ searchParams }: PageProps) {
         )}
 
         <div className="flex flex-1 flex-col gap-4 min-h-0">
-          {isManagerOrAdmin && (
-            <OrderFilters
-              copywriters={copywriters}
-              clients={clients}
-              showCopywriterFilter={isManagerOrAdmin}
-              showClientFilter={isManagerOrAdmin}
-              showStatusFilter={false}
-            />
-          )}
+          <OrderFilters
+            copywriters={copywriters}
+            clients={clients}
+            showCopywriterFilter={isManagerOrAdmin}
+            showClientFilter={isManagerOrAdmin}
+            showStatusFilter={false}
+          />
 
           <div className="flex-1 min-h-0">
             <OrdersKanban

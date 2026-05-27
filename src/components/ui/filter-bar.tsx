@@ -177,20 +177,22 @@ export function FilterBar({
             className="w-64 h-9"
           />
         )}
-        <Button
-          variant="outline"
-          size="sm"
-          className={cn(
-            'gap-2',
-            open &&
-              'border-primary text-primary bg-primary-soft hover:bg-primary-soft-2',
-          )}
-          onClick={() => setOpen((o) => !o)}
-          aria-pressed={open}
-        >
-          <SlidersHorizontal className="h-4 w-4" />
-          Filters
-        </Button>
+        {fields.length > 0 && (
+          <Button
+            variant="outline"
+            size="sm"
+            className={cn(
+              'gap-2',
+              open &&
+                'border-primary text-primary bg-primary-soft hover:bg-primary-soft-2',
+            )}
+            onClick={() => setOpen((o) => !o)}
+            aria-pressed={open}
+          >
+            <SlidersHorizontal className="h-4 w-4" />
+            Filters
+          </Button>
+        )}
         {hasFilters && (
           <Button
             variant="ghost"
