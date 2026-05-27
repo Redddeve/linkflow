@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
-import { requireUser } from '@/lib/auth';
+import { requireUser } from '@/lib/features/auth';
 import {
   fetchInvoiceById,
   fetchInvoiceOrders,
@@ -11,11 +11,11 @@ import { BackLink } from '@/components/ui/back-link';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import { buttonVariants } from '@/components/ui/button';
-import { formatBillingMonth } from '@/lib/billing';
-import { InvoiceStatusBadge } from '../components/invoice-status-badge';
-import { SendInvoiceDialog } from '../components/send-invoice-dialog';
-import { MarkPaidDialog } from '../components/mark-paid-dialog';
-import { EditOrdersDialog } from '../components/edit-orders-dialog';
+import { formatBillingMonth } from '@/lib/features/billing';
+import { InvoiceStatusBadge } from '@/components/invoices/invoice-status-badge';
+import { SendInvoiceDialog } from '@/components/invoices/send-invoice-dialog';
+import { MarkPaidDialog } from '@/components/invoices/mark-paid-dialog';
+import { EditOrdersDialog } from '@/components/invoices/edit-orders-dialog';
 
 interface PageProps {
   params: Promise<{ id: string }>;
@@ -41,7 +41,10 @@ export default async function InvoiceDetailPage({ params }: PageProps) {
   const orders = await fetchInvoiceOrders(invoice.id);
   const availableOrders =
     invoice.status === 'Draft'
-      ? await fetchUnattachedOrdersForInvoice(invoice.client_id, invoice.billing_month)
+      ? await fetchUnattachedOrdersForInvoice(
+          invoice.client_id,
+          invoice.billing_month,
+        )
       : [];
 
   // Load user records (client + sent_by + marked_as_paid_by)
@@ -56,7 +59,9 @@ export default async function InvoiceDetailPage({ params }: PageProps) {
 
   const client = userMap[invoice.client_id];
   const sentBy = invoice.sent_by_id ? userMap[invoice.sent_by_id] : null;
-  const paidBy = invoice.marked_as_paid_by_id ? userMap[invoice.marked_as_paid_by_id] : null;
+  const paidBy = invoice.marked_as_paid_by_id
+    ? userMap[invoice.marked_as_paid_by_id]
+    : null;
 
   const canSend = isManagerOrAdmin && invoice.status === 'Draft';
   const canMarkPaid = isAdmin && invoice.status === 'Sent';
@@ -67,9 +72,13 @@ export default async function InvoiceDetailPage({ params }: PageProps) {
       <BackLink href="/dashboard/invoices" label="Invoices" />
       <div className="flex items-start justify-between">
         <div>
-          <h1 className="text-2xl font-semibold">{formatBillingMonth(invoice.billing_month)} invoice</h1>
+          <h1 className="text-2xl font-semibold">
+            {formatBillingMonth(invoice.billing_month)} invoice
+          </h1>
           <p className="text-sm text-muted-foreground">
-            {client ? `${client.first_name} ${client.last_name}` : 'Unknown client'}
+            {client
+              ? `${client.first_name} ${client.last_name}`
+              : 'Unknown client'}
           </p>
         </div>
         <div className="flex gap-2">
@@ -106,7 +115,9 @@ export default async function InvoiceDetailPage({ params }: PageProps) {
         <CardContent className="grid sm:grid-cols-2 gap-x-8 gap-y-3 text-sm">
           <div>
             <p className="text-muted-foreground">Billing month</p>
-            <p className="font-medium">{formatBillingMonth(invoice.billing_month)}</p>
+            <p className="font-medium">
+              {formatBillingMonth(invoice.billing_month)}
+            </p>
           </div>
           <div>
             <p className="text-muted-foreground">Total</p>
@@ -116,14 +127,18 @@ export default async function InvoiceDetailPage({ params }: PageProps) {
           </div>
           <div>
             <p className="text-muted-foreground">Created</p>
-            <p className="font-medium">{new Date(invoice.created_at).toLocaleDateString('en-CA')}</p>
+            <p className="font-medium">
+              {new Date(invoice.created_at).toLocaleDateString('en-CA')}
+            </p>
           </div>
           {(invoice.status === 'Sent' || invoice.status === 'Paid') && (
             <>
               <div>
                 <p className="text-muted-foreground">Sent at</p>
                 <p className="font-medium">
-                  {invoice.sent_at ? new Date(invoice.sent_at).toLocaleString('en-CA') : '—'}
+                  {invoice.sent_at
+                    ? new Date(invoice.sent_at).toLocaleString('en-CA')
+                    : '—'}
                 </p>
               </div>
               <div>
@@ -140,7 +155,9 @@ export default async function InvoiceDetailPage({ params }: PageProps) {
                 <p className="text-muted-foreground">Marked paid at</p>
                 <p className="font-medium">
                   {invoice.marked_as_paid_at
-                    ? new Date(invoice.marked_as_paid_at).toLocaleString('en-CA')
+                    ? new Date(invoice.marked_as_paid_at).toLocaleString(
+                        'en-CA',
+                      )
                     : '—'}
                 </p>
               </div>
@@ -178,13 +195,20 @@ export default async function InvoiceDetailPage({ params }: PageProps) {
                 {orders.map((o) => (
                   <tr key={o.id} className="border-b last:border-b-0">
                     <td className="py-2">
-                      <Link href={`/dashboard/orders/${o.id}`} className="hover:underline">
+                      <Link
+                        href={`/dashboard/orders/${o.id}`}
+                        className="hover:underline"
+                      >
                         {o.site_domain}
                       </Link>
                     </td>
-                    <td className="py-2 text-muted-foreground tabular-nums">{o.publish_date ?? '—'}</td>
                     <td className="py-2 text-muted-foreground tabular-nums">
-                      {o.billing_month ? formatBillingMonth(o.billing_month) : '—'}
+                      {o.publish_date ?? '—'}
+                    </td>
+                    <td className="py-2 text-muted-foreground tabular-nums">
+                      {o.billing_month
+                        ? formatBillingMonth(o.billing_month)
+                        : '—'}
                     </td>
                     <td className="py-2 text-right tabular-nums">
                       ${(o.price_cents / 100).toFixed(2)}

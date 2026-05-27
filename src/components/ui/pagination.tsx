@@ -11,7 +11,10 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { cn } from '@/lib/utils';
-import { DEFAULT_PAGE_SIZE, PAGE_SIZE_OPTIONS } from '@/lib/pagination';
+import {
+  DEFAULT_PAGE_SIZE,
+  PAGE_SIZE_OPTIONS,
+} from '@/lib/features/pagination';
 
 interface Props {
   total: number;
@@ -21,7 +24,10 @@ interface Props {
   className?: string;
 }
 
-function buildPageList(current: number, totalPages: number): (number | 'ellipsis')[] {
+function buildPageList(
+  current: number,
+  totalPages: number,
+): (number | 'ellipsis')[] {
   const pages: (number | 'ellipsis')[] = [];
   const window = 1; // pages on each side of current
   const first = 1;

@@ -1,13 +1,13 @@
-import { requireRole } from '@/lib/auth';
+import { requireRole } from '@/lib/features/auth';
 import { listManagers } from './actions';
 import { UserFilters } from '@/components/users/user-filters';
 import { UsersTable } from '@/components/users/users-table';
 import { InviteUserForm } from '@/components/users/invite-form';
 import { PageHeader } from '@/components/ui/page-header';
 import { Pagination } from '@/components/ui/pagination';
-import { parsePagination } from '@/lib/pagination';
+import { parsePagination } from '@/lib/features/pagination';
 import { fetchUsersList } from '@/lib/data/users';
-import type { UserRole } from '@/lib/auth';
+import type { UserRole } from '@/lib/features/auth';
 import type { Database } from '@/types/database.types';
 
 type UserStatus = Database['public']['Enums']['user_status'];

@@ -22,7 +22,7 @@ import {
   DialogTrigger,
 } from '@/components/ui/dialog';
 import { editUser } from '@/app/dashboard/users/actions';
-import type { UserRow } from '@/lib/auth';
+import type { UserRow } from '@/lib/features/auth';
 import type { EditUserInput } from '@/lib/schemas/users';
 
 interface Props {
@@ -58,6 +58,10 @@ export function EditUserDialog({ user, managers }: Props) {
 
   const selectedRole = useWatch({ control, name: 'role' });
   const managerId = useWatch({ control, name: 'manager_id' });
+
+  const managerLabels = Object.fromEntries(
+    managers.map((m) => [m.id, `${m.first_name} ${m.last_name}`]),
+  );
 
   function handleRoleChange(v: string | null) {
     if (v) setValue('role', v as EditUserInput['role']);
@@ -176,6 +180,7 @@ export function EditUserDialog({ user, managers }: Props) {
               <div className="grid gap-2">
                 <Label htmlFor="edit-manager">Manager</Label>
                 <Select
+                  items={managerLabels}
                   value={managerId ?? ''}
                   onValueChange={handleManagerChange}
                 >

@@ -1,5 +1,5 @@
 import { notFound } from 'next/navigation';
-import { requireRole } from '@/lib/auth';
+import { requireRole } from '@/lib/features/auth';
 import { AddToCartButton } from '@/components/catalog/add-to-cart-button';
 import { SiteDetailView } from '@/components/sites/site-detail-view';
 import { fetchActiveCatalogSiteById } from '@/lib/data/catalog';

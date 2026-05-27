@@ -1,5 +1,5 @@
 import { notFound } from 'next/navigation';
-import { requireRole } from '@/lib/auth';
+import { requireRole } from '@/lib/features/auth';
 import {
   fetchCategoriesPage,
   fetchCategorySiteCountMap,
@@ -8,7 +8,7 @@ import { CreateCategoryForm } from '@/components/categories/create-form';
 import { CategoriesTable } from '@/components/categories/categories-table';
 import { PageHeader } from '@/components/ui/page-header';
 import { Pagination } from '@/components/ui/pagination';
-import { parsePagination } from '@/lib/pagination';
+import { parsePagination } from '@/lib/features/pagination';
 
 export const metadata = { title: 'Categories' };
 
@@ -33,7 +33,8 @@ export default async function CategoriesPage({ searchParams }: PageProps) {
     categoriesResult.status === 'fulfilled'
       ? categoriesResult.value
       : { rows: [], total: 0 };
-  const siteCountMap = siteCountMapResult.status === 'fulfilled' ? siteCountMapResult.value : {};
+  const siteCountMap =
+    siteCountMapResult.status === 'fulfilled' ? siteCountMapResult.value : {};
 
   return (
     <div>

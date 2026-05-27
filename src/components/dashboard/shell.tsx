@@ -19,7 +19,7 @@ import {
 } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { avatarPublicUrl } from '@/lib/avatar';
+import { avatarPublicUrl } from '@/lib/features/avatar';
 import {
   Tooltip,
   TooltipContent,
@@ -33,7 +33,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import type { UserRow, UserRole } from '@/lib/auth';
+import type { UserRow, UserRole } from '@/lib/features/auth';
 
 interface NavItem {
   href: string;

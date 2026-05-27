@@ -17,9 +17,9 @@ import {
   DialogTrigger,
 } from '@/components/ui/dialog';
 import { createClient } from '@/lib/supabase/client';
-import { avatarPublicUrl } from '@/lib/avatar';
+import { avatarPublicUrl } from '@/lib/features/avatar';
 import { updateProfile } from '@/app/dashboard/profile/actions';
-import type { UserRow } from '@/lib/auth';
+import type { UserRow } from '@/lib/features/auth';
 import type { UpdateProfileInput } from '@/lib/schemas/profile';
 
 const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
@@ -153,9 +153,7 @@ export function EditProfileDialog({ user }: Props) {
               />
             </div>
             <div className="text-sm text-muted-foreground">
-              {uploading
-                ? 'Uploading…'
-                : 'JPEG, PNG, WEBP or GIF. Max 2 MB.'}
+              {uploading ? 'Uploading…' : 'JPEG, PNG, WEBP or GIF. Max 2 MB.'}
               {uploadError && (
                 <p className="mt-1 text-destructive">{uploadError}</p>
               )}

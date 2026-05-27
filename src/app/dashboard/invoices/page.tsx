@@ -1,11 +1,11 @@
 import { notFound } from 'next/navigation';
-import { requireUser } from '@/lib/auth';
-import { InvoiceFilters } from './components/invoice-filters';
-import { InvoicesTable } from './components/invoices-table';
-import { GenerateInvoicesDialog } from './components/generate-invoices-dialog';
+import { requireUser } from '@/lib/features/auth';
+import { InvoiceFilters } from '@/components/invoices/invoice-filters';
+import { InvoicesTable } from '@/components/invoices/invoices-table';
+import { GenerateInvoicesDialog } from '@/components/invoices/generate-invoices-dialog';
 import { PageHeader } from '@/components/ui/page-header';
 import { Pagination } from '@/components/ui/pagination';
-import { parsePagination } from '@/lib/pagination';
+import { parsePagination } from '@/lib/features/pagination';
 import { fetchInvoicesList } from '@/lib/data/invoices';
 import { fetchUsersByIds, fetchActiveByRole } from '@/lib/data/users';
 import type { Database } from '@/types/database.types';
@@ -20,7 +20,10 @@ type InvoiceStatus = Database['public']['Enums']['invoice_status'];
 const INVOICE_STATUSES: readonly InvoiceStatus[] = ['Draft', 'Sent', 'Paid'];
 
 function isInvoiceStatus(value: string | undefined): value is InvoiceStatus {
-  return typeof value === 'string' && (INVOICE_STATUSES as readonly string[]).includes(value);
+  return (
+    typeof value === 'string' &&
+    (INVOICE_STATUSES as readonly string[]).includes(value)
+  );
 }
 
 export default async function InvoicesPage({ searchParams }: PageProps) {
@@ -28,7 +31,9 @@ export default async function InvoicesPage({ searchParams }: PageProps) {
   if (!actor.role) notFound();
 
   const params = await searchParams;
-  const statusFilter = isInvoiceStatus(params.status) ? params.status : undefined;
+  const statusFilter = isInvoiceStatus(params.status)
+    ? params.status
+    : undefined;
   const clientFilter = params.client;
   const searchFilter = params.search?.trim() || undefined;
   const { page, pageSize } = parsePagination(params);
@@ -39,7 +44,11 @@ export default async function InvoicesPage({ searchParams }: PageProps) {
   if (!isManagerOrAdmin && !isClient) notFound();
 
   const { rows: rawList, total } = await fetchInvoicesList({
-    clientId: isClient ? actor.id : clientFilter && isManagerOrAdmin ? clientFilter : undefined,
+    clientId: isClient
+      ? actor.id
+      : clientFilter && isManagerOrAdmin
+        ? clientFilter
+        : undefined,
     status: statusFilter,
     search: isManagerOrAdmin ? searchFilter : undefined,
     excludeDisabledClients: true,
@@ -69,7 +78,9 @@ export default async function InvoicesPage({ searchParams }: PageProps) {
       <PageHeader
         title="Invoices"
         description={isClient ? 'Your invoices' : 'All client invoices'}
-        actions={actor.role === 'Admin' ? <GenerateInvoicesDialog /> : undefined}
+        actions={
+          actor.role === 'Admin' ? <GenerateInvoicesDialog /> : undefined
+        }
       />
       <div className="space-y-4">
         <InvoiceFilters clients={clients} showClientFilter={isManagerOrAdmin} />

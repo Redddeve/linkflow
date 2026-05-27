@@ -2,9 +2,9 @@
 
 import { revalidatePath } from 'next/cache';
 import { createClient } from '@/lib/supabase/server';
-import { requireRole } from '@/lib/auth';
-import { recordAudit } from '@/lib/audit';
-import { notify } from '@/lib/notify';
+import { requireRole } from '@/lib/features/auth';
+import { recordAudit } from '@/lib/features/audit';
+import { notify } from '@/lib/features/notify';
 import { AppError } from '@/lib/errors';
 import { z } from 'zod';
 import {
@@ -26,7 +26,10 @@ import {
 
 function mapForbidden(e: unknown): never {
   if (e instanceof Error && e.message.startsWith('FORBIDDEN')) {
-    throw new AppError('FORBIDDEN', 'You do not have permission to perform this action');
+    throw new AppError(
+      'FORBIDDEN',
+      'You do not have permission to perform this action',
+    );
   }
   throw e;
 }
@@ -34,19 +37,31 @@ function mapForbidden(e: unknown): never {
 // Postgres error code → AppError mapping for our RPCs.
 function mapRpcError(message: string): AppError {
   if (message.includes('forbidden')) {
-    return new AppError('FORBIDDEN', 'You do not have permission to perform this action');
+    return new AppError(
+      'FORBIDDEN',
+      'You do not have permission to perform this action',
+    );
   }
   if (message.includes('order_not_found')) {
     return new AppError('NOT_FOUND', 'Order not found');
   }
   if (message.includes('order_not_published')) {
-    return new AppError('VALIDATION', 'Order must be Published to reassign its billing month');
+    return new AppError(
+      'VALIDATION',
+      'Order must be Published to reassign its billing month',
+    );
   }
   if (message.includes('order_not_invoiced')) {
-    return new AppError('VALIDATION', 'Order is not yet attached to an invoice');
+    return new AppError(
+      'VALIDATION',
+      'Order is not yet attached to an invoice',
+    );
   }
   if (message.includes('source_invoice_not_draft')) {
-    return new AppError('VALIDATION', 'Only Draft invoices can have orders reassigned');
+    return new AppError(
+      'VALIDATION',
+      'Only Draft invoices can have orders reassigned',
+    );
   }
   return new AppError('VALIDATION', message);
 }
@@ -57,7 +72,8 @@ export async function sendInvoice(input: SendInvoiceInput): Promise<void> {
   const actor = await requireRole(['Manager', 'Admin']).catch(mapForbidden);
 
   const parsed = sendInvoiceSchema.safeParse(input);
-  if (!parsed.success) throw new AppError('VALIDATION', parsed.error.issues[0].message);
+  if (!parsed.success)
+    throw new AppError('VALIDATION', parsed.error.issues[0].message);
   const { invoiceId } = parsed.data;
 
   const supabase = await createClient();
@@ -71,7 +87,10 @@ export async function sendInvoice(input: SendInvoiceInput): Promise<void> {
 
   if (error || !invoice) throw new AppError('NOT_FOUND', 'Invoice not found');
   if (invoice.status !== 'Draft') {
-    throw new AppError('VALIDATION', `Cannot send an invoice with status "${invoice.status}"`);
+    throw new AppError(
+      'VALIDATION',
+      `Cannot send an invoice with status "${invoice.status}"`,
+    );
   }
   if (invoice.total_price_cents <= 0) {
     throw new AppError('VALIDATION', 'Cannot send an empty invoice ($0 total)');
@@ -83,7 +102,10 @@ export async function sendInvoice(input: SendInvoiceInput): Promise<void> {
     .eq('invoice_id', invoiceId);
 
   if (!orderCount || orderCount === 0) {
-    throw new AppError('VALIDATION', 'Cannot send an invoice with no attached orders');
+    throw new AppError(
+      'VALIDATION',
+      'Cannot send an invoice with no attached orders',
+    );
   }
 
   const now = new Date().toISOString();
@@ -115,11 +137,14 @@ export async function sendInvoice(input: SendInvoiceInput): Promise<void> {
 
 // ── markInvoicePaid ────────────────────────────────────────────────────────────
 
-export async function markInvoicePaid(input: MarkInvoicePaidInput): Promise<void> {
+export async function markInvoicePaid(
+  input: MarkInvoicePaidInput,
+): Promise<void> {
   const actor = await requireRole(['Admin']).catch(mapForbidden);
 
   const parsed = markInvoicePaidSchema.safeParse(input);
-  if (!parsed.success) throw new AppError('VALIDATION', parsed.error.issues[0].message);
+  if (!parsed.success)
+    throw new AppError('VALIDATION', parsed.error.issues[0].message);
   const { invoiceId } = parsed.data;
 
   const supabase = await createClient();
@@ -131,7 +156,10 @@ export async function markInvoicePaid(input: MarkInvoicePaidInput): Promise<void
 
   if (error || !invoice) throw new AppError('NOT_FOUND', 'Invoice not found');
   if (invoice.status !== 'Sent') {
-    throw new AppError('VALIDATION', `Cannot mark as paid an invoice with status "${invoice.status}"`);
+    throw new AppError(
+      'VALIDATION',
+      `Cannot mark as paid an invoice with status "${invoice.status}"`,
+    );
   }
 
   const now = new Date().toISOString();
@@ -139,7 +167,11 @@ export async function markInvoicePaid(input: MarkInvoicePaidInput): Promise<void
   // transition if our role check above ever drifts out of sync with the DB.
   const { error: updateError } = await supabase
     .from('invoices')
-    .update({ status: 'Paid', marked_as_paid_at: now, marked_as_paid_by_id: actor.id })
+    .update({
+      status: 'Paid',
+      marked_as_paid_at: now,
+      marked_as_paid_by_id: actor.id,
+    })
     .eq('id', invoiceId)
     .eq('status', 'Sent');
 
@@ -170,11 +202,14 @@ interface ReassignResult {
   targets_touched: string[];
 }
 
-export async function reassignOrders(input: ReassignOrdersInput): Promise<ReassignResult> {
+export async function reassignOrders(
+  input: ReassignOrdersInput,
+): Promise<ReassignResult> {
   await requireRole(['Manager', 'Admin']).catch(mapForbidden);
 
   const parsed = reassignOrdersSchema.safeParse(input);
-  if (!parsed.success) throw new AppError('VALIDATION', parsed.error.issues[0].message);
+  if (!parsed.success)
+    throw new AppError('VALIDATION', parsed.error.issues[0].message);
   const { changes } = parsed.data;
 
   if (changes.length === 0) {
@@ -191,7 +226,10 @@ export async function reassignOrders(input: ReassignOrdersInput): Promise<Reassi
 
   if (error) throw mapRpcError(error.message);
 
-  const result = (data ?? { sources_touched: [], targets_touched: [] }) as unknown as ReassignResult;
+  const result = (data ?? {
+    sources_touched: [],
+    targets_touched: [],
+  }) as unknown as ReassignResult;
 
   await recordAudit({
     entityType: 'invoice',
@@ -220,9 +258,15 @@ export async function reassignOrderBillingMonth(
   input: ReassignOrderBillingMonthInput,
 ): Promise<void> {
   const parsed = reassignOrderBillingMonthSchema.safeParse(input);
-  if (!parsed.success) throw new AppError('VALIDATION', parsed.error.issues[0].message);
+  if (!parsed.success)
+    throw new AppError('VALIDATION', parsed.error.issues[0].message);
   await reassignOrders({
-    changes: [{ orderId: parsed.data.orderId, billing_month: parsed.data.billing_month }],
+    changes: [
+      {
+        orderId: parsed.data.orderId,
+        billing_month: parsed.data.billing_month,
+      },
+    ],
   });
 }
 
@@ -244,7 +288,8 @@ export async function generateInvoicesForMonth(
   await requireRole(['Admin']).catch(mapForbidden);
 
   const parsed = generateInvoicesSchema.safeParse(input);
-  if (!parsed.success) throw new AppError('VALIDATION', parsed.error.issues[0].message);
+  if (!parsed.success)
+    throw new AppError('VALIDATION', parsed.error.issues[0].message);
   const { billing_month: billingMonth } = parsed.data;
 
   const supabase = await createClient();
@@ -254,7 +299,9 @@ export async function generateInvoicesForMonth(
 
   if (error) throw mapRpcError(error.message);
 
-  const result = rpcGenerateResultSchema.parse(data ?? { created: 0, updated: 0 });
+  const result = rpcGenerateResultSchema.parse(
+    data ?? { created: 0, updated: 0 },
+  );
 
   if (result.created > 0 || result.updated > 0) {
     await recordAudit({
@@ -319,7 +366,8 @@ export async function addOrdersToInvoice(
   await requireRole(['Manager', 'Admin']).catch(mapForbidden);
 
   const parsed = addOrdersToInvoiceSchema.safeParse(input);
-  if (!parsed.success) throw new AppError('VALIDATION', parsed.error.issues[0].message);
+  if (!parsed.success)
+    throw new AppError('VALIDATION', parsed.error.issues[0].message);
   const { invoiceId, orderIds } = parsed.data;
 
   const supabase = await createClient();
@@ -331,7 +379,10 @@ export async function addOrdersToInvoice(
     .single();
   if (invErr || !invoice) throw new AppError('NOT_FOUND', 'Invoice not found');
   if (invoice.status !== 'Draft') {
-    throw new AppError('VALIDATION', 'Orders can only be added to a Draft invoice');
+    throw new AppError(
+      'VALIDATION',
+      'Orders can only be added to a Draft invoice',
+    );
   }
 
   // Only attach orders that match the invoice's client + billing_month, are
@@ -381,7 +432,8 @@ export async function removeOrdersFromInvoice(
   await requireRole(['Manager', 'Admin']).catch(mapForbidden);
 
   const parsed = removeOrdersFromInvoiceSchema.safeParse(input);
-  if (!parsed.success) throw new AppError('VALIDATION', parsed.error.issues[0].message);
+  if (!parsed.success)
+    throw new AppError('VALIDATION', parsed.error.issues[0].message);
   const { invoiceId, orderIds } = parsed.data;
 
   const supabase = await createClient();
@@ -393,7 +445,10 @@ export async function removeOrdersFromInvoice(
     .single();
   if (invErr || !invoice) throw new AppError('NOT_FOUND', 'Invoice not found');
   if (invoice.status !== 'Draft') {
-    throw new AppError('VALIDATION', 'Orders can only be removed from a Draft invoice');
+    throw new AppError(
+      'VALIDATION',
+      'Orders can only be removed from a Draft invoice',
+    );
   }
 
   // Only unlink orders actually attached to this invoice. Keep billing_month
@@ -408,7 +463,10 @@ export async function removeOrdersFromInvoice(
 
   const removedIds = (updated ?? []).map((o) => o.id);
   if (removedIds.length === 0) {
-    throw new AppError('VALIDATION', 'No matching orders were attached to this invoice');
+    throw new AppError(
+      'VALIDATION',
+      'No matching orders were attached to this invoice',
+    );
   }
 
   const total = await recomputeInvoiceTotal(supabase, invoiceId);

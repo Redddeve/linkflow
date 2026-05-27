@@ -1,17 +1,21 @@
 import { notFound } from 'next/navigation';
 import { cookies } from 'next/headers';
-import { requireUser } from '@/lib/auth';
-import { OrderFilters } from './components/order-filters';
-import { OrdersTable } from './components/orders-table';
-import { OrdersKanban } from './components/orders-kanban';
-import { ViewToggle } from './components/view-toggle';
-import { KANBAN_COLUMNS } from './components/kanban-columns';
-import { toOrderRow } from './components/order-row-mapper';
+import { requireUser } from '@/lib/features/auth';
+import { OrderFilters } from '@/components/orders/order-filters';
+import { OrdersTable } from '@/components/orders/orders-table';
+import { OrdersKanban } from '@/components/orders/orders-kanban';
+import { ViewToggle } from '@/components/orders/view-toggle';
+import { KANBAN_COLUMNS } from '@/components/orders/kanban-columns';
+import { toOrderRow } from '@/components/orders/order-row-mapper';
 import { PageHeader } from '@/components/ui/page-header';
 import { Pagination } from '@/components/ui/pagination';
-import { parsePagination } from '@/lib/pagination';
+import { parsePagination } from '@/lib/features/pagination';
 import { fetchOrdersList } from '@/lib/data/orders';
-import { fetchUsersByIds, fetchActiveByRole } from '@/lib/data/users';
+import {
+  fetchUsersByIds,
+  fetchActiveByRole,
+  fetchActiveClientsForManager,
+} from '@/lib/data/users';
 import type { Database } from '@/types/database.types';
 
 interface PageProps {
@@ -31,11 +35,13 @@ export default async function OrdersPage({ searchParams }: PageProps) {
   const params = await searchParams;
   const statusFilter = params.status as OrderStatus | undefined;
   const copywriterFilter = params.copywriter;
+  const clientFilter = params.client;
   const searchFilter = params.search?.trim() || undefined;
   // URL wins; fall back to the user's saved preference cookie; default to list.
   const cookieView = (await cookies()).get('orders_view')?.value;
   const view =
-    params.view ?? (cookieView === 'kanban' || cookieView === 'list' ? cookieView : 'list');
+    params.view ??
+    (cookieView === 'kanban' || cookieView === 'list' ? cookieView : 'list');
   const { page, pageSize } = parsePagination(params);
 
   const isManagerOrAdmin = actor.role === 'Manager' || actor.role === 'Admin';
@@ -47,10 +53,24 @@ export default async function OrdersPage({ searchParams }: PageProps) {
 
   const checkedOut = params.checked_out ? Number(params.checked_out) : null;
 
-  // Copywriters list for filter (manager/admin only)
-  const copywriters = isManagerOrAdmin
-    ? await fetchActiveByRole('Copywriter')
-    : [];
+  // Copywriters & clients lists for filters (manager/admin only)
+  const [copywriters, clients] = isManagerOrAdmin
+    ? await Promise.all([
+        fetchActiveByRole('Copywriter'),
+        actor.role === 'Admin'
+          ? fetchActiveByRole('Client')
+          : fetchActiveClientsForManager(actor.id),
+      ])
+    : [[], []];
+
+  // For managers, restrict the client filter to their own clients to prevent
+  // URL-tampered filtering across other managers' clients.
+  const effectiveClientFilter =
+    clientFilter &&
+    isManagerOrAdmin &&
+    clients.some((c) => c.id === clientFilter)
+      ? clientFilter
+      : undefined;
 
   if (showKanban) {
     // Fan out one query per column; skip the query for columns that don't
@@ -61,7 +81,7 @@ export default async function OrdersPage({ searchParams }: PageProps) {
           return Promise.resolve({ rows: [], total: 0 });
         }
         return fetchOrdersList({
-          createdById: isClient ? actor.id : undefined,
+          createdById: isClient ? actor.id : effectiveClientFilter,
           copywriterId:
             copywriterFilter && isManagerOrAdmin ? copywriterFilter : undefined,
           unassigned: params.assignee === 'unassigned' && isManagerOrAdmin,
@@ -79,7 +99,9 @@ export default async function OrdersPage({ searchParams }: PageProps) {
         columnResults.flatMap(({ rows }) =>
           rows.flatMap(
             (o) =>
-              [o.copywriter_id, o.manager_id, o.created_by_id].filter(Boolean) as string[],
+              [o.copywriter_id, o.manager_id, o.created_by_id].filter(
+                Boolean,
+              ) as string[],
           ),
         ),
       ),
@@ -107,27 +129,33 @@ export default async function OrdersPage({ searchParams }: PageProps) {
 
         {checkedOut !== null && (
           <div className="mb-4 rounded-lg border border-(--st-live-fg)/20 bg-(--st-live-bg) px-3 py-2 text-sm font-medium text-(--st-live-fg)">
-            {checkedOut} order{checkedOut !== 1 ? 's' : ''} created successfully.
+            {checkedOut} order{checkedOut !== 1 ? 's' : ''} created
+            successfully.
           </div>
         )}
 
         <div className="flex flex-1 flex-col gap-4 min-h-0">
           <OrderFilters
             copywriters={copywriters}
+            clients={clients}
             showCopywriterFilter={isManagerOrAdmin}
+            showClientFilter={isManagerOrAdmin}
             showStatusFilter={false}
           />
 
           <div className="flex-1 min-h-0">
             <OrdersKanban
-              key={`${searchFilter ?? ''}|${copywriterFilter ?? ''}|${params.assignee ?? ''}`}
+              key={`${searchFilter ?? ''}|${copywriterFilter ?? ''}|${effectiveClientFilter ?? ''}|${params.assignee ?? ''}`}
               initialColumns={initialColumns}
               filters={{
                 copywriterId: copywriterFilter,
+                createdById: effectiveClientFilter,
                 search: searchFilter,
-                unassigned: params.assignee === 'unassigned' && isManagerOrAdmin,
+                unassigned:
+                  params.assignee === 'unassigned' && isManagerOrAdmin,
               }}
               pageSize={KANBAN_PAGE_SIZE}
+              viewerRole={actor.role}
             />
           </div>
         </div>
@@ -136,7 +164,7 @@ export default async function OrdersPage({ searchParams }: PageProps) {
   }
 
   const { rows: rawList, total } = await fetchOrdersList({
-    createdById: isClient ? actor.id : undefined,
+    createdById: isClient ? actor.id : effectiveClientFilter,
     copywriterId: isCopywriter
       ? actor.id
       : copywriterFilter && isManagerOrAdmin
@@ -155,7 +183,9 @@ export default async function OrdersPage({ searchParams }: PageProps) {
     ...new Set(
       rawList.flatMap(
         (o) =>
-          [o.copywriter_id, o.manager_id, o.created_by_id].filter(Boolean) as string[],
+          [o.copywriter_id, o.manager_id, o.created_by_id].filter(
+            Boolean,
+          ) as string[],
       ),
     ),
   ];
@@ -187,7 +217,9 @@ export default async function OrdersPage({ searchParams }: PageProps) {
       <div className="space-y-4">
         <OrderFilters
           copywriters={copywriters}
+          clients={clients}
           showCopywriterFilter={isManagerOrAdmin}
+          showClientFilter={isManagerOrAdmin}
         />
 
         <OrdersTable

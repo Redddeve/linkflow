@@ -32,7 +32,7 @@ import {
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { TableEmptyState } from '@/components/ui/table-empty-state';
-import type { UserRow } from '@/lib/auth';
+import type { UserRow } from '@/lib/features/auth';
 import {
   disableUser,
   activateUser,
@@ -40,7 +40,7 @@ import {
   type DisableResult,
   type BlockingOrder,
 } from '@/app/dashboard/users/actions';
-import { avatarPublicUrl } from '@/lib/avatar';
+import { avatarPublicUrl } from '@/lib/features/avatar';
 
 function userInitials(u: UserRow) {
   const f = u.first_name?.trim() ?? '';

@@ -1,6 +1,6 @@
 import { createClient } from '@/lib/supabase/server';
-import type { BillingMonth } from '@/lib/billing';
-import { commissionCents } from '@/lib/commission';
+import type { BillingMonth } from '@/lib/features/billing';
+import { commissionCents } from '@/lib/features/commission';
 
 export interface EarningsFilters {
   month: BillingMonth;
@@ -48,7 +48,9 @@ function extractSourcerId(row: OrdersJoinedRow): string | null {
   return sites.sourcer_id;
 }
 
-async function fetchPayoutRows(filters: EarningsFilters): Promise<EarningsListRow[]> {
+async function fetchPayoutRows(
+  filters: EarningsFilters,
+): Promise<EarningsListRow[]> {
   const supabase = await createClient();
   let query = supabase
     .from('orders')
@@ -120,11 +122,15 @@ export async function sumUnpaidPayouts(): Promise<number> {
   const supabase = await createClient();
   const { data } = await supabase
     .from('orders')
-    .select('sourcer_payout_cents, sites!inner(sourcer_id), invoices!inner(status)')
+    .select(
+      'sourcer_payout_cents, sites!inner(sourcer_id), invoices!inner(status)',
+    )
     .is('sourcer_paid_at', null)
     .not('sourcer_payout_cents', 'is', null)
     .not('sites.sourcer_id', 'is', null)
     .eq('invoices.status', 'Paid');
-  const rows = (data ?? []) as unknown as { sourcer_payout_cents: number | null }[];
+  const rows = (data ?? []) as unknown as {
+    sourcer_payout_cents: number | null;
+  }[];
   return rows.reduce((sum, r) => sum + (r.sourcer_payout_cents ?? 0), 0);
 }

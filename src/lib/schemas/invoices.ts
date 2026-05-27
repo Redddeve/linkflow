@@ -1,9 +1,12 @@
 import { z } from 'zod';
-import { isValidBillingMonth } from '@/lib/billing';
+import { isValidBillingMonth } from '@/lib/features/billing';
 
 const billingMonth = z
   .string()
-  .refine(isValidBillingMonth, 'Billing month must be the first day of a calendar month (YYYY-MM-01)');
+  .refine(
+    isValidBillingMonth,
+    'Billing month must be the first day of a calendar month (YYYY-MM-01)',
+  );
 
 export const sendInvoiceSchema = z.object({
   invoiceId: z.uuid(),
@@ -46,8 +49,12 @@ export const removeOrdersFromInvoiceSchema = z.object({
 
 export type SendInvoiceInput = z.input<typeof sendInvoiceSchema>;
 export type MarkInvoicePaidInput = z.input<typeof markInvoicePaidSchema>;
-export type ReassignOrderBillingMonthInput = z.input<typeof reassignOrderBillingMonthSchema>;
+export type ReassignOrderBillingMonthInput = z.input<
+  typeof reassignOrderBillingMonthSchema
+>;
 export type ReassignOrdersInput = z.input<typeof reassignOrdersSchema>;
 export type GenerateInvoicesInput = z.input<typeof generateInvoicesSchema>;
 export type AddOrdersToInvoiceInput = z.input<typeof addOrdersToInvoiceSchema>;
-export type RemoveOrdersFromInvoiceInput = z.input<typeof removeOrdersFromInvoiceSchema>;
+export type RemoveOrdersFromInvoiceInput = z.input<
+  typeof removeOrdersFromInvoiceSchema
+>;

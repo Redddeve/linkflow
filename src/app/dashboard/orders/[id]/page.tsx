@@ -1,22 +1,23 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
-import { requireUser } from '@/lib/auth';
+import { requireUser } from '@/lib/features/auth';
 import { createClient } from '@/lib/supabase/server';
 import { fetchOrderById, fetchOrderComments } from '@/lib/data/orders';
+import { fetchChatParticipants } from '@/lib/data/chat';
 import { fetchUsersByIds } from '@/lib/data/users';
 import { buttonVariants } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { OrderStatusBadge } from '../components/order-status-badge';
-import { CancelOrderDialog } from '../components/cancel-order-dialog';
-import { EditPublishDateDialog } from '../components/edit-publish-date-dialog';
-import { AssignCopywriterDialog } from '../components/assign-copywriter-dialog';
-import { ApproveOrderDialog } from '../components/approve-order-dialog';
-import { RejectOrderDialog } from '../components/reject-order-dialog';
-import { CommentsTimeline } from '../components/comments-timeline';
-import { AddCommentForm } from '../components/add-comment-form';
+import { OrderStatusBadge } from '@/components/orders/order-status-badge';
+import { CancelOrderDialog } from '@/components/orders/cancel-order-dialog';
+import { EditPublishDateDialog } from '@/components/orders/edit-publish-date-dialog';
+import { AssignCopywriterDialog } from '@/components/orders/assign-copywriter-dialog';
+import { ApproveOrderDialog } from '@/components/orders/approve-order-dialog';
+import { RejectOrderDialog } from '@/components/orders/reject-order-dialog';
+import { CommentsTimeline } from '@/components/orders/comments-timeline';
+import { AddCommentForm } from '@/components/orders/add-comment-form';
 import { listCopywriters } from '../actions';
 import { BackLink } from '@/components/ui/back-link';
-import { StartChatButton } from '../components/start-chat-button';
+import { StartChatButton } from '@/components/orders/start-chat-button';
 
 interface PageProps {
   params: Promise<{ id: string }>;
@@ -86,9 +87,8 @@ export default async function OrderDetailPage({ params }: PageProps) {
     order.copywriter_id === actor.id &&
     (order.status === 'In Progress' || order.status === 'Needs changes');
   const canApprove =
-    isClient &&
     order.status === 'Content Sent' &&
-    order.created_by_id === actor.id;
+    (isManagerOrAdmin || (isClient && order.created_by_id === actor.id));
   const canReject = canApprove;
   const canPublish = isManagerOrAdmin && order.status === 'Content Approved';
   const canComment =
@@ -96,12 +96,17 @@ export default async function OrderDetailPage({ params }: PageProps) {
     (isClient && order.created_by_id === actor.id) ||
     (isCopywriter && order.copywriter_id === actor.id);
   const hasChatCounterpart = Boolean(order.copywriter_id || order.manager_id);
-  const canStartChat =
-    !!order.chat_id ||
-    ((isManagerOrAdmin ||
-      (isClient && order.created_by_id === actor.id) ||
-      (isCopywriter && order.copywriter_id === actor.id)) &&
-      hasChatCounterpart);
+  const isChatParticipant = order.chat_id
+    ? (await fetchChatParticipants(order.chat_id)).some(
+        (p) => p.id === actor.id,
+      )
+    : false;
+  const canStartChat = order.chat_id
+    ? isChatParticipant
+    : (isManagerOrAdmin ||
+        (isClient && order.created_by_id === actor.id) ||
+        (isCopywriter && order.copywriter_id === actor.id)) &&
+      hasChatCounterpart;
 
   const metrics: { label: string; value: React.ReactNode }[] = [];
   if (!isSourcer) {
@@ -313,18 +318,25 @@ export default async function OrderDetailPage({ params }: PageProps) {
             </Card>
           )}
 
-          {order.content_body && (isManagerOrAdmin || isCopywriter) && (
-            <Card>
-              <CardHeader>
-                <CardTitle>Content</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-sm whitespace-pre-wrap font-mono leading-relaxed">
-                  {order.content_body}
-                </p>
-              </CardContent>
-            </Card>
-          )}
+          {order.content_body &&
+            (isManagerOrAdmin ||
+              isCopywriter ||
+              (isClient &&
+                (order.status === 'Content Sent' ||
+                  order.status === 'Content Approved' ||
+                  order.status === 'Published' ||
+                  order.status === 'Needs changes'))) && (
+              <Card>
+                <CardHeader>
+                  <CardTitle>Content</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-sm whitespace-pre-wrap font-mono leading-relaxed">
+                    {order.content_body}
+                  </p>
+                </CardContent>
+              </Card>
+            )}
 
           <Card>
             <CardHeader>

@@ -2,11 +2,11 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { buttonVariants } from '@/components/ui/button';
 import { PageHeader } from '@/components/ui/page-header';
-import { requireRole } from '@/lib/auth';
+import { requireRole } from '@/lib/features/auth';
 import { SitesFilters } from '@/components/sites/sites-filters';
 import { SitesTable } from '@/components/sites/sites-table';
 import { Pagination } from '@/components/ui/pagination';
-import { parsePagination } from '@/lib/pagination';
+import { parsePagination } from '@/lib/features/pagination';
 import { fetchSitesList } from '@/lib/data/sites';
 import { fetchCategories } from '@/lib/data/categories';
 import type { Database } from '@/types/database.types';
@@ -20,14 +20,29 @@ interface PageProps {
 export const metadata = { title: 'Sites' };
 
 export default async function SitesPage({ searchParams }: PageProps) {
-  const actor = await requireRole(['Sourcer', 'Manager', 'Admin']).catch(() => notFound());
+  const actor = await requireRole(['Sourcer', 'Manager', 'Admin']).catch(() =>
+    notFound(),
+  );
 
   const params = await searchParams;
-  const status = typeof params?.status === 'string' ? (params.status as SiteStatus) : undefined;
-  const category = typeof params?.category === 'string' ? params.category : undefined;
-  const priceMin = typeof params?.price_min === 'string' ? Number(params.price_min) * 100 : undefined;
-  const priceMax = typeof params?.price_max === 'string' ? Number(params.price_max) * 100 : undefined;
-  const search = typeof params?.search === 'string' ? params.search.trim() || undefined : undefined;
+  const status =
+    typeof params?.status === 'string'
+      ? (params.status as SiteStatus)
+      : undefined;
+  const category =
+    typeof params?.category === 'string' ? params.category : undefined;
+  const priceMin =
+    typeof params?.price_min === 'string'
+      ? Number(params.price_min) * 100
+      : undefined;
+  const priceMax =
+    typeof params?.price_max === 'string'
+      ? Number(params.price_max) * 100
+      : undefined;
+  const search =
+    typeof params?.search === 'string'
+      ? params.search.trim() || undefined
+      : undefined;
   const { page, pageSize } = parsePagination(params);
 
   const [{ rows: sites, total }, categories] = await Promise.all([
@@ -50,7 +65,11 @@ export default async function SitesPage({ searchParams }: PageProps) {
     <div>
       <PageHeader
         title={actor.role === 'Sourcer' ? 'My Sites' : 'Sites'}
-        description={actor.role === 'Sourcer' ? 'Sites you have submitted' : 'All sites in the platform'}
+        description={
+          actor.role === 'Sourcer'
+            ? 'Sites you have submitted'
+            : 'All sites in the platform'
+        }
         actions={
           canCreate && (
             <Link href="/dashboard/sites/new" className={buttonVariants()}>
@@ -61,7 +80,9 @@ export default async function SitesPage({ searchParams }: PageProps) {
       />
       <div className="space-y-4">
         <SitesFilters categories={categories} />
-        <SitesTable sites={sites as Parameters<typeof SitesTable>[0]['sites']} />
+        <SitesTable
+          sites={sites as Parameters<typeof SitesTable>[0]['sites']}
+        />
         <Pagination total={total} page={page} pageSize={pageSize} />
       </div>
     </div>

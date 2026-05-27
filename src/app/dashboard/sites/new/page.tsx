@@ -1,5 +1,5 @@
 import { notFound } from 'next/navigation';
-import { requireRole } from '@/lib/auth';
+import { requireRole } from '@/lib/features/auth';
 import { SiteForm } from '@/components/sites/site-form';
 import { fetchCategories } from '@/lib/data/categories';
 
@@ -14,13 +14,11 @@ export default async function NewSitePage() {
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-semibold">Add site</h1>
-        <p className="text-sm text-muted-foreground">Submit a new site for review</p>
+        <p className="text-sm text-muted-foreground">
+          Submit a new site for review
+        </p>
       </div>
-      <SiteForm
-        mode="create"
-        categories={categories}
-        actorRole={actor.role!}
-      />
+      <SiteForm mode="create" categories={categories} actorRole={actor.role!} />
     </div>
   );
 }

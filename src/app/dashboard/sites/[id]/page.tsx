@@ -1,6 +1,6 @@
 import { notFound } from 'next/navigation';
 import { Badge } from '@/components/ui/badge';
-import { requireRole } from '@/lib/auth';
+import { requireRole } from '@/lib/features/auth';
 import { StatusActions } from '@/components/sites/status-actions';
 import { EditSiteDialog } from '@/components/sites/edit-dialog';
 import { SiteDetailView } from '@/components/sites/site-detail-view';
@@ -43,7 +43,8 @@ export default async function SiteDetailPage({ params }: PageProps) {
 
   const isAdmin = actor.role === 'Admin';
   const showSourcerFields = actor.role === 'Admin' || actor.role === 'Sourcer';
-  const categoryName = (site.categories as { name: string } | null)?.name ?? null;
+  const categoryName =
+    (site.categories as { name: string } | null)?.name ?? null;
 
   return (
     <SiteDetailView
@@ -68,7 +69,9 @@ export default async function SiteDetailPage({ params }: PageProps) {
         sourcer_payout_cents: site.sourcer_payout_cents,
         created_at: site.created_at,
       }}
-      statusBadge={<Badge variant={statusVariant(site.status)}>{site.status}</Badge>}
+      statusBadge={
+        <Badge variant={statusVariant(site.status)}>{site.status}</Badge>
+      }
       actions={
         canEdit ? (
           <EditSiteDialog
@@ -96,7 +99,9 @@ export default async function SiteDetailPage({ params }: PageProps) {
         ) : undefined
       }
       beforeMetrics={
-        isAdmin ? <StatusActions siteId={id} currentStatus={site.status} /> : undefined
+        isAdmin ? (
+          <StatusActions siteId={id} currentStatus={site.status} />
+        ) : undefined
       }
       showSourcerDetails={showSourcerFields}
     />

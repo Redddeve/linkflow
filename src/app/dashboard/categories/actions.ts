@@ -1,8 +1,8 @@
 'use server';
 
 import { createClient } from '@/lib/supabase/server';
-import { requireRole } from '@/lib/auth';
-import { recordAudit } from '@/lib/audit';
+import { requireRole } from '@/lib/features/auth';
+import { recordAudit } from '@/lib/features/audit';
 import { AppError } from '@/lib/errors';
 import {
   createCategorySchema,
@@ -13,16 +13,22 @@ import {
 
 function mapForbidden(e: unknown): never {
   if (e instanceof Error && e.message.startsWith('FORBIDDEN')) {
-    throw new AppError('FORBIDDEN', 'You do not have permission to perform this action');
+    throw new AppError(
+      'FORBIDDEN',
+      'You do not have permission to perform this action',
+    );
   }
   throw e;
 }
 
-export async function createCategory(input: CreateCategoryInput): Promise<{ categoryId: string }> {
+export async function createCategory(
+  input: CreateCategoryInput,
+): Promise<{ categoryId: string }> {
   await requireRole(['Admin']).catch(mapForbidden);
 
   const parsed = createCategorySchema.safeParse(input);
-  if (!parsed.success) throw new AppError('VALIDATION', parsed.error.issues[0].message);
+  if (!parsed.success)
+    throw new AppError('VALIDATION', parsed.error.issues[0].message);
 
   const supabase = await createClient();
 
@@ -32,7 +38,8 @@ export async function createCategory(input: CreateCategoryInput): Promise<{ cate
     .ilike('name', parsed.data.name)
     .maybeSingle();
 
-  if (existing) throw new AppError('CONFLICT', 'A category with that name already exists');
+  if (existing)
+    throw new AppError('CONFLICT', 'A category with that name already exists');
 
   const { data: actor } = await (await createClient()).auth.getClaims();
   const actorId = actor?.claims?.sub ?? '';
@@ -43,7 +50,8 @@ export async function createCategory(input: CreateCategoryInput): Promise<{ cate
     .select('id')
     .single();
 
-  if (error || !category) throw new Error(error?.message ?? 'Failed to create category');
+  if (error || !category)
+    throw new Error(error?.message ?? 'Failed to create category');
 
   await recordAudit({
     entityType: 'site',
@@ -55,11 +63,15 @@ export async function createCategory(input: CreateCategoryInput): Promise<{ cate
   return { categoryId: category.id };
 }
 
-export async function editCategory(id: string, input: EditCategoryInput): Promise<void> {
+export async function editCategory(
+  id: string,
+  input: EditCategoryInput,
+): Promise<void> {
   await requireRole(['Admin']).catch(mapForbidden);
 
   const parsed = editCategorySchema.safeParse(input);
-  if (!parsed.success) throw new AppError('VALIDATION', parsed.error.issues[0].message);
+  if (!parsed.success)
+    throw new AppError('VALIDATION', parsed.error.issues[0].message);
 
   const supabase = await createClient();
 
@@ -69,7 +81,8 @@ export async function editCategory(id: string, input: EditCategoryInput): Promis
     .eq('id', id)
     .single();
 
-  if (fetchError || !current) throw new AppError('NOT_FOUND', 'Category not found');
+  if (fetchError || !current)
+    throw new AppError('NOT_FOUND', 'Category not found');
 
   if (parsed.data.name.toLowerCase() !== current.name.toLowerCase()) {
     const { data: existing } = await supabase
@@ -79,7 +92,11 @@ export async function editCategory(id: string, input: EditCategoryInput): Promis
       .neq('id', id)
       .maybeSingle();
 
-    if (existing) throw new AppError('CONFLICT', 'A category with that name already exists');
+    if (existing)
+      throw new AppError(
+        'CONFLICT',
+        'A category with that name already exists',
+      );
   }
 
   const { error: updateError } = await supabase
@@ -109,7 +126,8 @@ export async function deleteCategory(id: string): Promise<void> {
     .eq('id', id)
     .single();
 
-  if (fetchError || !current) throw new AppError('NOT_FOUND', 'Category not found');
+  if (fetchError || !current)
+    throw new AppError('NOT_FOUND', 'Category not found');
 
   const { count } = await supabase
     .from('sites')
@@ -117,7 +135,10 @@ export async function deleteCategory(id: string): Promise<void> {
     .eq('category_id', id);
 
   if (count && count > 0)
-    throw new AppError('CONFLICT', `Cannot delete: ${count} site${count === 1 ? '' : 's'} use this category`);
+    throw new AppError(
+      'CONFLICT',
+      `Cannot delete: ${count} site${count === 1 ? '' : 's'} use this category`,
+    );
 
   const { error: deleteError } = await supabase
     .from('categories')

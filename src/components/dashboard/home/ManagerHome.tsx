@@ -3,7 +3,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { StatCard } from './stat-card';
 import { DashboardHeader, SectionHeading } from './dashboard-header';
-import type { UserRow } from '@/lib/auth';
+import type { UserRow } from '@/lib/features/auth';
 import type { Database } from '@/types/database.types';
 import {
   countUnassignedOrders,
@@ -22,13 +22,14 @@ const ACTIVE_NOT_DONE: OrderStatus[] = [
 ];
 
 export async function ManagerHome({ user }: { user: UserRow }) {
-  const [unassigned, inProgress, needsChanges, awaitingPub, recent] = await Promise.all([
-    countUnassignedOrders(ACTIVE_NOT_DONE),
-    countOrdersByStatus('In Progress'),
-    countOrdersByStatus('Needs changes'),
-    countOrdersByStatus('Content Approved'),
-    fetchManagerRecentActive(ACTIVE_NOT_DONE, 5),
-  ]);
+  const [unassigned, inProgress, needsChanges, awaitingPub, recent] =
+    await Promise.all([
+      countUnassignedOrders(ACTIVE_NOT_DONE),
+      countOrdersByStatus('In Progress'),
+      countOrdersByStatus('Needs changes'),
+      countOrdersByStatus('Content Approved'),
+      fetchManagerRecentActive(ACTIVE_NOT_DONE, 5),
+    ]);
 
   return (
     <div className="space-y-6">
@@ -63,7 +64,10 @@ export async function ManagerHome({ user }: { user: UserRow }) {
       <Card>
         <CardContent className="p-0">
           <div className="flex items-center justify-between px-4 py-3.5">
-            <SectionHeading title="Recent active orders" description="Last 5 created" />
+            <SectionHeading
+              title="Recent active orders"
+              description="Last 5 created"
+            />
             <Link
               href="/dashboard/orders?view=kanban"
               className="text-sm font-medium text-primary hover:underline"
@@ -72,25 +76,28 @@ export async function ManagerHome({ user }: { user: UserRow }) {
             </Link>
           </div>
           {recent.length === 0 ? (
-            <div className="px-4 pb-4 text-sm text-muted-foreground">No active orders.</div>
+            <div className="px-4 pb-4 text-sm text-muted-foreground">
+              No active orders.
+            </div>
           ) : (
             <ul className="divide-y border-t border-border">
               {recent.map((o) => (
-                <li
-                  key={o.id}
-                  className="flex items-center justify-between gap-3 px-4 py-3 transition-colors hover:bg-muted/60"
-                >
+                <li key={o.id}>
                   <Link
                     href={`/dashboard/orders/${o.id}`}
-                    className="text-sm font-medium hover:text-primary"
+                    className="flex items-center justify-between gap-3 px-4 py-3 transition-colors hover:bg-muted/60"
                   >
-                    {o.site_domain}
+                    <span className="text-sm font-medium">{o.site_domain}</span>
+                    <span className="flex items-center gap-2 text-xs text-muted-foreground">
+                      {o.publish_date && (
+                        <span className="tabular-nums">{o.publish_date}</span>
+                      )}
+                      <Badge variant="outline">{o.status}</Badge>
+                      {!o.copywriter_id && (
+                        <Badge variant="warning">Unassigned</Badge>
+                      )}
+                    </span>
                   </Link>
-                  <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                    {o.publish_date && <span className="tabular-nums">{o.publish_date}</span>}
-                    <Badge variant="outline">{o.status}</Badge>
-                    {!o.copywriter_id && <Badge variant="warning">Unassigned</Badge>}
-                  </div>
                 </li>
               ))}
             </ul>

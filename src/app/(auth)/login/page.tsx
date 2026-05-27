@@ -15,6 +15,7 @@ import { Label } from '@/components/ui/label';
 import { Constants } from '@/types/database.types';
 import Image from 'next/image';
 import Link from 'next/link';
+import { Loader2 } from 'lucide-react';
 import { loginWithPassword } from './actions';
 
 type UserRole = (typeof Constants.public.Enums.user_role)[number];
@@ -188,6 +189,9 @@ export default function LoginForm() {
                   className="w-full"
                   disabled={isSubmitting}
                 >
+                  {isSubmitting && (
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  )}
                   {isSubmitting ? 'Signing in…' : 'Sign in'}
                 </Button>
               </form>

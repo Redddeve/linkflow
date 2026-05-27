@@ -2,7 +2,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import Link from 'next/link';
 import { StatCard } from './stat-card';
 import { DashboardHeader } from './dashboard-header';
-import type { UserRow } from '@/lib/auth';
+import type { UserRow } from '@/lib/features/auth';
 import { countSitesByStatus } from '@/lib/data/sites';
 import { countUsersByStatus } from '@/lib/data/users';
 import { countInvoicesByStatus } from '@/lib/data/invoices';

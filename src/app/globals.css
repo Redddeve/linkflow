@@ -58,6 +58,21 @@
   --st-rejected-bg: #fef2f2;
   --st-rejected-fg: #b91c1c;
 
+  /* Kanban column tints (per status) */
+  --kc-in-progress: #fafbfe;
+  --kc-content-sent: #fffdf5;
+  --kc-needs-changes: #faf7ff;
+  --kc-content-approved: #f5fff9;
+  --kc-published: #e5fbe9;
+  --kc-canceled: #fbf2f2;
+
+  /* Kanban badge backgrounds (per status) */
+  --kb-content-sent: #fde7c2;
+  --kb-needs-changes: #e6d7ff;
+  --kb-content-approved: #d6f5df;
+  --kb-published: #c8efd2;
+  --kb-canceled: #f4dcdc;
+
   /* Spacing base: 4px grid */
   --radius: 8px;
   --radius-sm: 6px;

@@ -1,8 +1,8 @@
 import { StatCard } from './stat-card';
 import { DashboardHeader, SectionHeading } from './dashboard-header';
-import type { UserRow } from '@/lib/auth';
+import type { UserRow } from '@/lib/features/auth';
 import { countSitesByStatusForSourcer } from '@/lib/data/sites';
-import { addMonths, firstOfMonth } from '@/lib/billing';
+import { addMonths, firstOfMonth } from '@/lib/features/billing';
 import { fetchEarningsTotals } from '@/lib/data/earnings';
 
 function formatCurrency(cents: number) {
@@ -11,13 +11,15 @@ function formatCurrency(cents: number) {
 
 export async function SourcerHome({ user }: { user: UserRow }) {
   const lastMonth = addMonths(firstOfMonth(new Date()), -1);
-  const [pending, active, needsChanges, archived, earnings] = await Promise.all([
-    countSitesByStatusForSourcer(user.id, 'Pending'),
-    countSitesByStatusForSourcer(user.id, 'Active'),
-    countSitesByStatusForSourcer(user.id, 'Needs changes'),
-    countSitesByStatusForSourcer(user.id, 'Archived'),
-    fetchEarningsTotals({ month: lastMonth, sourcerId: user.id }),
-  ]);
+  const [pending, active, needsChanges, archived, earnings] = await Promise.all(
+    [
+      countSitesByStatusForSourcer(user.id, 'Pending'),
+      countSitesByStatusForSourcer(user.id, 'Active'),
+      countSitesByStatusForSourcer(user.id, 'Needs changes'),
+      countSitesByStatusForSourcer(user.id, 'Archived'),
+      fetchEarningsTotals({ month: lastMonth, sourcerId: user.id }),
+    ],
+  );
 
   return (
     <div className="space-y-6">

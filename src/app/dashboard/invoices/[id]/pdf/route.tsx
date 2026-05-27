@@ -1,9 +1,9 @@
 import { NextResponse } from 'next/server';
 import { renderToBuffer } from '@react-pdf/renderer';
-import { requireUser } from '@/lib/auth';
+import { requireUser } from '@/lib/features/auth';
 import { createClient } from '@/lib/supabase/server';
-import { InvoicePdf } from '../../components/invoice-pdf';
-import { formatBillingMonth } from '@/lib/billing';
+import { InvoicePdf } from '@/components/invoices/invoice-pdf';
+import { formatBillingMonth } from '@/lib/features/billing';
 
 export const runtime = 'nodejs';
 
@@ -22,7 +22,9 @@ export async function GET(_req: Request, { params }: RouteContext) {
   const supabase = await createClient();
   const { data: invoice, error } = await supabase
     .from('invoices')
-    .select('id, client_id, billing_month, status, total_price_cents, created_at, sent_at, marked_as_paid_at')
+    .select(
+      'id, client_id, billing_month, status, total_price_cents, created_at, sent_at, marked_as_paid_at',
+    )
     .eq('id', id)
     .single();
 

@@ -2,9 +2,9 @@
 
 import { revalidatePath } from 'next/cache';
 import { createClient } from '@/lib/supabase/server';
-import { requireRole } from '@/lib/auth';
-import { recordAudit } from '@/lib/audit';
-import { notify } from '@/lib/notify';
+import { requireRole } from '@/lib/features/auth';
+import { recordAudit } from '@/lib/features/audit';
+import { notify } from '@/lib/features/notify';
 import { AppError } from '@/lib/errors';
 import {
   addCartItemSchema,

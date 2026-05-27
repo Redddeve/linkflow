@@ -1,6 +1,6 @@
 import { createClient } from '@/lib/supabase/server';
 import type { Database } from '@/types/database.types';
-import type { UserRole } from '@/lib/auth';
+import type { UserRole } from '@/lib/features/auth';
 
 type ChatRow = Database['public']['Tables']['chats']['Row'];
 type ChatCategory = Database['public']['Enums']['chat_category'];
@@ -61,7 +61,8 @@ export async function fetchChatsList(
     .order('created_at', { ascending: false });
 
   if (filters.status) query = query.eq('status', filters.status as ChatStatus);
-  if (filters.category) query = query.eq('category', filters.category as ChatCategory);
+  if (filters.category)
+    query = query.eq('category', filters.category as ChatCategory);
 
   const { data: chats } = await query;
   if (!chats?.length) return [];
@@ -69,7 +70,10 @@ export async function fetchChatsList(
   const { data: allParticipants } = await supabase
     .from('chat_participants')
     .select('chat_id, user_id')
-    .in('chat_id', chats.map((c) => c.id));
+    .in(
+      'chat_id',
+      chats.map((c) => c.id),
+    );
 
   const userIds = [...new Set((allParticipants ?? []).map((p) => p.user_id))];
   const { data: users } = await supabase
@@ -77,7 +81,9 @@ export async function fetchChatsList(
     .select('id, first_name, last_name, role')
     .in('id', userIds);
 
-  const userMap = Object.fromEntries((users ?? []).map((u) => [u.id, u as ChatParticipant]));
+  const userMap = Object.fromEntries(
+    (users ?? []).map((u) => [u.id, u as ChatParticipant]),
+  );
   const participantsByChat: Record<string, ChatParticipant[]> = {};
   for (const p of allParticipants ?? []) {
     const u = userMap[p.user_id];
@@ -103,7 +109,8 @@ export async function fetchChatsList(
 
   if (actor.role === 'Client') {
     filtered.sort((a, b) => {
-      const rank = CLIENT_CATEGORY_RANK[a.category] - CLIENT_CATEGORY_RANK[b.category];
+      const rank =
+        CLIENT_CATEGORY_RANK[a.category] - CLIENT_CATEGORY_RANK[b.category];
       if (rank !== 0) return rank;
       return b.created_at.localeCompare(a.created_at);
     });
@@ -117,7 +124,9 @@ export async function fetchChatById(id: string) {
   return supabase.from('chats').select('*').eq('id', id).single();
 }
 
-export async function fetchChatParticipants(chatId: string): Promise<ChatParticipant[]> {
+export async function fetchChatParticipants(
+  chatId: string,
+): Promise<ChatParticipant[]> {
   const supabase = await createClient();
   const { data: rows } = await supabase
     .from('chat_participants')
@@ -129,7 +138,10 @@ export async function fetchChatParticipants(chatId: string): Promise<ChatPartici
   const { data: users } = await supabase
     .from('users')
     .select('id, first_name, last_name, role')
-    .in('id', rows.map((r) => r.user_id));
+    .in(
+      'id',
+      rows.map((r) => r.user_id),
+    );
 
   return (users ?? []) as ChatParticipant[];
 }
@@ -144,7 +156,9 @@ export async function fetchChatMessages(chatId: string): Promise<MessageRow[]> {
   return data ?? [];
 }
 
-export async function fetchOrderChatId(orderId: string): Promise<string | null> {
+export async function fetchOrderChatId(
+  orderId: string,
+): Promise<string | null> {
   const supabase = await createClient();
   const { data } = await supabase
     .from('orders')
@@ -152,6 +166,24 @@ export async function fetchOrderChatId(orderId: string): Promise<string | null> 
     .eq('id', orderId)
     .single();
   return data?.chat_id ?? null;
+}
+
+export interface RelatedOrderSummary {
+  id: string;
+  site_domain: string;
+  status: Database['public']['Enums']['order_status'];
+}
+
+export async function fetchOrderByChatId(
+  chatId: string,
+): Promise<RelatedOrderSummary | null> {
+  const supabase = await createClient();
+  const { data } = await supabase
+    .from('orders')
+    .select('id, site_domain, status')
+    .eq('chat_id', chatId)
+    .maybeSingle();
+  return data ?? null;
 }
 
 export async function fetchActiveUsers(): Promise<ChatParticipant[]> {

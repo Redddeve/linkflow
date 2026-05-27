@@ -1,4 +1,4 @@
-import { requireRole } from '@/lib/auth';
+import { requireRole } from '@/lib/features/auth';
 import { listManagers } from '../actions';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { InviteUserForm } from '@/components/users/invite-form';

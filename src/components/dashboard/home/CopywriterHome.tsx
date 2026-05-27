@@ -3,7 +3,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { StatCard } from './stat-card';
 import { DashboardHeader, SectionHeading } from './dashboard-header';
-import type { UserRow } from '@/lib/auth';
+import type { UserRow } from '@/lib/features/auth';
 import type { Database } from '@/types/database.types';
 import {
   countCopywriterOrders,
@@ -13,7 +13,12 @@ import {
 
 type OrderStatus = Database['public']['Enums']['order_status'];
 
-const COPYWRITER_ACTIVE: OrderStatus[] = ['New', 'In Progress', 'Needs changes', 'Content Sent'];
+const COPYWRITER_ACTIVE: OrderStatus[] = [
+  'New',
+  'In Progress',
+  'Needs changes',
+  'Content Sent',
+];
 const COPYWRITER_UPCOMING: OrderStatus[] = ['In Progress', 'Needs changes'];
 
 export async function CopywriterHome({ user }: { user: UserRow }) {
@@ -62,20 +67,19 @@ export async function CopywriterHome({ user }: { user: UserRow }) {
           ) : (
             <ul className="divide-y border-t border-border">
               {upcoming.map((o) => (
-                <li
-                  key={o.id}
-                  className="flex items-center justify-between gap-3 px-4 py-3 transition-colors hover:bg-muted/60"
-                >
+                <li key={o.id}>
                   <Link
                     href={`/dashboard/orders/${o.id}`}
-                    className="text-sm font-medium hover:text-primary"
+                    className="flex items-center justify-between gap-3 px-4 py-3 transition-colors hover:bg-muted/60"
                   >
-                    {o.site_domain}
+                    <span className="text-sm font-medium">{o.site_domain}</span>
+                    <span className="flex items-center gap-2 text-xs text-muted-foreground">
+                      {o.publish_date && (
+                        <span className="tabular-nums">{o.publish_date}</span>
+                      )}
+                      <Badge variant="outline">{o.status}</Badge>
+                    </span>
                   </Link>
-                  <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                    {o.publish_date && <span className="tabular-nums">{o.publish_date}</span>}
-                    <Badge variant="outline">{o.status}</Badge>
-                  </div>
                 </li>
               ))}
             </ul>

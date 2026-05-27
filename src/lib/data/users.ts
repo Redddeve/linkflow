@@ -1,6 +1,6 @@
 import { createClient } from '@/lib/supabase/server';
 import type { Database } from '@/types/database.types';
-import type { UserRole } from '@/lib/auth';
+import type { UserRole } from '@/lib/features/auth';
 
 type UserStatus = Database['public']['Enums']['user_status'];
 type UsersRow = Database['public']['Tables']['users']['Row'];
@@ -86,6 +86,20 @@ export async function fetchActiveByRole(
     .select('id, first_name, last_name')
     .eq('role', role)
     .eq('status', 'ACTIVE')
+    .order('first_name');
+  return data ?? [];
+}
+
+export async function fetchActiveClientsForManager(
+  managerId: string,
+): Promise<{ id: string; first_name: string; last_name: string }[]> {
+  const supabase = await createClient();
+  const { data } = await supabase
+    .from('users')
+    .select('id, first_name, last_name')
+    .eq('role', 'Client')
+    .eq('status', 'ACTIVE')
+    .eq('manager_id', managerId)
     .order('first_name');
   return data ?? [];
 }
