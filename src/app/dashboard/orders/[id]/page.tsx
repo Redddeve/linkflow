@@ -87,9 +87,8 @@ export default async function OrderDetailPage({ params }: PageProps) {
     order.copywriter_id === actor.id &&
     (order.status === 'In Progress' || order.status === 'Needs changes');
   const canApprove =
-    isClient &&
     order.status === 'Content Sent' &&
-    order.created_by_id === actor.id;
+    (isManagerOrAdmin || (isClient && order.created_by_id === actor.id));
   const canReject = canApprove;
   const canPublish = isManagerOrAdmin && order.status === 'Content Approved';
   const canComment =
@@ -98,7 +97,9 @@ export default async function OrderDetailPage({ params }: PageProps) {
     (isCopywriter && order.copywriter_id === actor.id);
   const hasChatCounterpart = Boolean(order.copywriter_id || order.manager_id);
   const isChatParticipant = order.chat_id
-    ? (await fetchChatParticipants(order.chat_id)).some((p) => p.id === actor.id)
+    ? (await fetchChatParticipants(order.chat_id)).some(
+        (p) => p.id === actor.id,
+      )
     : false;
   const canStartChat = order.chat_id
     ? isChatParticipant
@@ -317,18 +318,25 @@ export default async function OrderDetailPage({ params }: PageProps) {
             </Card>
           )}
 
-          {order.content_body && (isManagerOrAdmin || isCopywriter) && (
-            <Card>
-              <CardHeader>
-                <CardTitle>Content</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-sm whitespace-pre-wrap font-mono leading-relaxed">
-                  {order.content_body}
-                </p>
-              </CardContent>
-            </Card>
-          )}
+          {order.content_body &&
+            (isManagerOrAdmin ||
+              isCopywriter ||
+              (isClient &&
+                (order.status === 'Content Sent' ||
+                  order.status === 'Content Approved' ||
+                  order.status === 'Published' ||
+                  order.status === 'Needs changes'))) && (
+              <Card>
+                <CardHeader>
+                  <CardTitle>Content</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-sm whitespace-pre-wrap font-mono leading-relaxed">
+                    {order.content_body}
+                  </p>
+                </CardContent>
+              </Card>
+            )}
 
           <Card>
             <CardHeader>

@@ -1,6 +1,7 @@
 'use server';
 
 import { revalidatePath } from 'next/cache';
+import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
 import { requireRole, requireUser } from '@/lib/features/auth';
 import { recordAudit } from '@/lib/features/audit';
@@ -424,7 +425,7 @@ export async function submitOrderContent(
   if (!parsed.success)
     throw new AppError('VALIDATION', parsed.error.issues[0].message);
 
-  const { orderId } = parsed.data;
+  const { orderId, body } = parsed.data;
 
   const supabase = await createClient();
   const { data: order, error } = await supabase
@@ -444,13 +445,14 @@ export async function submitOrderContent(
       `Cannot submit content on an order with status "${order.status}"`,
     );
   }
-  if (!order.content_body || order.content_body.length < 50) {
-    throw new AppError('VALIDATION', 'Content must be at least 50 characters');
-  }
 
   const { error: updateError } = await supabase
     .from('orders')
-    .update({ status: 'Content Sent', sent_at: new Date().toISOString() })
+    .update({
+      content_body: body,
+      status: 'Content Sent',
+      sent_at: new Date().toISOString(),
+    })
     .eq('id', orderId)
     .in('status', ['In Progress', 'Needs changes']);
 
@@ -485,7 +487,8 @@ export async function submitOrderContent(
 
   revalidatePath('/dashboard/orders');
   revalidatePath(`/dashboard/orders/${orderId}`);
-  revalidatePath(`/dashboard/orders/${orderId}/edit`);
+
+  redirect(`/dashboard/orders/${orderId}`);
 }
 
 export async function listCopywriters(): Promise<
@@ -503,7 +506,9 @@ export async function listCopywriters(): Promise<
 }
 
 export async function approveOrder(input: ApproveOrderInput): Promise<void> {
-  const actor = await requireRole(['Client']).catch(mapForbidden);
+  const actor = await requireRole(['Client', 'Manager', 'Admin']).catch(
+    mapForbidden,
+  );
 
   const parsed = approveOrderSchema.safeParse(input);
   if (!parsed.success)
@@ -519,7 +524,7 @@ export async function approveOrder(input: ApproveOrderInput): Promise<void> {
     .single();
 
   if (error || !order) throw new AppError('NOT_FOUND', 'Order not found');
-  if (order.created_by_id !== actor.id)
+  if (actor.role === 'Client' && order.created_by_id !== actor.id)
     throw new AppError('FORBIDDEN', 'You do not own this order');
   if (!TRANSITION_GUARDS.approve.includes(order.status)) {
     throw new AppError(
@@ -588,7 +593,9 @@ export async function approveOrder(input: ApproveOrderInput): Promise<void> {
 }
 
 export async function rejectOrder(input: RejectOrderInput): Promise<void> {
-  const actor = await requireRole(['Client']).catch(mapForbidden);
+  const actor = await requireRole(['Client', 'Manager', 'Admin']).catch(
+    mapForbidden,
+  );
 
   const parsed = rejectOrderSchema.safeParse(input);
   if (!parsed.success)
@@ -604,7 +611,7 @@ export async function rejectOrder(input: RejectOrderInput): Promise<void> {
     .single();
 
   if (error || !order) throw new AppError('NOT_FOUND', 'Order not found');
-  if (order.created_by_id !== actor.id)
+  if (actor.role === 'Client' && order.created_by_id !== actor.id)
     throw new AppError('FORBIDDEN', 'You do not own this order');
   if (!TRANSITION_GUARDS.reject.includes(order.status)) {
     throw new AppError(

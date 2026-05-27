@@ -542,7 +542,7 @@ describe('submitOrderContent()', () => {
     const updateChain = makeChain({ data: null, error: null });
     mockFrom.mockReturnValueOnce(selectChain).mockReturnValue(updateChain);
 
-    await submitOrderContent({ orderId: ORD_1 });
+    await submitOrderContent({ orderId: ORD_1, body: 'A'.repeat(60) });
 
     expect(mockRecordAudit).toHaveBeenCalledWith(
       expect.objectContaining({ action: 'order.submit' }),
@@ -578,7 +578,7 @@ describe('submitOrderContent()', () => {
     });
     mockFrom.mockReturnValue(chain);
 
-    await expect(submitOrderContent({ orderId: ORD_1 })).rejects.toThrow(
+    await expect(submitOrderContent({ orderId: ORD_1, body: 'short' })).rejects.toThrow(
       '50 characters',
     );
   });
@@ -600,7 +600,7 @@ describe('submitOrderContent()', () => {
     });
     mockFrom.mockReturnValue(chain);
 
-    await expect(submitOrderContent({ orderId: ORD_1 })).rejects.toThrow(
+    await expect(submitOrderContent({ orderId: ORD_1, body: '' })).rejects.toThrow(
       '50 characters',
     );
   });
@@ -622,7 +622,7 @@ describe('submitOrderContent()', () => {
     });
     mockFrom.mockReturnValue(chain);
 
-    await expect(submitOrderContent({ orderId: ORD_1 })).rejects.toThrow(
+    await expect(submitOrderContent({ orderId: ORD_1, body: 'A'.repeat(60) })).rejects.toThrow(
       'not assigned',
     );
   });
@@ -646,7 +646,7 @@ describe('submitOrderContent()', () => {
     mockFrom.mockReturnValueOnce(selectChain).mockReturnValue(updateChain);
 
     await expect(
-      submitOrderContent({ orderId: ORD_1 }),
+      submitOrderContent({ orderId: ORD_1, body: 'A'.repeat(60) }),
     ).resolves.toBeUndefined();
   });
 });

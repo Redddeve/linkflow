@@ -44,8 +44,9 @@ export function ContentEditorForm({ orderId, initialBody, status }: Props) {
     setSubmitError(null);
     startSubmit(async () => {
       try {
-        await submitOrderContent({ orderId });
+        await submitOrderContent({ orderId, body });
       } catch (e) {
+        if (e instanceof Error && e.message === 'NEXT_REDIRECT') throw e;
         setSubmitError(e instanceof Error ? e.message : 'Failed to submit');
       }
     });

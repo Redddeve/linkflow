@@ -30,6 +30,7 @@ export const saveOrderContentSchema = z.object({
 
 export const submitOrderContentSchema = z.object({
   orderId: z.uuid(),
+  body: z.string().min(50, 'Content must be at least 50 characters').max(50_000),
 });
 
 export const approveOrderSchema = z.object({

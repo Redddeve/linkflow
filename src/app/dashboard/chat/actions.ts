@@ -330,12 +330,15 @@ export async function startOrderChat(
   // Return existing chat if already linked
   if (order.chat_id) return { chatId: order.chat_id };
 
-  // Build participant list
+  // Build participant list: all assigned people on the order + the actor
   const participantIds = [
     ...new Set(
-      [order.copywriter_id, order.manager_id, actor.id].filter(
-        Boolean,
-      ) as string[],
+      [
+        order.created_by_id,
+        order.copywriter_id,
+        order.manager_id,
+        actor.id,
+      ].filter(Boolean) as string[],
     ),
   ];
 

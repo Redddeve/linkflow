@@ -15,6 +15,36 @@ import type { Database } from '@/types/database.types';
 type OrderStatus = Database['public']['Enums']['order_status'];
 type ViewerRole = Database['public']['Enums']['user_role'];
 
+const COLUMN_TINTS: Record<KanbanColumnStatus, string> = {
+  New: 'var(--card)',
+  'In Progress': '#eef2ff70',
+  'Content Sent': '#fffbeb',
+  'Needs changes': 'var(--st-assign-bg)',
+  'Content Approved': 'var(--st-pub-bg)',
+  Published: 'var(--st-live-bg)',
+  Canceled: 'color-mix(in srgb, var(--destructive) 10%, transparent)',
+};
+
+const COLUMN_TEXT: Record<KanbanColumnStatus, string> = {
+  New: 'var(--foreground)',
+  'In Progress': 'var(--primary-text)',
+  'Content Sent': '#b45309',
+  'Needs changes': 'var(--st-assign-fg)',
+  'Content Approved': 'var(--st-pub-fg)',
+  Published: 'var(--st-live-fg)',
+  Canceled: 'var(--destructive)',
+};
+
+const BADGE_BG: Record<KanbanColumnStatus, string> = {
+  New: '#fafafa',
+  'In Progress': '#d5dcf5',
+  'Content Sent': 'color-mix(in srgb, #fffbeb 88%, black)',
+  'Needs changes': 'color-mix(in srgb, var(--st-assign-bg) 88%, black)',
+  'Content Approved': 'var(--st-pub-bg)',
+  Published: 'color-mix(in srgb, var(--st-live-bg) 88%, black)',
+  Canceled: 'color-mix(in srgb, var(--destructive) 10%, transparent)',
+};
+
 export interface OrdersKanbanProps {
   initialColumns: Record<
     KanbanColumnStatus,
@@ -121,20 +151,26 @@ export function OrdersKanban({
             key={status}
             data-testid="kanban-column"
             data-status={status}
-            className="flex shrink-0 w-72 flex-col gap-2"
+            className="flex shrink-0 w-72 flex-col gap-3 rounded-md p-3"
+            style={{ backgroundColor: COLUMN_TINTS[status] }}
           >
-            <div className="flex items-center gap-2 px-1">
-              <OrderStatusBadge status={status} />
+            <div className="flex items-center justify-between gap-2">
+              <OrderStatusBadge
+                status={status}
+                className="h-auto rounded-md border-transparent px-3 py-1 text-md font-semibold"
+                style={{ backgroundColor: BADGE_BG[status] }}
+              />
               <span
                 data-testid="kanban-column-total"
-                className="text-xs text-muted-foreground ml-auto"
+                className="text-md font-medium"
+                style={{ color: COLUMN_TEXT[status] }}
               >
                 {isFilteredOut ? 0 : col.total}
               </span>
             </div>
             <div
               data-testid={`kanban-column-${status}`}
-              className="flex flex-col gap-2 flex-1 rounded-md bg-muted/30 p-2"
+              className="flex flex-col gap-2 flex-1"
             >
               {isFilteredOut ? (
                 <p className="text-xs text-muted-foreground text-center py-6">
@@ -150,9 +186,9 @@ export function OrdersKanban({
                     key={order.id}
                     href={`/dashboard/orders/${order.id}`}
                     data-testid="kanban-card"
-                    className="group/card rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                    className="group/card rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                   >
-                    <Card className="gap-0 py-0 shadow-sm transition-all group-hover/card:border-ring group-hover/card:shadow-md cursor-pointer">
+                    <Card className="gap-0 py-0 rounded-md shadow-sm transition-all group-hover/card:border-ring group-hover/card:shadow-md cursor-pointer">
                       <CardHeader className="px-3 pt-3 pb-2 gap-1.5">
                         <div className="flex items-start justify-between gap-2">
                           <p
