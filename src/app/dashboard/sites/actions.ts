@@ -75,6 +75,29 @@ export async function createSite(
     after: { domain: parsed.data.domain, status: 'Pending' },
   });
 
+  // §6.11: notify all admins that a new site has been submitted.
+  const { data: admins } = await supabase
+    .from('users')
+    .select('id')
+    .eq('role', 'Admin')
+    .eq('status', 'ACTIVE');
+
+  if (admins) {
+    await Promise.all(
+      admins.map((a) =>
+        notify({
+          recipientId: a.id,
+          type: 'site.created',
+          payload: {
+            site_id: site.id,
+            domain: parsed.data.domain,
+            submitted_by: actor.id,
+          },
+        }),
+      ),
+    );
+  }
+
   return { siteId: site.id };
 }
 
@@ -152,7 +175,7 @@ export async function setSiteStatus(
 
   const { data: site, error: fetchError } = await supabase
     .from('sites')
-    .select('id, domain, status, sourcer_id')
+    .select('id, domain, status, sourcer_id, created_by_id')
     .eq('id', id)
     .single();
 
@@ -195,15 +218,28 @@ export async function setSiteStatus(
     },
   });
 
-  await notify({
-    recipientId: site.sourcer_id,
-    type: `site.${action.toLowerCase()}`,
-    payload: {
-      site_id: id,
-      domain: site.domain,
-      change_note: change_note ?? null,
-    },
-  });
+  // §6.11: notify the site owner (and the sourcer if different) that the
+  // status has changed.
+  const recipients = new Set<string>();
+  if (site.sourcer_id) recipients.add(site.sourcer_id);
+  if (site.created_by_id) recipients.add(site.created_by_id);
+  recipients.delete(actor.id);
+
+  await Promise.all(
+    Array.from(recipients).map((recipientId) =>
+      notify({
+        recipientId,
+        type: 'site.status_changed',
+        payload: {
+          site_id: id,
+          domain: site.domain,
+          from_status: site.status,
+          to_status: ACTION_RESULT_STATUS[action],
+          change_note: change_note ?? null,
+        },
+      }),
+    ),
+  );
 }
 
 export async function listCategories(): Promise<

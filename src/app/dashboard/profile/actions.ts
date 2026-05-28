@@ -9,6 +9,7 @@ import {
   type UpdateProfileInput,
 } from '@/lib/schemas/profile';
 import { updatePasswordSchema } from '@/lib/schemas/auth';
+import { getAppUrl } from '@/lib/utils';
 
 export async function updateProfile(input: UpdateProfileInput): Promise<void> {
   const actor = await requireUser();
@@ -78,9 +79,8 @@ export async function sendOwnPasswordReset(): Promise<void> {
   const actor = await requireUser();
 
   const supabase = await createClient();
-  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? 'http://localhost:3000';
   const { error } = await supabase.auth.resetPasswordForEmail(actor.email, {
-    redirectTo: `${siteUrl}/auth/update-password`,
+    redirectTo: `${getAppUrl()}/auth/update-password`,
   });
   if (error) throw new Error(error.message);
 

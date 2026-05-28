@@ -40,31 +40,37 @@ Why:
 
 ## Library code (`src/lib/`)
 
-Every module is its own folder with `index.ts` (and `index.test.ts` if it has tests):
+Every module is its own folder with `index.ts` (and `index.test.ts` if it has tests). Feature modules live under `features/`; shared utilities, data helpers, schemas, supabase factories and similar live at the root of `src/lib/`:
 
 ```
 src/lib/
-  auth/
-    index.ts
-    index.test.ts
-  audit/
-    index.ts
-    index.test.ts
-  billing/        rbac/         verify-link/
-  avatar/         commission/   errors/
-  notify/         pagination/   utils/
+  features/       # feature modules — each is a folder with index.ts
+    auth/
+      index.ts
+      index.test.ts
+    audit/
+      index.ts
+      index.test.ts
+    notify/
+    email/        # transactional mailer (Brevo)
+    notifications-format/
+    audit-format/
+    avatar/       billing/       commission/
+    pagination/   verify-link/   dashboard/
   data/           # data-access helpers, grouped by table
   schemas/        # Zod schemas, one file per domain
     __tests__/    # schema unit tests live here, not next to schemas
   supabase/       # client factories
-  dashboard/      # role-home helpers
+  errors/         rbac/
+  utils/          # cn(), getAppUrl(), and other tiny shared helpers
 ```
 
 Imports stay terse thanks to `index.ts`:
 
 ```ts
-import { requireUser } from '@/lib/auth';
-import { recordAudit } from '@/lib/audit';
+import { requireUser } from '@/lib/features/auth';
+import { recordAudit } from '@/lib/features/audit';
+import { getAppUrl, cn } from '@/lib/utils';
 ```
 
 Rules:

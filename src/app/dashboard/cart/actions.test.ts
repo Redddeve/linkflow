@@ -1,16 +1,16 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+﻿import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 // ---- mocks ----
-vi.mock('@/lib/audit', () => ({
+vi.mock('@/lib/features/audit', () => ({
   recordAudit: vi.fn().mockResolvedValue(undefined),
 }));
-vi.mock('@/lib/notify', () => ({
+vi.mock('@/lib/features/notify', () => ({
   notify: vi.fn().mockResolvedValue(undefined),
 }));
 vi.mock('next/cache', () => ({ revalidatePath: vi.fn() }));
 
 const mockRequireRole = vi.fn();
-vi.mock('@/lib/auth', () => ({ requireRole: mockRequireRole }));
+vi.mock('@/lib/features/auth', () => ({ requireRole: mockRequireRole }));
 
 const mockMaybeSingle = vi.fn();
 const mockSingle = vi.fn();
@@ -128,7 +128,7 @@ describe('addToCart()', () => {
       data: { id: 'cart-1' },
       error: null,
     });
-    // insert → unique violation
+    // insert в†’ unique violation
     mockInsertSelectSingle.mockResolvedValueOnce({
       data: null,
       error: { code: '23505', message: 'unique' },

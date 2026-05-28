@@ -28,9 +28,25 @@ vi.mock('@/lib/supabase/admin', () => ({
 
 const mockRecordAudit = vi.fn();
 const mockNotify = vi.fn();
+const mockMailerSend = vi.fn();
 
 vi.mock('@/lib/features/audit', () => ({ recordAudit: mockRecordAudit }));
 vi.mock('@/lib/features/notify', () => ({ notify: mockNotify }));
+vi.mock('@/lib/features/email', () => ({
+  getMailer: () => ({ send: mockMailerSend }),
+  EMAIL_TEMPLATES: {
+    'user.invite_resent': {
+      templateId: 2,
+      buildParams: (input: {
+        first_name?: string | null;
+        invite_link: string;
+      }) => ({
+        first_name: input.first_name ?? '',
+        invite_link: input.invite_link,
+      }),
+    },
+  },
+}));
 
 // ── Auth mock helpers ──────────────────────────────────────────────────────────
 
@@ -185,23 +201,77 @@ describe('resendInvite()', () => {
     await expect(resendInvite('u1')).rejects.toThrow('PENDING');
   });
 
-  it('updates invited_at and records audit on success', async () => {
+  it('re-sends via inviteUserByEmail and records audit on success', async () => {
     const selectChain = makeChain({
-      data: { id: 'u1', email: 'a@b.com', status: 'PENDING', role: 'Client' },
+      data: {
+        id: 'u1',
+        email: 'a@b.com',
+        status: 'PENDING',
+        role: 'Client',
+        first_name: 'A',
+        last_name: 'B',
+        manager_id: null,
+      },
       error: null,
     });
     const updateChain = makeChain({ data: null, error: null });
     mockFrom.mockReturnValueOnce(selectChain).mockReturnValue(updateChain);
-    mockAdminGenerateLink.mockResolvedValue({ data: {}, error: null });
+    mockAdminInvite.mockResolvedValue({
+      data: { user: { id: 'u1' } },
+      error: null,
+    });
 
     await resendInvite('u1');
 
-    expect(mockAdminGenerateLink).toHaveBeenCalledWith({
-      type: 'invite',
-      email: 'a@b.com',
-    });
+    expect(mockAdminInvite).toHaveBeenCalledWith(
+      'a@b.com',
+      expect.objectContaining({
+        data: expect.objectContaining({ resent: true }),
+        redirectTo: expect.stringContaining('/auth/confirm'),
+      }),
+    );
+    expect(mockAdminGenerateLink).not.toHaveBeenCalled();
     expect(mockRecordAudit).toHaveBeenCalledWith(
       expect.objectContaining({ action: 'user.invite_resent', entityId: 'u1' }),
+    );
+  });
+
+  it('falls back to generateLink + mailer when inviteUserByEmail fails', async () => {
+    const selectChain = makeChain({
+      data: {
+        id: 'u1',
+        email: 'a@b.com',
+        status: 'PENDING',
+        role: 'Client',
+        first_name: 'A',
+        last_name: 'B',
+        manager_id: null,
+      },
+      error: null,
+    });
+    const updateChain = makeChain({ data: null, error: null });
+    mockFrom.mockReturnValueOnce(selectChain).mockReturnValue(updateChain);
+    mockAdminInvite.mockResolvedValue({
+      data: null,
+      error: { message: 'User already exists' },
+    });
+    mockAdminGenerateLink.mockResolvedValue({
+      data: { properties: { action_link: 'https://x.test/confirm?token=abc' } },
+      error: null,
+    });
+
+    await resendInvite('u1');
+
+    expect(mockAdminGenerateLink).toHaveBeenCalledWith(
+      expect.objectContaining({ type: 'invite', email: 'a@b.com' }),
+    );
+    expect(mockMailerSend).toHaveBeenCalledWith(
+      expect.objectContaining({
+        to: 'a@b.com',
+        params: expect.objectContaining({
+          invite_link: 'https://x.test/confirm?token=abc',
+        }),
+      }),
     );
   });
 });
@@ -481,15 +551,26 @@ describe('resendInvite() — Manager actor', () => {
     async (role) => {
       vi.mocked(requireRole).mockResolvedValueOnce(makeManagerUser());
       const selectChain = makeChain({
-        data: { id: 'u1', email: 'a@b.com', status: 'PENDING', role },
+        data: {
+          id: 'u1',
+          email: 'a@b.com',
+          status: 'PENDING',
+          role,
+          first_name: 'A',
+          last_name: 'B',
+          manager_id: null,
+        },
         error: null,
       });
       const updateChain = makeChain({ data: null, error: null });
       mockFrom.mockReturnValueOnce(selectChain).mockReturnValue(updateChain);
-      mockAdminGenerateLink.mockResolvedValue({ data: {}, error: null });
+      mockAdminInvite.mockResolvedValue({
+        data: { user: { id: 'u1' } },
+        error: null,
+      });
 
       await resendInvite('u1');
-      expect(mockAdminGenerateLink).toHaveBeenCalled();
+      expect(mockAdminInvite).toHaveBeenCalled();
     },
   );
 
@@ -498,13 +579,21 @@ describe('resendInvite() — Manager actor', () => {
     async (role) => {
       vi.mocked(requireRole).mockResolvedValueOnce(makeManagerUser());
       const selectChain = makeChain({
-        data: { id: 'u1', email: 'a@b.com', status: 'PENDING', role },
+        data: {
+          id: 'u1',
+          email: 'a@b.com',
+          status: 'PENDING',
+          role,
+          first_name: 'X',
+          last_name: 'Y',
+          manager_id: null,
+        },
         error: null,
       });
       mockFrom.mockReturnValue(selectChain);
 
       await expect(resendInvite('u1')).rejects.toThrow('permission');
-      expect(mockAdminGenerateLink).not.toHaveBeenCalled();
+      expect(mockAdminInvite).not.toHaveBeenCalled();
     },
   );
 });

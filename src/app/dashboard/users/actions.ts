@@ -5,8 +5,10 @@ import { createAdminClient } from '@/lib/supabase/admin';
 import { requireRole } from '@/lib/features/auth';
 import { recordAudit } from '@/lib/features/audit';
 import { notify } from '@/lib/features/notify';
+import { EMAIL_TEMPLATES, getMailer } from '@/lib/features/email';
 import { AppError } from '@/lib/errors';
 import { canManageTargetRole, canReassignClientManager } from '@/lib/rbac';
+import { getAppUrl } from '@/lib/utils';
 import {
   inviteUserSchema,
   editUserSchema,
@@ -81,9 +83,11 @@ export async function inviteUser(
   }
 
   const admin = createAdminClient();
+  const redirectTo = `${getAppUrl()}/auth/confirm?next=/dashboard`;
   const { data: authData, error: authError } =
     await admin.auth.admin.inviteUserByEmail(email, {
       data: { role, manager_id, first_name, last_name },
+      redirectTo,
     });
 
   if (authError || !authData.user) {
@@ -124,7 +128,7 @@ export async function resendInvite(userId: string): Promise<void> {
   const supabase = await createClient();
   const { data: user, error } = await supabase
     .from('users')
-    .select('id, email, status, role')
+    .select('id, email, status, role, first_name, last_name, manager_id')
     .eq('id', userId)
     .single();
 
@@ -139,12 +143,50 @@ export async function resendInvite(userId: string): Promise<void> {
     throw new Error('User is not in PENDING status');
 
   const admin = createAdminClient();
-  const { error: linkError } = await admin.auth.admin.generateLink({
-    type: 'invite',
-    email: user.email,
-  });
+  const redirectTo = `${getAppUrl()}/auth/confirm?next=/dashboard`;
 
-  if (linkError) throw new Error(linkError.message);
+  // First try: re-send the native Supabase invite email. This is what
+  // actually delivers an inbox message in 99% of cases.
+  const { error: inviteError } = await admin.auth.admin.inviteUserByEmail(
+    user.email,
+    {
+      data: {
+        role: user.role,
+        manager_id: user.manager_id,
+        first_name: user.first_name,
+        last_name: user.last_name,
+        resent: true,
+      },
+      redirectTo,
+    },
+  );
+
+  // Fallback: if the auth row already exists, inviteUserByEmail returns
+  // an error. Generate a link manually and ship it via the transactional
+  // mailer (Brevo) so the user still receives an email.
+  if (inviteError) {
+    const { data: linkData, error: linkError } =
+      await admin.auth.admin.generateLink({
+        type: 'invite',
+        email: user.email,
+        options: { redirectTo },
+      });
+
+    if (linkError) throw new Error(linkError.message);
+
+    const inviteLink = linkData?.properties?.action_link;
+    if (inviteLink) {
+      const tpl = EMAIL_TEMPLATES['user.invite_resent'];
+      await getMailer().send({
+        to: user.email,
+        templateId: tpl.templateId,
+        params: tpl.buildParams({
+          first_name: user.first_name,
+          invite_link: inviteLink,
+        }),
+      });
+    }
+  }
 
   await supabase
     .from('users')

@@ -651,6 +651,12 @@ export async function rejectOrder(input: RejectOrderInput): Promise<void> {
         type: 'order.needs_changes',
         payload: { orderId },
       }),
+      // §6.11: "Change Request created" → Assigned Copywriter
+      notify({
+        recipientId: order.copywriter_id,
+        type: 'change_request.created',
+        payload: { orderId, comment: parsed.data.comment },
+      }),
     );
   }
   if (order.manager_id) {

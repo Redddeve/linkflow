@@ -2,6 +2,7 @@
 
 import { createClient } from '@/lib/supabase/server';
 import { emailSchema } from '@/lib/schemas/auth';
+import { getAppUrl } from '@/lib/utils';
 
 export async function resetPasswordForEmail(email: string) {
   const parsed = emailSchema.safeParse({ email });
@@ -15,20 +16,31 @@ export async function resetPasswordForEmail(email: string) {
   );
 
   if (lookupError) {
-    return { success: false, error: 'Something went wrong. Please try again later.' };
+    return {
+      success: false,
+      error: 'Something went wrong. Please try again later.',
+    };
   }
 
   if (!exists) {
-    return { success: false, error: 'No account found with that email address.' };
+    return {
+      success: false,
+      error: 'No account found with that email address.',
+    };
   }
 
-  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? 'http://localhost:3000';
-  const { error } = await supabase.auth.resetPasswordForEmail(parsed.data.email, {
-    redirectTo: `${siteUrl}/auth/update-password`,
-  });
+  const { error } = await supabase.auth.resetPasswordForEmail(
+    parsed.data.email,
+    {
+      redirectTo: `${getAppUrl()}/auth/update-password`,
+    },
+  );
 
   if (error) {
-    return { success: false, error: 'Something went wrong. Please try again later.' };
+    return {
+      success: false,
+      error: 'Something went wrong. Please try again later.',
+    };
   }
 
   return { success: true };

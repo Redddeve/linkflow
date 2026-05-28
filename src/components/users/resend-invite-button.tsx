@@ -36,28 +36,35 @@ export function ResendInviteButton({ userId, userEmail }: Props) {
     });
   }
 
+  function handleOpenChange(o: boolean) {
+    if (!o) setError(null);
+    setOpen(o);
+  }
+
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
+    <>
       <Button variant="outline" size="sm" onClick={() => setOpen(true)}>
         Resend Invite
       </Button>
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle>Resend invitation to {userEmail}?</DialogTitle>
-        </DialogHeader>
-        <p className="text-sm text-muted-foreground">
-          A new invitation email will be sent. The previous link will expire.
-        </p>
-        {error && <p className="text-sm text-destructive">{error}</p>}
-        <DialogFooter>
-          <Button variant="outline" onClick={() => setOpen(false)}>
-            Cancel
-          </Button>
-          <Button disabled={isPending} onClick={handleConfirm}>
-            {isPending ? 'Sending…' : 'Resend'}
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+      <Dialog open={open} onOpenChange={handleOpenChange}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Resend invitation to {userEmail}?</DialogTitle>
+          </DialogHeader>
+          <p className="text-sm text-muted-foreground">
+            A new invitation email will be sent. The previous link will expire.
+          </p>
+          {error && <p className="text-sm text-destructive">{error}</p>}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setOpen(false)}>
+              Cancel
+            </Button>
+            <Button disabled={isPending} onClick={handleConfirm}>
+              {isPending ? 'Sending…' : 'Resend'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </>
   );
 }

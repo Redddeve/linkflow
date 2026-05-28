@@ -10,7 +10,6 @@ import {
   ShoppingCart,
   FileText,
   Receipt,
-  Bell,
   LogOut,
   Tag,
   MessageSquare,
@@ -20,12 +19,7 @@ import {
 import { createClient } from '@/lib/supabase/client';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { avatarPublicUrl } from '@/lib/features/avatar';
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from '@/components/ui/tooltip';
+import { TooltipProvider } from '@/components/ui/tooltip';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -207,9 +201,11 @@ function displayName(user: UserRow): string {
 export function DashboardShell({
   user,
   children,
+  notificationsSlot,
 }: {
   user: UserRow;
   children: React.ReactNode;
+  notificationsSlot?: React.ReactNode;
 }) {
   const pathname = usePathname();
   const router = useRouter();
@@ -282,7 +278,7 @@ export function DashboardShell({
             </Link>
             <button
               onClick={handleSignOut}
-              className="nav-item w-full mt-0.5 text-left"
+              className="nav-item w-full mt-0.5 cursor-pointer text-left"
             >
               <LogOut className="nav-icon" />
               <span>Sign out</span>
@@ -296,19 +292,11 @@ export function DashboardShell({
           <div className="topbar">
             <div className="flex-1" />
 
-            <Tooltip>
-              <TooltipTrigger
-                className="relative flex h-8 w-8 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
-                aria-label="Notifications"
-              >
-                <Bell className="h-4 w-4" />
-              </TooltipTrigger>
-              <TooltipContent>Notifications</TooltipContent>
-            </Tooltip>
+            {notificationsSlot}
 
             <DropdownMenu>
               <DropdownMenuTrigger
-                className="flex h-8 w-8 items-center justify-center rounded-full outline-none ring-offset-background focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                className="flex h-8 w-8 cursor-pointer items-center justify-center rounded-full outline-none ring-offset-background focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
                 aria-label="User menu"
               >
                 <Avatar className="h-7 w-7 ring-2 ring-primary-soft">
@@ -332,12 +320,16 @@ export function DashboardShell({
                 </div>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem
+                  className="cursor-pointer"
                   onClick={() => router.push('/dashboard/profile')}
                 >
                   <UserIcon className="h-4 w-4" />
                   Profile
                 </DropdownMenuItem>
-                <DropdownMenuItem onClick={handleSignOut}>
+                <DropdownMenuItem
+                  className="cursor-pointer"
+                  onClick={handleSignOut}
+                >
                   <LogOut className="h-4 w-4" />
                   Sign out
                 </DropdownMenuItem>

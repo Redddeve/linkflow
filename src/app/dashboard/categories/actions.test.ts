@@ -1,9 +1,9 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+﻿import { describe, it, expect, vi, beforeEach } from 'vitest';
 
-vi.mock('@/lib/audit', () => ({ recordAudit: vi.fn().mockResolvedValue(undefined) }));
+vi.mock('@/lib/features/audit', () => ({ recordAudit: vi.fn().mockResolvedValue(undefined) }));
 
 const mockRequireRole = vi.fn();
-vi.mock('@/lib/auth', () => ({ requireRole: mockRequireRole }));
+vi.mock('@/lib/features/auth', () => ({ requireRole: mockRequireRole }));
 
 const mockMaybeSingle = vi.fn();
 const mockSingle = vi.fn();
