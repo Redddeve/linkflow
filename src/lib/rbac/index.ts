@@ -31,6 +31,7 @@ export const PERMISSIONS = {
 
   // User management
   'users:manage': ['Admin'] as UserRole[],
+  'users:view': ['Admin', 'Manager'] as UserRole[],
 
   // Invoice capabilities
   'invoices:view_own': ['Client'] as UserRole[],
@@ -74,4 +75,38 @@ export type Permission = keyof typeof PERMISSIONS;
 
 export function can(role: UserRole, permission: Permission): boolean {
   return (PERMISSIONS[permission] as readonly UserRole[]).includes(role);
+}
+
+export const MANAGER_TARGET_ROLES = [
+  'Client',
+  'Copywriter',
+  'Sourcer',
+] as const satisfies readonly UserRole[];
+
+export function canManageTargetRole(
+  actorRole: UserRole,
+  targetRole: UserRole | null,
+): boolean {
+  if (!targetRole) return false;
+  if (actorRole === 'Admin') return true;
+  if (actorRole === 'Manager') {
+    return (MANAGER_TARGET_ROLES as readonly UserRole[]).includes(targetRole);
+  }
+  return false;
+}
+
+// Admin can reassign any Client to any Manager.
+// A Manager can reassign only Clients they currently manage.
+export function canReassignClientManager(args: {
+  actorRole: UserRole;
+  actorId: string;
+  targetRole: UserRole | null;
+  targetManagerId: string | null;
+}): boolean {
+  if (args.targetRole !== 'Client') return false;
+  if (args.actorRole === 'Admin') return true;
+  if (args.actorRole === 'Manager') {
+    return args.targetManagerId === args.actorId;
+  }
+  return false;
 }

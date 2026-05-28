@@ -1,5 +1,5 @@
 import { notFound } from 'next/navigation';
-import { requireRole } from '@/lib/features/auth';
+import { requireRole, type UserRole } from '@/lib/features/auth';
 import { BackLink } from '@/components/ui/back-link';
 import { fetchUserById } from '@/lib/data/users';
 import { listManagers } from '../actions';
@@ -7,6 +7,8 @@ import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { EditUserDialog } from '@/components/users/edit-dialog';
 import { StatusActions } from '@/components/users/status-actions';
+import { ResendInviteButton } from '@/components/users/resend-invite-button';
+import { canManageTargetRole, canReassignClientManager } from '@/lib/rbac';
 
 interface PageProps {
   params: Promise<{ id: string }>;
@@ -25,14 +27,24 @@ function statusLabel(status: string) {
 }
 
 export default async function UserDetailPage({ params }: PageProps) {
-  const currentUser = await requireRole(['Admin']);
+  const currentUser = await requireRole(['Admin', 'Manager']);
+  const actorRole = currentUser.role as UserRole;
   const { id } = await params;
 
   const { data: user, error } = await fetchUserById(id);
 
   if (error || !user) notFound();
 
-  const managers = await listManagers();
+  const canEdit = canManageTargetRole(actorRole, user.role);
+  const canChangeStatus = actorRole === 'Admin';
+  const canReassignManager = canReassignClientManager({
+    actorRole,
+    actorId: currentUser.id,
+    targetRole: user.role,
+    targetManagerId: user.manager_id,
+  });
+  const canResend = canEdit && user.status === 'PENDING';
+  const managers = canReassignManager ? await listManagers() : [];
 
   const details: { label: string; value: React.ReactNode }[] = [
     { label: 'First Name', value: user.first_name ?? '—' },
@@ -72,8 +84,20 @@ export default async function UserDetailPage({ params }: PageProps) {
           <p className="text-base text-muted-foreground">{user.email}</p>
         </div>
         <div className="flex items-center gap-2 shrink-0">
-          <EditUserDialog user={user} managers={managers} />
-          <StatusActions user={user} currentUserId={currentUser.id} />
+          {canResend && (
+            <ResendInviteButton userId={user.id} userEmail={user.email} />
+          )}
+          {canEdit && (
+            <EditUserDialog
+              user={user}
+              managers={managers}
+              actorRole={actorRole}
+              canReassignManager={canReassignManager}
+            />
+          )}
+          {canChangeStatus && (
+            <StatusActions user={user} currentUserId={currentUser.id} />
+          )}
         </div>
       </div>
 

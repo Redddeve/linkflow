@@ -6,6 +6,7 @@ import { requireRole } from '@/lib/features/auth';
 import { recordAudit } from '@/lib/features/audit';
 import { notify } from '@/lib/features/notify';
 import { AppError } from '@/lib/errors';
+import { canManageTargetRole, canReassignClientManager } from '@/lib/rbac';
 import {
   inviteUserSchema,
   editUserSchema,
@@ -43,13 +44,26 @@ function mapForbidden(e: unknown): never {
 export async function inviteUser(
   input: InviteUserInput,
 ): Promise<{ userId: string }> {
-  const actor = await requireRole(['Admin']).catch(mapForbidden);
+  const actor = await requireRole(['Admin', 'Manager']).catch(mapForbidden);
 
   const parsed = inviteUserSchema.safeParse(input);
   if (!parsed.success)
     throw new AppError('VALIDATION', parsed.error.issues[0].message);
 
-  const { email, first_name, last_name, role, manager_id } = parsed.data;
+  const { email, first_name, last_name, role } = parsed.data;
+
+  if (actor.role && !canManageTargetRole(actor.role, role)) {
+    throw new AppError(
+      'FORBIDDEN',
+      'You do not have permission to invite this role',
+    );
+  }
+
+  // For Clients invited by a Manager, default to self if no explicit pick
+  const manager_id =
+    role === 'Client' && actor.role === 'Manager'
+      ? (parsed.data.manager_id ?? actor.id)
+      : (parsed.data.manager_id ?? null);
 
   // Email uniqueness check across all statuses (PRD §1282)
   const supabase = await createClient();
@@ -69,7 +83,7 @@ export async function inviteUser(
   const admin = createAdminClient();
   const { data: authData, error: authError } =
     await admin.auth.admin.inviteUserByEmail(email, {
-      data: { role, manager_id: manager_id ?? null, first_name, last_name },
+      data: { role, manager_id, first_name, last_name },
     });
 
   if (authError || !authData.user) {
@@ -92,7 +106,7 @@ export async function inviteUser(
     entityType: 'user',
     entityId: userId,
     action: 'user.invite',
-    after: { email, role, manager_id: manager_id ?? null },
+    after: { email, role, manager_id },
   });
 
   await notify({
@@ -105,16 +119,22 @@ export async function inviteUser(
 }
 
 export async function resendInvite(userId: string): Promise<void> {
-  await requireRole(['Admin']).catch(mapForbidden);
+  const actor = await requireRole(['Admin', 'Manager']).catch(mapForbidden);
 
   const supabase = await createClient();
   const { data: user, error } = await supabase
     .from('users')
-    .select('id, email, status')
+    .select('id, email, status, role')
     .eq('id', userId)
     .single();
 
   if (error || !user) throw new AppError('NOT_FOUND', 'User not found');
+  if (actor.role && !canManageTargetRole(actor.role, user.role)) {
+    throw new AppError(
+      'FORBIDDEN',
+      'You do not have permission to resend this invitation',
+    );
+  }
   if (user.status !== 'PENDING')
     throw new Error('User is not in PENDING status');
 
@@ -149,7 +169,7 @@ export async function editUser(
   patch: EditUserInput,
   opts: { confirmRoleChange?: boolean } = {},
 ): Promise<EditUserResult> {
-  await requireRole(['Admin']).catch(mapForbidden);
+  const actor = await requireRole(['Admin', 'Manager']).catch(mapForbidden);
 
   const parsed = editUserSchema.safeParse(patch);
   if (!parsed.success)
@@ -163,6 +183,42 @@ export async function editUser(
     .single();
 
   if (error || !current) throw new AppError('NOT_FOUND', 'User not found');
+
+  if (actor.role && !canManageTargetRole(actor.role, current.role)) {
+    throw new AppError(
+      'FORBIDDEN',
+      'You do not have permission to edit this user',
+    );
+  }
+
+  if (actor.role === 'Manager' && parsed.data.role !== undefined) {
+    throw new AppError(
+      'VALIDATION',
+      'Managers cannot change a user role',
+    );
+  }
+
+  // manager_id reassignment: Admin can set any Client's manager;
+  // a Manager may only reassign Clients they currently manage.
+  if (
+    parsed.data.manager_id !== undefined &&
+    parsed.data.manager_id !== current.manager_id
+  ) {
+    const allowed =
+      actor.role &&
+      canReassignClientManager({
+        actorRole: actor.role,
+        actorId: actor.id,
+        targetRole: current.role,
+        targetManagerId: current.manager_id,
+      });
+    if (!allowed) {
+      throw new AppError(
+        'FORBIDDEN',
+        'You do not have permission to reassign this user to another manager',
+      );
+    }
+  }
 
   // If changing role, check for active dependencies
   if (
@@ -329,7 +385,7 @@ export async function activateUser(userId: string): Promise<void> {
 export async function listManagers(): Promise<
   { id: string; first_name: string; last_name: string }[]
 > {
-  await requireRole(['Admin']).catch(mapForbidden);
+  await requireRole(['Admin', 'Manager']).catch(mapForbidden);
   const supabase = await createClient();
   const { data } = await supabase
     .from('users')

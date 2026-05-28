@@ -81,6 +81,11 @@ const NAV_ITEMS: Record<UserRole, NavItem[]> = {
       icon: <LayoutDashboard className="nav-icon" />,
     },
     {
+      href: '/dashboard/users',
+      label: 'Users',
+      icon: <Users className="nav-icon" />,
+    },
+    {
       href: '/dashboard/orders',
       label: 'Orders',
       icon: <FileText className="nav-icon" />,

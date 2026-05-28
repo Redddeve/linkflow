@@ -1,9 +1,6 @@
 'use client';
 
-import { useState, useTransition } from 'react';
-import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { MoreHorizontal } from 'lucide-react';
 import {
   Table,
   TableBody,
@@ -13,33 +10,9 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import {
-  Dialog,
-  DialogContent,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
-import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
 import { TableEmptyState } from '@/components/ui/table-empty-state';
 import type { UserRow } from '@/lib/features/auth';
-import {
-  disableUser,
-  activateUser,
-  resendInvite,
-  type DisableResult,
-  type BlockingOrder,
-} from '@/app/dashboard/users/actions';
 import { avatarPublicUrl } from '@/lib/features/avatar';
 
 function userInitials(u: UserRow) {
@@ -65,78 +38,10 @@ function statusLabel(status: UserRow['status']) {
 
 interface Props {
   users: UserRow[];
-  currentUserId: string;
 }
 
-export function UsersTable({ users, currentUserId }: Props) {
+export function UsersTable({ users }: Props) {
   const router = useRouter();
-  const [isPending, startTransition] = useTransition();
-
-  const [disableTarget, setDisableTarget] = useState<UserRow | null>(null);
-  const [disableReason, setDisableReason] = useState('');
-  const [disableError, setDisableError] = useState('');
-  const [blockingOrders, setBlockingOrders] = useState<BlockingOrder[] | null>(
-    null,
-  );
-
-  const [activateTarget, setActivateTarget] = useState<UserRow | null>(null);
-  const [resendTarget, setResendTarget] = useState<UserRow | null>(null);
-
-  function resetDisable() {
-    setDisableTarget(null);
-    setDisableReason('');
-    setDisableError('');
-    setBlockingOrders(null);
-  }
-
-  async function handleDisable() {
-    if (!disableTarget) return;
-    setDisableError('');
-    startTransition(async () => {
-      try {
-        const result: DisableResult = await disableUser(
-          disableTarget.id,
-          disableReason,
-        );
-        if (result.ok) {
-          resetDisable();
-          router.refresh();
-        } else if (result.code === 'BLOCKING_ORDERS') {
-          setBlockingOrders(result.orders);
-        } else {
-          setDisableError('You cannot disable your own account.');
-        }
-      } catch (e: unknown) {
-        setDisableError(e instanceof Error ? e.message : 'An error occurred');
-      }
-    });
-  }
-
-  async function handleActivate() {
-    if (!activateTarget) return;
-    startTransition(async () => {
-      try {
-        await activateUser(activateTarget.id);
-        setActivateTarget(null);
-        router.refresh();
-      } catch (e: unknown) {
-        console.error(e);
-      }
-    });
-  }
-
-  async function handleResend() {
-    if (!resendTarget) return;
-    startTransition(async () => {
-      try {
-        await resendInvite(resendTarget.id);
-        setResendTarget(null);
-        router.refresh();
-      } catch (e: unknown) {
-        console.error(e);
-      }
-    });
-  }
 
   return (
     <>
@@ -147,7 +52,6 @@ export function UsersTable({ users, currentUserId }: Props) {
             <TableHead>Role</TableHead>
             <TableHead>Status</TableHead>
             <TableHead>Invited</TableHead>
-            <TableHead />
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -193,44 +97,6 @@ export function UsersTable({ users, currentUserId }: Props) {
                   ? new Date(u.invited_at).toLocaleDateString('en-CA')
                   : '—'}
               </TableCell>
-              <TableCell onClick={(e) => e.stopPropagation()}>
-                <DropdownMenu>
-                  <DropdownMenuTrigger
-                    className="inline-flex h-9 w-9 items-center justify-center rounded-md hover:bg-muted"
-                    aria-label="User actions"
-                  >
-                    <MoreHorizontal className="h-4 w-4" />
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end">
-                    <DropdownMenuItem
-                      onClick={() => router.push(`/dashboard/users/${u.id}`)}
-                    >
-                      View / Edit
-                    </DropdownMenuItem>
-                    {u.status === 'PENDING' && (
-                      <DropdownMenuItem onClick={() => setResendTarget(u)}>
-                        Resend Invite
-                      </DropdownMenuItem>
-                    )}
-                    {u.status === 'DISABLED' && (
-                      <DropdownMenuItem onClick={() => setActivateTarget(u)}>
-                        Activate
-                      </DropdownMenuItem>
-                    )}
-                    {u.id !== currentUserId && u.status !== 'DISABLED' && (
-                      <>
-                        <DropdownMenuSeparator />
-                        <DropdownMenuItem
-                          className="text-destructive"
-                          onClick={() => setDisableTarget(u)}
-                        >
-                          Disable
-                        </DropdownMenuItem>
-                      </>
-                    )}
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              </TableCell>
             </TableRow>
           ))}
         </TableBody>
@@ -241,134 +107,6 @@ export function UsersTable({ users, currentUserId }: Props) {
           description="Invite a teammate to get started. New users appear here once they accept their invitation."
         />
       )}
-
-      <Dialog
-        open={!!disableTarget && !blockingOrders}
-        onOpenChange={(o) => {
-          if (!o) resetDisable();
-        }}
-      >
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>
-              Disable {disableTarget?.first_name} {disableTarget?.last_name}?
-            </DialogTitle>
-          </DialogHeader>
-          <div className="grid gap-2">
-            <Label htmlFor="disable-reason">Reason</Label>
-            <Textarea
-              id="disable-reason"
-              placeholder="Why is this account being disabled…"
-              value={disableReason}
-              onChange={(e) => setDisableReason(e.target.value)}
-              rows={3}
-            />
-            {disableError && (
-              <p className="text-sm text-destructive">{disableError}</p>
-            )}
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={resetDisable}>
-              Cancel
-            </Button>
-            <Button
-              variant="destructive"
-              disabled={isPending || disableReason.trim().length < 5}
-              onClick={handleDisable}
-            >
-              {isPending ? 'Disabling…' : 'Disable'}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      <Dialog
-        open={!!blockingOrders}
-        onOpenChange={(o) => {
-          if (!o) resetDisable();
-        }}
-      >
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Reassign active orders first</DialogTitle>
-          </DialogHeader>
-          <p className="text-sm text-muted-foreground">
-            This copywriter has active orders. Reassign each one before
-            disabling.
-          </p>
-          <ul className="mt-2 space-y-1">
-            {blockingOrders?.map((o) => (
-              <li key={o.id}>
-                <Link
-                  href={`/dashboard/orders/${o.id}`}
-                  className="text-sm hover:underline text-primary"
-                >
-                  {o.site_domain} —{' '}
-                  <span className="text-muted-foreground">{o.status}</span>
-                </Link>
-              </li>
-            ))}
-          </ul>
-          <DialogFooter>
-            <Button variant="outline" onClick={resetDisable}>
-              Close
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      <Dialog
-        open={!!activateTarget}
-        onOpenChange={(o) => {
-          if (!o) setActivateTarget(null);
-        }}
-      >
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>
-              Activate {activateTarget?.first_name} {activateTarget?.last_name}?
-            </DialogTitle>
-          </DialogHeader>
-          <p className="text-sm text-muted-foreground">
-            Their account will be set to Active. Sites that were archived when
-            this Sourcer was disabled will not be automatically restored.
-          </p>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setActivateTarget(null)}>
-              Cancel
-            </Button>
-            <Button disabled={isPending} onClick={handleActivate}>
-              {isPending ? 'Activating…' : 'Activate'}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      <Dialog
-        open={!!resendTarget}
-        onOpenChange={(o) => {
-          if (!o) setResendTarget(null);
-        }}
-      >
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>
-              Resend invitation to {resendTarget?.email}?
-            </DialogTitle>
-          </DialogHeader>
-          <p className="text-sm text-muted-foreground">
-            A new invitation email will be sent. The previous link will expire.
-          </p>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setResendTarget(null)}>
-              Cancel
-            </Button>
-            <Button disabled={isPending} onClick={handleResend}>
-              {isPending ? 'Sending…' : 'Resend'}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
     </>
   );
 }

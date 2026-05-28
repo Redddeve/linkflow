@@ -17,7 +17,8 @@ interface PageProps {
 }
 
 export default async function UsersPage({ searchParams }: PageProps) {
-  const currentUser = await requireRole(['Admin']);
+  const currentUser = await requireRole(['Admin', 'Manager']);
+  const actorRole = currentUser.role as UserRole;
   const params = await searchParams;
   const { page, pageSize } = parsePagination(params);
 
@@ -37,11 +38,11 @@ export default async function UsersPage({ searchParams }: PageProps) {
       <PageHeader
         title="Users"
         description={`${total} user${total !== 1 ? 's' : ''}`}
-        actions={<InviteUserForm managers={managers} />}
+        actions={<InviteUserForm managers={managers} actorRole={actorRole} />}
       />
       <div className="space-y-4">
         <UserFilters />
-        <UsersTable users={users} currentUserId={currentUser.id} />
+        <UsersTable users={users} />
         <Pagination total={total} page={page} pageSize={pageSize} />
       </div>
     </div>

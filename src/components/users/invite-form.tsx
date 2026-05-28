@@ -23,12 +23,19 @@ import {
 } from '@/components/ui/dialog';
 import { inviteUser } from '@/app/dashboard/users/actions';
 import type { InviteUserInput } from '@/lib/schemas/users';
+import type { UserRole } from '@/lib/features/auth';
+import { MANAGER_TARGET_ROLES } from '@/lib/rbac';
 
 interface Props {
   managers: { id: string; first_name: string; last_name: string }[];
+  actorRole: UserRole;
 }
 
-export function InviteUserForm({ managers }: Props) {
+export function InviteUserForm({ managers, actorRole }: Props) {
+  const isManagerActor = actorRole === 'Manager';
+  const allowedRoles: UserRole[] = isManagerActor
+    ? (MANAGER_TARGET_ROLES as readonly UserRole[]).slice()
+    : ['Client', 'Sourcer', 'Copywriter', 'Manager', 'Admin'];
   const router = useRouter();
   const [open, setOpen] = useState(false);
 
@@ -146,11 +153,11 @@ export function InviteUserForm({ managers }: Props) {
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="Client">Client</SelectItem>
-                <SelectItem value="Sourcer">Sourcer</SelectItem>
-                <SelectItem value="Copywriter">Copywriter</SelectItem>
-                <SelectItem value="Manager">Manager</SelectItem>
-                <SelectItem value="Admin">Admin</SelectItem>
+                {allowedRoles.map((r) => (
+                  <SelectItem key={r} value={r}>
+                    {r}
+                  </SelectItem>
+                ))}
               </SelectContent>
             </Select>
           </div>
@@ -160,7 +167,13 @@ export function InviteUserForm({ managers }: Props) {
               <Label htmlFor="invite-manager_id">Manager</Label>
               <Select onValueChange={handleManagerChange}>
                 <SelectTrigger id="invite-manager_id">
-                  <SelectValue placeholder="Assign a manager (optional)" />
+                  <SelectValue
+                    placeholder={
+                      isManagerActor
+                        ? 'Defaults to you (override optional)'
+                        : 'Assign a manager (optional)'
+                    }
+                  />
                 </SelectTrigger>
                 <SelectContent>
                   {managers.map((m) => (
