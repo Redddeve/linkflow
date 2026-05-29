@@ -5,6 +5,7 @@ import { usePathname } from 'next/navigation';
 import clsx from 'clsx';
 import { CategoryIcon } from './category-icon';
 import { maskParticipants } from './mask-participants';
+import { useChatReadState } from './read-state-provider';
 import type { ChatsListRow } from '@/lib/data/chat';
 import type { UserRole } from '@/lib/features/auth';
 
@@ -12,15 +13,12 @@ interface Props {
   chats: ChatsListRow[];
   viewerRole: UserRole | null;
   actorId: string;
-  unreadByChat: Record<string, number>;
 }
 
-export function ChatListPane({
-  chats,
-  viewerRole,
-  actorId,
-  unreadByChat,
-}: Props) {
+export function ChatListPane({ chats, viewerRole, actorId }: Props) {
+  // Read the effective per-chat unread map from the provider (server values
+  // minus any chats the user has locally marked read in this session).
+  const { unreadByChat } = useChatReadState();
   const pathname = usePathname();
   const selectedId = pathname.startsWith('/dashboard/chat/')
     ? pathname.slice('/dashboard/chat/'.length).split('/')[0] || null

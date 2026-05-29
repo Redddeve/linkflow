@@ -1,6 +1,7 @@
 import { requireUser } from '@/lib/features/auth';
 import { DashboardShell } from '@/components/dashboard/shell';
 import { NotificationsPopover } from '@/components/notifications/notifications-popover';
+import { ChatReadStateProvider } from '@/components/chat/read-state-provider';
 import { ensureAutoChats } from '@/app/dashboard/chat/actions';
 import {
   fetchRecentUnreadNotifications,
@@ -25,14 +26,16 @@ export default async function DashboardLayout({
   ]);
 
   return (
-    <DashboardShell
-      user={user}
-      chatUnreadCount={chatUnreadCount}
-      notificationsSlot={
-        <NotificationsPopover unreadCount={unreadCount} items={recent} />
-      }
-    >
-      {children}
-    </DashboardShell>
+    <ChatReadStateProvider>
+      <DashboardShell
+        user={user}
+        chatUnreadCount={chatUnreadCount}
+        notificationsSlot={
+          <NotificationsPopover unreadCount={unreadCount} items={recent} />
+        }
+      >
+        {children}
+      </DashboardShell>
+    </ChatReadStateProvider>
   );
 }

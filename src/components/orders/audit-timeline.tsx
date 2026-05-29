@@ -16,7 +16,11 @@ function relativeTime(iso: string): string {
 
 export async function AuditTimeline({ orderId }: Props) {
   const rows = await fetchOrderAuditTrail(orderId);
-  if (rows.length === 0) return null;
+  if (rows.length === 0) {
+    return (
+      <p className="text-sm text-muted-foreground">No activity yet.</p>
+    );
+  }
 
   const actorIds = Array.from(
     new Set(rows.map((r) => r.actor_id).filter((x): x is string => !!x)),

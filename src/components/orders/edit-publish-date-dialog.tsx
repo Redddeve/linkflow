@@ -11,7 +11,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog';
-import { Input } from '@/components/ui/input';
+import { DatePicker } from '@/components/ui/date-picker';
 import { Label } from '@/components/ui/label';
 import { editOrderPublishDate } from '@/app/dashboard/orders/actions';
 
@@ -38,7 +38,8 @@ export function EditPublishDateDialog({ orderId, currentDate }: Props) {
     });
   }
 
-  const today = new Date().toISOString().split('T')[0];
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
@@ -54,12 +55,11 @@ export function EditPublishDateDialog({ orderId, currentDate }: Props) {
         </DialogHeader>
         <div className="space-y-2">
           <Label htmlFor="publish-date">Publish date</Label>
-          <Input
+          <DatePicker
             id="publish-date"
-            type="date"
-            min={today}
             value={date}
-            onChange={(e) => setDate(e.target.value)}
+            onChange={(v) => setDate(v ?? '')}
+            minDate={today}
           />
           {error && <p className="text-sm text-destructive">{error}</p>}
         </div>

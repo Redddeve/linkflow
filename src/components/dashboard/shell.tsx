@@ -16,6 +16,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { NAV_ITEMS } from '@/lib/features/dashboard/nav';
+import { useChatReadState } from '@/components/chat/read-state-provider';
 import type { UserRow } from '@/lib/features/auth';
 
 function userInitials(user: UserRow): string {
@@ -48,6 +49,16 @@ export function DashboardShell({
   const router = useRouter();
   const navItems = (user.role ? NAV_ITEMS[user.role] : null) ?? [];
   const avatarUrl = avatarPublicUrl(user.avatar);
+
+  // Prefer the chat layout's per-chat map (when the user is on the chat
+  // surface) so opening an unread thread clears the nav dot immediately.
+  // Outside the chat surface the provider has no hydrated map and we fall
+  // back to the server-side total fetched in the dashboard layout.
+  const { unreadChatCount, unreadByChat } = useChatReadState();
+  const hasHydratedChatMap = Object.keys(unreadByChat).length > 0;
+  const showChatDot = hasHydratedChatMap
+    ? unreadChatCount > 0
+    : chatUnreadCount > 0;
 
   const handleSignOut = async () => {
     const supabase = createClient();
@@ -83,7 +94,7 @@ export function DashboardShell({
                   : pathname === item.href ||
                     pathname.startsWith(`${item.href}/`);
               const showChatUnread =
-                item.href === '/dashboard/chat' && chatUnreadCount > 0;
+                item.href === '/dashboard/chat' && showChatDot;
               return (
                 <Link
                   key={item.href}

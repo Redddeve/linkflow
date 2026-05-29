@@ -8,6 +8,7 @@ import { Card } from '@/components/ui/card';
 import { ChatFilters } from '@/components/chat/chat-filters';
 import { CreateChatDialog } from '@/components/chat/create-chat-dialog';
 import { ChatListPane } from '@/components/chat/chat-list-pane';
+import { ChatUnreadHydrator } from '@/components/chat/read-state-provider';
 
 interface Props {
   children: React.ReactNode;
@@ -34,6 +35,7 @@ export default async function ChatLayout({ children, searchParams }: Props) {
 
   return (
     <div className="flex flex-col gap-4 h-[calc(100vh-9rem)] min-h-150">
+      <ChatUnreadHydrator unreadByChat={unreadByChat} />
       <PageHeader
         title="Chats"
         description="Direct messages and order rooms."
@@ -56,7 +58,6 @@ export default async function ChatLayout({ children, searchParams }: Props) {
               chats={chats}
               viewerRole={actor.role}
               actorId={actor.id}
-              unreadByChat={unreadByChat}
             />
           </aside>
 

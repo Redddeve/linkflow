@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { DatePicker } from '@/components/ui/date-picker';
 import { publishOrder } from '@/app/dashboard/orders/actions';
 
 interface Props {
@@ -54,12 +55,10 @@ export function PublishOrderForm({ orderId, defaultPublishDate }: Props) {
 
       <div className="space-y-2">
         <Label htmlFor="publish-date">Publish date</Label>
-        <Input
+        <DatePicker
           id="publish-date"
-          type="date"
           value={date}
-          onChange={(e) => setDate(e.target.value)}
-          required
+          onChange={(v) => setDate(v ?? '')}
           disabled={isPending}
         />
       </div>
