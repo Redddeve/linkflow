@@ -82,7 +82,7 @@ export async function inviteUser(
   }
 
   const admin = createAdminClient();
-  const redirectTo = `${getAppUrl()}/auth/confirm?next=/dashboard`;
+  const redirectTo = `${getAppUrl()}/auth/confirm?next=/auth/set-password`;
   const { data: authData, error: authError } =
     await admin.auth.admin.inviteUserByEmail(email, {
       data: { role, manager_id, first_name, last_name },
@@ -136,7 +136,7 @@ export async function resendInvite(userId: string): Promise<void> {
     throw new Error('User is not in PENDING status');
 
   const admin = createAdminClient();
-  const redirectTo = `${getAppUrl()}/auth/confirm?next=/dashboard`;
+  const redirectTo = `${getAppUrl()}/auth/confirm?next=/auth/set-password`;
 
   // First try: re-send the native Supabase invite email. This is what
   // actually delivers an inbox message in 99% of cases.
@@ -221,10 +221,7 @@ export async function editUser(
   }
 
   if (actor.role === 'Manager' && parsed.data.role !== undefined) {
-    throw new AppError(
-      'VALIDATION',
-      'Managers cannot change a user role',
-    );
+    throw new AppError('VALIDATION', 'Managers cannot change a user role');
   }
 
   // manager_id reassignment: Admin can set any Client's manager;
