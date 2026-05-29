@@ -57,26 +57,23 @@ describe('createSiteSchema', () => {
 });
 
 describe('setSiteStatusSchema', () => {
-  it('passes for APPROVE without change_note', () => {
+  it('passes for APPROVE', () => {
     const result = setSiteStatusSchema.safeParse({ action: 'APPROVE' });
     expect(result.success).toBe(true);
   });
 
-  it('fails for NEEDS_CHANGES without change_note', () => {
-    const result = setSiteStatusSchema.safeParse({ action: 'NEEDS_CHANGES' });
-    expect(result.success).toBe(false);
+  it('passes for ARCHIVE and REACTIVATE', () => {
+    expect(setSiteStatusSchema.safeParse({ action: 'ARCHIVE' }).success).toBe(
+      true,
+    );
+    expect(
+      setSiteStatusSchema.safeParse({ action: 'REACTIVATE' }).success,
+    ).toBe(true);
   });
 
-  it('fails for NEEDS_CHANGES with short change_note', () => {
-    const result = setSiteStatusSchema.safeParse({ action: 'NEEDS_CHANGES', change_note: 'short' });
-    expect(result.success).toBe(false);
-  });
-
-  it('passes for NEEDS_CHANGES with sufficient change_note', () => {
-    const result = setSiteStatusSchema.safeParse({
-      action: 'NEEDS_CHANGES',
-      change_note: 'Please fix the domain info',
-    });
-    expect(result.success).toBe(true);
+  it('rejects unknown actions (including the removed NEEDS_CHANGES)', () => {
+    expect(
+      setSiteStatusSchema.safeParse({ action: 'NEEDS_CHANGES' }).success,
+    ).toBe(false);
   });
 });

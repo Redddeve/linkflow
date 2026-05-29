@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState, useTransition } from 'react';
+import { useEffect, useMemo, useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { X } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
@@ -16,11 +16,13 @@ import {
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { createChat } from '@/app/dashboard/chat/actions';
+import {
+  createChat,
+  listActiveUsersForChat,
+} from '@/app/dashboard/chat/actions';
 import type { ChatParticipant } from '@/lib/data/chat';
 
 interface Props {
-  users: ChatParticipant[];
   actorId: string;
 }
 
@@ -28,14 +30,35 @@ function displayName(u: ChatParticipant) {
   return `${u.first_name} ${u.last_name}`;
 }
 
-export function CreateChatDialog({ users, actorId }: Props) {
+export function CreateChatDialog({ actorId }: Props) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
+  const [users, setUsers] = useState<ChatParticipant[]>([]);
+  const [usersLoaded, setUsersLoaded] = useState(false);
   const [title, setTitle] = useState('');
   const [selectedIds, setSelectedIds] = useState<string[]>([actorId]);
   const [query, setQuery] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
+
+  // Fetch the directory only once, the first time the dialog opens.
+  useEffect(() => {
+    if (!open || usersLoaded) return;
+    let cancelled = false;
+    listActiveUsersForChat()
+      .then((rows) => {
+        if (!cancelled) {
+          setUsers(rows);
+          setUsersLoaded(true);
+        }
+      })
+      .catch(() => {
+        if (!cancelled) setError('Failed to load users');
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [open, usersLoaded]);
 
   const usersById = useMemo(
     () => Object.fromEntries(users.map((u) => [u.id, u])),

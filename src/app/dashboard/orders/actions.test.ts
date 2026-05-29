@@ -1,7 +1,7 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+﻿import { describe, it, expect, vi, beforeEach } from 'vitest';
 import type { UserRow } from '@/lib/features/auth';
 
-// ── Shared mock state ──────────────────────────────────────────────────────────
+// в”Ђв”Ђ Shared mock state в”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђ
 
 const mockFrom = vi.fn();
 const mockRpc = vi.fn();
@@ -19,13 +19,13 @@ const mockRevalidatePath = vi.fn();
 const mockFetchOrdersList = vi.fn();
 const mockFetchUsersByIds = vi.fn();
 
-vi.mock('@/lib/audit', () => ({ recordAudit: mockRecordAudit }));
-vi.mock('@/lib/notify', () => ({ notify: mockNotify }));
+vi.mock('@/lib/features/audit', () => ({ recordAudit: mockRecordAudit }));
+vi.mock('@/lib/features/notify', () => ({ notify: mockNotify }));
 vi.mock('next/cache', () => ({ revalidatePath: mockRevalidatePath }));
 vi.mock('@/lib/data/orders', () => ({ fetchOrdersList: mockFetchOrdersList }));
 vi.mock('@/lib/data/users', () => ({ fetchUsersByIds: mockFetchUsersByIds }));
 
-// ── Auth mock helpers ──────────────────────────────────────────────────────────
+// в”Ђв”Ђ Auth mock helpers в”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђ
 
 const makeUser = (overrides: Partial<UserRow> = {}): UserRow => ({
   id: 'user-1',
@@ -45,7 +45,7 @@ const makeUser = (overrides: Partial<UserRow> = {}): UserRow => ({
 const mockRequireRole = vi.fn(async () => makeUser());
 const mockRequireUser = vi.fn(async () => makeUser());
 
-vi.mock('@/lib/auth', async (importOriginal) => {
+vi.mock('@/lib/features/auth', async (importOriginal) => {
   const actual = await importOriginal<typeof import('@/lib/features/auth')>();
   return {
     ...actual,
@@ -54,7 +54,7 @@ vi.mock('@/lib/auth', async (importOriginal) => {
   };
 });
 
-// ── Import actions after mocks ─────────────────────────────────────────────────
+// в”Ђв”Ђ Import actions after mocks в”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђ
 
 const {
   editOrderPublishDate,
@@ -70,7 +70,7 @@ const {
   fetchOrdersColumn,
 } = await import('./actions');
 
-// ── Fluent Supabase stub builder ───────────────────────────────────────────────
+// в”Ђв”Ђ Fluent Supabase stub builder в”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђ
 
 type ChainResult = { data: unknown; error: unknown; count?: number };
 
@@ -111,7 +111,7 @@ const tomorrow = new Date();
 tomorrow.setDate(tomorrow.getDate() + 1);
 const tomorrowStr = tomorrow.toISOString().split('T')[0];
 
-// ── editOrderPublishDate ───────────────────────────────────────────────────────
+// в”Ђв”Ђ editOrderPublishDate в”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђ
 
 describe('editOrderPublishDate()', () => {
   beforeEach(() => vi.clearAllMocks());
@@ -201,7 +201,7 @@ describe('editOrderPublishDate()', () => {
   });
 });
 
-// ── cancelOrder ────────────────────────────────────────────────────────────────
+// в”Ђв”Ђ cancelOrder в”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђ
 
 describe('cancelOrder()', () => {
   beforeEach(() => vi.clearAllMocks());
@@ -289,7 +289,7 @@ describe('cancelOrder()', () => {
   });
 });
 
-// ── assignCopywriter ───────────────────────────────────────────────────────────
+// в”Ђв”Ђ assignCopywriter в”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђ
 
 describe('assignCopywriter()', () => {
   beforeEach(() => vi.clearAllMocks());
@@ -393,12 +393,12 @@ describe('assignCopywriter()', () => {
   });
 });
 
-// ── reassignCopywriter ─────────────────────────────────────────────────────────
+// в”Ђв”Ђ reassignCopywriter в”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђ
 
 describe('reassignCopywriter()', () => {
   beforeEach(() => vi.clearAllMocks());
 
-  it('reassigns and notifies both old and new copywriter', async () => {
+  it('reassigns and notifies only the new copywriter', async () => {
     mockRequireRole.mockResolvedValueOnce(
       makeUser({ id: MGR_1, role: 'Manager' }),
     );
@@ -426,11 +426,9 @@ describe('reassignCopywriter()', () => {
     expect(mockNotify).toHaveBeenCalledWith(
       expect.objectContaining({ recipientId: CW_NEW, type: 'order.assigned' }),
     );
-    expect(mockNotify).toHaveBeenCalledWith(
-      expect.objectContaining({
-        recipientId: CW_OLD,
-        type: 'order.reassigned_away',
-      }),
+    // The previous copywriter is intentionally NOT notified on reassignment.
+    expect(mockNotify).not.toHaveBeenCalledWith(
+      expect.objectContaining({ type: 'order.reassigned_away' }),
     );
     expect(mockRecordAudit).toHaveBeenCalledWith(
       expect.objectContaining({ action: 'order.reassign' }),
@@ -462,7 +460,7 @@ describe('reassignCopywriter()', () => {
   });
 });
 
-// ── saveOrderContent ───────────────────────────────────────────────────────────
+// в”Ђв”Ђ saveOrderContent в”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђ
 
 describe('saveOrderContent()', () => {
   beforeEach(() => vi.clearAllMocks());
@@ -518,7 +516,7 @@ describe('saveOrderContent()', () => {
   });
 });
 
-// ── submitOrderContent ─────────────────────────────────────────────────────────
+// в”Ђв”Ђ submitOrderContent в”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђ
 
 describe('submitOrderContent()', () => {
   beforeEach(() => vi.clearAllMocks());
@@ -651,12 +649,12 @@ describe('submitOrderContent()', () => {
   });
 });
 
-// ── approveOrder ───────────────────────────────────────────────────────────────
+// в”Ђв”Ђ approveOrder в”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђ
 
 describe('approveOrder()', () => {
   beforeEach(() => vi.clearAllMocks());
 
-  it('transitions Content Sent → Content Approved and notifies manager + copywriter', async () => {
+  it('transitions Content Sent в†’ Content Approved and notifies manager + copywriter', async () => {
     mockRequireRole.mockResolvedValueOnce(
       makeUser({ id: CLIENT_1, role: 'Client' }),
     );
@@ -742,7 +740,7 @@ describe('approveOrder()', () => {
   });
 });
 
-// ── rejectOrder ────────────────────────────────────────────────────────────────
+// в”Ђв”Ђ rejectOrder в”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђ
 
 describe('rejectOrder()', () => {
   beforeEach(() => vi.clearAllMocks());
@@ -856,12 +854,12 @@ describe('rejectOrder()', () => {
   });
 });
 
-// ── addComment ─────────────────────────────────────────────────────────────────
+// в”Ђв”Ђ addComment в”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђ
 
 describe('addComment()', () => {
   beforeEach(() => vi.clearAllMocks());
 
-  it('allows Manager to comment and notifies client + copywriter', async () => {
+  it('allows Manager to comment without firing notifications', async () => {
     mockRequireRole.mockResolvedValueOnce(
       makeUser({ id: MGR_1, role: 'Manager' }),
     );
@@ -881,11 +879,10 @@ describe('addComment()', () => {
       text: 'Please double-check the facts.',
     });
 
-    expect(mockNotify).toHaveBeenCalledWith(
-      expect.objectContaining({ recipientId: CLIENT_1 }),
-    );
-    expect(mockNotify).toHaveBeenCalledWith(
-      expect.objectContaining({ recipientId: CW_1 }),
+    // Per product: comments no longer generate notifications.
+    expect(mockNotify).not.toHaveBeenCalled();
+    expect(mockRecordAudit).toHaveBeenCalledWith(
+      expect.objectContaining({ action: 'order.comment_added' }),
     );
   });
 
@@ -954,12 +951,12 @@ describe('addComment()', () => {
   });
 });
 
-// ── publishOrder ───────────────────────────────────────────────────────────────
+// в”Ђв”Ђ publishOrder в”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђ
 
 describe('publishOrder()', () => {
   beforeEach(() => vi.clearAllMocks());
 
-  it('transitions Content Approved → Published and snapshots sourcer payout', async () => {
+  it('transitions Content Approved в†’ Published and snapshots sourcer payout', async () => {
     mockRequireRole.mockResolvedValueOnce(
       makeUser({ id: MGR_1, role: 'Manager' }),
     );
@@ -1095,7 +1092,7 @@ describe('publishOrder()', () => {
   });
 });
 
-// ── fetchOrdersColumn ──────────────────────────────────────────────────────────
+// в”Ђв”Ђ fetchOrdersColumn в”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђ
 
 describe('fetchOrdersColumn()', () => {
   beforeEach(() => {

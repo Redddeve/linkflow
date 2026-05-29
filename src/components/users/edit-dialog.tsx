@@ -22,15 +22,23 @@ import {
   DialogTrigger,
 } from '@/components/ui/dialog';
 import { editUser } from '@/app/dashboard/users/actions';
-import type { UserRow } from '@/lib/features/auth';
+import type { UserRow, UserRole } from '@/lib/features/auth';
 import type { EditUserInput } from '@/lib/schemas/users';
 
 interface Props {
   user: UserRow;
   managers: { id: string; first_name: string; last_name: string }[];
+  actorRole: UserRole;
+  canReassignManager: boolean;
 }
 
-export function EditUserDialog({ user, managers }: Props) {
+export function EditUserDialog({
+  user,
+  managers,
+  actorRole,
+  canReassignManager,
+}: Props) {
+  const canEditRole = actorRole === 'Admin';
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [isPending, startTransition] = useTransition();
@@ -93,9 +101,12 @@ export function EditUserDialog({ user, managers }: Props) {
   }
 
   async function submit(data: EditUserInput, confirmed = false) {
+    const patch: EditUserInput = canEditRole
+      ? data
+      : { ...data, role: undefined };
     startTransition(async () => {
       try {
-        const result = await editUser(user.id, data, {
+        const result = await editUser(user.id, patch, {
           confirmRoleChange: confirmed,
         });
         if ('requiresConfirm' in result && result.requiresConfirm) {
@@ -157,26 +168,28 @@ export function EditUserDialog({ user, managers }: Props) {
               </div>
             </div>
 
-            <div className="grid gap-2">
-              <Label htmlFor="edit-role">Role</Label>
-              <Select
-                value={selectedRole ?? ''}
-                onValueChange={handleRoleChange}
-              >
-                <SelectTrigger id="edit-role">
-                  <SelectValue placeholder="Select role" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="Client">Client</SelectItem>
-                  <SelectItem value="Sourcer">Sourcer</SelectItem>
-                  <SelectItem value="Copywriter">Copywriter</SelectItem>
-                  <SelectItem value="Manager">Manager</SelectItem>
-                  <SelectItem value="Admin">Admin</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
+            {canEditRole && (
+              <div className="grid gap-2">
+                <Label htmlFor="edit-role">Role</Label>
+                <Select
+                  value={selectedRole ?? ''}
+                  onValueChange={handleRoleChange}
+                >
+                  <SelectTrigger id="edit-role">
+                    <SelectValue placeholder="Select role" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Client">Client</SelectItem>
+                    <SelectItem value="Sourcer">Sourcer</SelectItem>
+                    <SelectItem value="Copywriter">Copywriter</SelectItem>
+                    <SelectItem value="Manager">Manager</SelectItem>
+                    <SelectItem value="Admin">Admin</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
 
-            {selectedRole === 'Client' && (
+            {selectedRole === 'Client' && canReassignManager && (
               <div className="grid gap-2">
                 <Label htmlFor="edit-manager">Manager</Label>
                 <Select

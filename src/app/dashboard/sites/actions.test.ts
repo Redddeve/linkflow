@@ -1,13 +1,12 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { AppError } from '@/lib/errors';
+﻿import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { VALID_TRANSITIONS } from '@/lib/schemas/sites';
 
 // ---- mocks ----
-vi.mock('@/lib/audit', () => ({ recordAudit: vi.fn().mockResolvedValue(undefined) }));
-vi.mock('@/lib/notify', () => ({ notify: vi.fn().mockResolvedValue(undefined) }));
+vi.mock('@/lib/features/audit', () => ({ recordAudit: vi.fn().mockResolvedValue(undefined) }));
+vi.mock('@/lib/features/notify', () => ({ notify: vi.fn().mockResolvedValue(undefined) }));
 
 const mockRequireRole = vi.fn();
-vi.mock('@/lib/auth', () => ({ requireRole: mockRequireRole }));
+vi.mock('@/lib/features/auth', () => ({ requireRole: mockRequireRole }));
 
 const mockMaybeSingle = vi.fn();
 const mockSingle = vi.fn();
@@ -181,27 +180,6 @@ describe('setSiteStatus()', () => {
     const updatePayload = mockUpdate.mock.calls[0][0];
     expect(updatePayload.status).toBe('Active');
     expect(updatePayload.approved_by_id).toBe('actor-1');
-  });
-
-  it('blocks NEEDS_CHANGES with short change_note', async () => {
-    mockRequireRole.mockResolvedValue(adminUser);
-    mockSingle.mockResolvedValue({ data: baseSite, error: null });
-
-    await expect(setSiteStatus('site-1', 'NEEDS_CHANGES', 'short')).rejects.toThrow(AppError);
-  });
-
-  it('sets NEEDS_CHANGES with valid note', async () => {
-    mockRequireRole.mockResolvedValue(adminUser);
-    mockSingle.mockResolvedValue({ data: baseSite, error: null });
-
-    const updateEq = vi.fn().mockResolvedValue({ error: null });
-    mockUpdate.mockReturnValue({ eq: updateEq });
-
-    await setSiteStatus('site-1', 'NEEDS_CHANGES', 'Please fix the description and add metrics');
-
-    const updatePayload = mockUpdate.mock.calls[0][0];
-    expect(updatePayload.status).toBe('Needs changes');
-    expect(updatePayload.needs_changes_by_id).toBe('actor-1');
   });
 
   it('archives an Active site', async () => {

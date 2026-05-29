@@ -51,23 +51,16 @@ export const editSiteSchema = z.object({
   sourcer_payout_cents: z.number().int().min(0).optional(),
 });
 
-export const setSiteStatusSchema = z
-  .object({
-    action: z.enum(['APPROVE', 'NEEDS_CHANGES', 'ARCHIVE', 'REACTIVATE']),
-    change_note: z.string().optional(),
-  })
-  .refine(
-    (data) => data.action !== 'NEEDS_CHANGES' || (data.change_note?.trim().length ?? 0) >= 10,
-    { message: 'Change note must be at least 10 characters', path: ['change_note'] },
-  );
+export const setSiteStatusSchema = z.object({
+  action: z.enum(['APPROVE', 'ARCHIVE', 'REACTIVATE']),
+});
 
-export type SiteStatus = 'Pending' | 'Active' | 'Needs changes' | 'Archived';
+export type SiteStatus = 'Pending' | 'Active' | 'Archived';
 
-export const VALID_TRANSITIONS: Record<string, SiteStatus> = {
-  APPROVE: 'Pending',
-  NEEDS_CHANGES: 'Pending',
-  ARCHIVE: 'Active',
-  REACTIVATE: 'Archived',
+export const VALID_TRANSITIONS: Record<string, SiteStatus[]> = {
+  APPROVE: ['Pending'],
+  ARCHIVE: ['Active'],
+  REACTIVATE: ['Archived'],
 };
 
 export type CreateSiteInput = z.input<typeof createSiteSchema>;

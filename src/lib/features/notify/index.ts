@@ -22,9 +22,10 @@ export async function notify(params: NotifyParams): Promise<void> {
 
   const channel = prefs?.channel ?? params.channel ?? 'IN_APP';
 
-  // Email wired in M8 — skip silently for now
-  if (channel === 'EMAIL') return;
-
+  // M8: all channels produce an in-app row so the notification is visible
+  // in the dashboard. Auto-email on every notify() is intentionally not
+  // wired yet — transactional emails (invite/resend/password) go through
+  // `@/lib/features/email` directly from server actions.
   const { error } = await supabase.rpc('insert_notification', {
     p_recipient_id: params.recipientId,
     p_type: params.type,

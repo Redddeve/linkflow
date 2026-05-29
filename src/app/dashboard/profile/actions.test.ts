@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+﻿import { describe, it, expect, vi, beforeEach } from 'vitest';
 import type { UserRow } from '@/lib/features/auth';
 
 const mockFrom = vi.fn();
@@ -18,7 +18,7 @@ vi.mock('@/lib/supabase/server', () => ({
 }));
 
 const mockRecordAudit = vi.fn();
-vi.mock('@/lib/audit', () => ({ recordAudit: mockRecordAudit }));
+vi.mock('@/lib/features/audit', () => ({ recordAudit: mockRecordAudit }));
 
 const makeUser = (overrides: Partial<UserRow> = {}): UserRow => ({
   id: 'user-1',
@@ -37,7 +37,7 @@ const makeUser = (overrides: Partial<UserRow> = {}): UserRow => ({
 
 const mockRequireUser = vi.fn(async () => makeUser());
 
-vi.mock('@/lib/auth', async (importOriginal) => {
+vi.mock('@/lib/features/auth', async (importOriginal) => {
   const actual = await importOriginal<typeof import('@/lib/features/auth')>();
   return { ...actual, requireUser: mockRequireUser };
 });

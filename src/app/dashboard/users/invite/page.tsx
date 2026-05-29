@@ -1,11 +1,12 @@
-import { requireRole } from '@/lib/features/auth';
+import { requireRole, type UserRole } from '@/lib/features/auth';
 import { listManagers } from '../actions';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { InviteUserForm } from '@/components/users/invite-form';
 import { BackLink } from '@/components/ui/back-link';
 
 export default async function InviteUserPage() {
-  await requireRole(['Admin']);
+  const currentUser = await requireRole(['Admin', 'Manager']);
+  const actorRole = currentUser.role as UserRole;
   const managers = await listManagers();
 
   return (
@@ -21,7 +22,7 @@ export default async function InviteUserPage() {
           <CardTitle>New invitation</CardTitle>
         </CardHeader>
         <CardContent>
-          <InviteUserForm managers={managers} />
+          <InviteUserForm managers={managers} actorRole={actorRole} />
         </CardContent>
       </Card>
     </div>

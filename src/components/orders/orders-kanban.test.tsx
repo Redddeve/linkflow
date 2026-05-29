@@ -6,7 +6,7 @@ import { KANBAN_COLUMNS } from './kanban-columns';
 
 const mockFetchOrdersColumn = vi.fn();
 
-vi.mock('../actions', () => ({
+vi.mock('@/app/dashboard/orders/actions', () => ({
   fetchOrdersColumn: (...args: unknown[]) => mockFetchOrdersColumn(...args),
 }));
 

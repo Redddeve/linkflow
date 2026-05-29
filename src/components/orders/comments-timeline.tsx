@@ -27,7 +27,11 @@ function relativeTime(isoDate: string): string {
 }
 
 export function CommentsTimeline({ comments, userMap }: Props) {
-  if (comments.length === 0) return null;
+  if (comments.length === 0) {
+    return (
+      <p className="text-sm text-muted-foreground">No comments yet.</p>
+    );
+  }
 
   return (
     <div className="space-y-3">

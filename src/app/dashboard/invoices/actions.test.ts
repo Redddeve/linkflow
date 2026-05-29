@@ -1,7 +1,7 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+﻿import { describe, it, expect, vi, beforeEach } from 'vitest';
 import type { UserRow } from '@/lib/features/auth';
 
-// ── Shared mock state ──────────────────────────────────────────────────────────
+// в”Ђв”Ђ Shared mock state в”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђ
 
 const mockFrom = vi.fn();
 const mockRpc = vi.fn();
@@ -17,8 +17,8 @@ const mockRecordAudit = vi.fn();
 const mockNotify = vi.fn();
 const mockRevalidatePath = vi.fn();
 
-vi.mock('@/lib/audit', () => ({ recordAudit: mockRecordAudit }));
-vi.mock('@/lib/notify', () => ({ notify: mockNotify }));
+vi.mock('@/lib/features/audit', () => ({ recordAudit: mockRecordAudit }));
+vi.mock('@/lib/features/notify', () => ({ notify: mockNotify }));
 vi.mock('next/cache', () => ({ revalidatePath: mockRevalidatePath }));
 
 const makeUser = (overrides: Partial<UserRow> = {}): UserRow => ({
@@ -38,7 +38,7 @@ const makeUser = (overrides: Partial<UserRow> = {}): UserRow => ({
 
 const mockRequireRole = vi.fn(async () => makeUser());
 
-vi.mock('@/lib/auth', async (importOriginal) => {
+vi.mock('@/lib/features/auth', async (importOriginal) => {
   const actual = await importOriginal<typeof import('@/lib/features/auth')>();
   return { ...actual, requireRole: mockRequireRole };
 });
@@ -51,7 +51,7 @@ const {
   generateInvoicesForMonth,
 } = await import('./actions');
 
-// ── Fluent Supabase stub builder ───────────────────────────────────────────────
+// в”Ђв”Ђ Fluent Supabase stub builder в”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђ
 
 type ChainResult = { data: unknown; error: unknown; count?: number };
 
@@ -75,7 +75,7 @@ function makeChain(result: ChainResult) {
   (chain['single'] as ReturnType<typeof vi.fn>).mockResolvedValue(result);
   (chain['maybeSingle'] as ReturnType<typeof vi.fn>).mockResolvedValue(result);
   // For `select(..., { count: 'exact', head: true })` callers that await the
-  // chain directly without `.single()` — return a thenable terminal.
+  // chain directly without `.single()` вЂ” return a thenable terminal.
   return chain;
 }
 
@@ -92,7 +92,7 @@ const MGR_1 = 'e0000002-0000-4000-8000-000000000002';
 function makeFromQueue(results: ChainResult[]) {
   const chains = results.map(makeChain);
   // The count query reads `chain` directly via thenable from select().eq()
-  // — emulate by adding a `then` on every chain that resolves to the result.
+  // вЂ” emulate by adding a `then` on every chain that resolves to the result.
   results.forEach((r, i) => {
     const chain = chains[i] as Record<string, unknown>;
     chain.then = (resolve: (v: ChainResult) => unknown) => resolve(r);
@@ -101,7 +101,7 @@ function makeFromQueue(results: ChainResult[]) {
   return () => chains[i++] ?? makeChain({ data: null, error: null });
 }
 
-// ── sendInvoice ────────────────────────────────────────────────────────────────
+// в”Ђв”Ђ sendInvoice в”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђ
 
 describe('sendInvoice()', () => {
   beforeEach(() => {
@@ -227,7 +227,7 @@ describe('sendInvoice()', () => {
   });
 });
 
-// ── markInvoicePaid ────────────────────────────────────────────────────────────
+// в”Ђв”Ђ markInvoicePaid в”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђ
 
 describe('markInvoicePaid()', () => {
   beforeEach(() => {
@@ -296,7 +296,7 @@ describe('markInvoicePaid()', () => {
   });
 });
 
-// ── reassignOrders (batch RPC) ─────────────────────────────────────────────────
+// в”Ђв”Ђ reassignOrders (batch RPC) в”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђ
 
 describe('reassignOrders()', () => {
   beforeEach(() => {
@@ -378,9 +378,9 @@ describe('reassignOrders()', () => {
   });
 });
 
-// ── reassignOrderBillingMonth (legacy single wrapper) ─────────────────────────
+// в”Ђв”Ђ reassignOrderBillingMonth (legacy single wrapper) в”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђ
 
-describe('reassignOrderBillingMonth() — single wrapper', () => {
+describe('reassignOrderBillingMonth() вЂ” single wrapper', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockFrom.mockReset();
@@ -406,7 +406,7 @@ describe('reassignOrderBillingMonth() — single wrapper', () => {
   });
 });
 
-// ── generateInvoicesForMonth ───────────────────────────────────────────────────
+// в”Ђв”Ђ generateInvoicesForMonth в”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђ
 
 describe('generateInvoicesForMonth()', () => {
   beforeEach(() => {
@@ -456,7 +456,7 @@ describe('generateInvoicesForMonth()', () => {
     };
     const freshChain = makeChain(freshResult) as Record<string, unknown>;
     // The production code does `.select(...).eq(...).eq(...)` and awaits
-    // directly — make the chain thenable so the awaited value is the result.
+    // directly вЂ” make the chain thenable so the awaited value is the result.
     freshChain.then = (resolve: (v: ChainResult) => unknown) =>
       resolve(freshResult);
     mockFrom.mockReturnValueOnce(freshChain);

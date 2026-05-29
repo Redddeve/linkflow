@@ -22,7 +22,6 @@ export function SitesFilters({ categories }: Props) {
       options: [
         { value: 'Pending', label: 'Pending' },
         { value: 'Active', label: 'Active' },
-        { value: 'Needs changes', label: 'Needs changes' },
         { value: 'Archived', label: 'Archived' },
       ],
       className: 'w-44 h-9',

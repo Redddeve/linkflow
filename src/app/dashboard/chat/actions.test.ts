@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+﻿import { describe, it, expect, vi, beforeEach } from 'vitest';
 import type { UserRow } from '@/lib/features/auth';
 
 const mockFrom = vi.fn();
@@ -16,8 +16,8 @@ const mockRecordAudit = vi.fn();
 const mockNotify = vi.fn();
 const mockRevalidatePath = vi.fn();
 
-vi.mock('@/lib/audit', () => ({ recordAudit: mockRecordAudit }));
-vi.mock('@/lib/notify', () => ({ notify: mockNotify }));
+vi.mock('@/lib/features/audit', () => ({ recordAudit: mockRecordAudit }));
+vi.mock('@/lib/features/notify', () => ({ notify: mockNotify }));
 vi.mock('next/cache', () => ({ revalidatePath: mockRevalidatePath }));
 
 const makeUser = (overrides: Partial<UserRow> = {}): UserRow => ({
@@ -38,7 +38,7 @@ const makeUser = (overrides: Partial<UserRow> = {}): UserRow => ({
 const mockRequireUser = vi.fn(async () => makeUser());
 const mockGetCurrentUser = vi.fn(async () => makeUser());
 
-vi.mock('@/lib/auth', async (importOriginal) => {
+vi.mock('@/lib/features/auth', async (importOriginal) => {
   const actual = await importOriginal<typeof import('@/lib/features/auth')>();
   return {
     ...actual,
@@ -53,7 +53,6 @@ const {
   archiveChat,
   unarchiveChat,
   sendMessage,
-  markChatRead,
   startOrderChat,
   ensureAutoChats,
 } = await import('./actions');
@@ -425,17 +424,9 @@ describe('sendMessage()', () => {
   });
 });
 
-describe('markChatRead()', () => {
-  beforeEach(() => vi.clearAllMocks());
-
-  it('calls the mark_messages_read RPC with the chat id', async () => {
-    mockRpc.mockResolvedValueOnce({ data: null, error: null });
-    await markChatRead(CHAT_1);
-    expect(mockRpc).toHaveBeenCalledWith('mark_messages_read', {
-      p_chat_id: CHAT_1,
-    });
-  });
-});
+// markChatRead used to live as a server action and was tested here. It is now
+// served by the POST /api/chat/mark-read route handler — see its integration
+// tests for the merged `mark_chat_read` RPC behavior.
 
 describe('startOrderChat()', () => {
   beforeEach(() => vi.clearAllMocks());

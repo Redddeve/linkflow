@@ -3,29 +3,11 @@
 import Image from 'next/image';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import {
-  LayoutDashboard,
-  Users,
-  Globe,
-  ShoppingCart,
-  FileText,
-  Receipt,
-  Bell,
-  LogOut,
-  Tag,
-  MessageSquare,
-  Wallet,
-  User as UserIcon,
-} from 'lucide-react';
+import { LogOut, User as UserIcon } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { avatarPublicUrl } from '@/lib/features/avatar';
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from '@/components/ui/tooltip';
+import { TooltipProvider } from '@/components/ui/tooltip';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -33,156 +15,9 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import type { UserRow, UserRole } from '@/lib/features/auth';
-
-interface NavItem {
-  href: string;
-  label: string;
-  icon: React.ReactNode;
-}
-
-const NAV_ITEMS: Record<UserRole, NavItem[]> = {
-  Client: [
-    {
-      href: '/dashboard',
-      label: 'Dashboard',
-      icon: <LayoutDashboard className="nav-icon" />,
-    },
-    {
-      href: '/dashboard/catalog',
-      label: 'Catalog',
-      icon: <Globe className="nav-icon" />,
-    },
-    {
-      href: '/dashboard/cart',
-      label: 'Cart',
-      icon: <ShoppingCart className="nav-icon" />,
-    },
-    {
-      href: '/dashboard/orders',
-      label: 'Orders',
-      icon: <FileText className="nav-icon" />,
-    },
-    {
-      href: '/dashboard/invoices',
-      label: 'Invoices',
-      icon: <Receipt className="nav-icon" />,
-    },
-    {
-      href: '/dashboard/chat',
-      label: 'Chat',
-      icon: <MessageSquare className="nav-icon" />,
-    },
-  ],
-  Manager: [
-    {
-      href: '/dashboard',
-      label: 'Dashboard',
-      icon: <LayoutDashboard className="nav-icon" />,
-    },
-    {
-      href: '/dashboard/orders',
-      label: 'Orders',
-      icon: <FileText className="nav-icon" />,
-    },
-    {
-      href: '/dashboard/sites',
-      label: 'Sites',
-      icon: <Globe className="nav-icon" />,
-    },
-    {
-      href: '/dashboard/invoices',
-      label: 'Invoices',
-      icon: <Receipt className="nav-icon" />,
-    },
-    {
-      href: '/dashboard/chat',
-      label: 'Chat',
-      icon: <MessageSquare className="nav-icon" />,
-    },
-  ],
-  Copywriter: [
-    {
-      href: '/dashboard',
-      label: 'Dashboard',
-      icon: <LayoutDashboard className="nav-icon" />,
-    },
-    {
-      href: '/dashboard/orders',
-      label: 'My Orders',
-      icon: <FileText className="nav-icon" />,
-    },
-    {
-      href: '/dashboard/chat',
-      label: 'Chat',
-      icon: <MessageSquare className="nav-icon" />,
-    },
-  ],
-  Sourcer: [
-    {
-      href: '/dashboard',
-      label: 'Dashboard',
-      icon: <LayoutDashboard className="nav-icon" />,
-    },
-    {
-      href: '/dashboard/sites',
-      label: 'My Sites',
-      icon: <Globe className="nav-icon" />,
-    },
-    {
-      href: '/dashboard/earnings',
-      label: 'Earnings',
-      icon: <Wallet className="nav-icon" />,
-    },
-    {
-      href: '/dashboard/chat',
-      label: 'Chat',
-      icon: <MessageSquare className="nav-icon" />,
-    },
-  ],
-  Admin: [
-    {
-      href: '/dashboard',
-      label: 'Dashboard',
-      icon: <LayoutDashboard className="nav-icon" />,
-    },
-    {
-      href: '/dashboard/users',
-      label: 'Users',
-      icon: <Users className="nav-icon" />,
-    },
-    {
-      href: '/dashboard/sites',
-      label: 'Sites',
-      icon: <Globe className="nav-icon" />,
-    },
-    {
-      href: '/dashboard/categories',
-      label: 'Categories',
-      icon: <Tag className="nav-icon" />,
-    },
-    {
-      href: '/dashboard/orders',
-      label: 'Orders',
-      icon: <FileText className="nav-icon" />,
-    },
-    {
-      href: '/dashboard/invoices',
-      label: 'Invoices',
-      icon: <Receipt className="nav-icon" />,
-    },
-    {
-      href: '/dashboard/earnings',
-      label: 'Earnings',
-      icon: <Wallet className="nav-icon" />,
-    },
-    {
-      href: '/dashboard/chat',
-      label: 'Chat',
-      icon: <MessageSquare className="nav-icon" />,
-    },
-  ],
-};
+import { NAV_ITEMS } from '@/lib/features/dashboard/nav';
+import { useChatReadState } from '@/components/chat/read-state-provider';
+import type { UserRow } from '@/lib/features/auth';
 
 function userInitials(user: UserRow): string {
   const f = user.first_name.trim();
@@ -202,14 +37,28 @@ function displayName(user: UserRow): string {
 export function DashboardShell({
   user,
   children,
+  notificationsSlot,
+  chatUnreadCount = 0,
 }: {
   user: UserRow;
   children: React.ReactNode;
+  notificationsSlot?: React.ReactNode;
+  chatUnreadCount?: number;
 }) {
   const pathname = usePathname();
   const router = useRouter();
   const navItems = (user.role ? NAV_ITEMS[user.role] : null) ?? [];
   const avatarUrl = avatarPublicUrl(user.avatar);
+
+  // Prefer the chat layout's per-chat map (when the user is on the chat
+  // surface) so opening an unread thread clears the nav dot immediately.
+  // Outside the chat surface the provider has no hydrated map and we fall
+  // back to the server-side total fetched in the dashboard layout.
+  const { unreadChatCount, unreadByChat } = useChatReadState();
+  const hasHydratedChatMap = Object.keys(unreadByChat).length > 0;
+  const showChatDot = hasHydratedChatMap
+    ? unreadChatCount > 0
+    : chatUnreadCount > 0;
 
   const handleSignOut = async () => {
     const supabase = createClient();
@@ -244,6 +93,8 @@ export function DashboardShell({
                   ? pathname === '/dashboard'
                   : pathname === item.href ||
                     pathname.startsWith(`${item.href}/`);
+              const showChatUnread =
+                item.href === '/dashboard/chat' && showChatDot;
               return (
                 <Link
                   key={item.href}
@@ -252,6 +103,12 @@ export function DashboardShell({
                 >
                   {item.icon}
                   <span>{item.label}</span>
+                  {showChatUnread && (
+                    <span
+                      aria-label={`${chatUnreadCount} unread message${chatUnreadCount === 1 ? '' : 's'}`}
+                      className="ml-auto h-2 w-2 rounded-full bg-primary"
+                    />
+                  )}
                 </Link>
               );
             })}
@@ -277,7 +134,7 @@ export function DashboardShell({
             </Link>
             <button
               onClick={handleSignOut}
-              className="nav-item w-full mt-0.5 text-left"
+              className="nav-item w-full mt-0.5 cursor-pointer text-left"
             >
               <LogOut className="nav-icon" />
               <span>Sign out</span>
@@ -291,19 +148,11 @@ export function DashboardShell({
           <div className="topbar">
             <div className="flex-1" />
 
-            <Tooltip>
-              <TooltipTrigger
-                className="relative flex h-8 w-8 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
-                aria-label="Notifications"
-              >
-                <Bell className="h-4 w-4" />
-              </TooltipTrigger>
-              <TooltipContent>Notifications</TooltipContent>
-            </Tooltip>
+            {notificationsSlot}
 
             <DropdownMenu>
               <DropdownMenuTrigger
-                className="flex h-8 w-8 items-center justify-center rounded-full outline-none ring-offset-background focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                className="flex h-8 w-8 cursor-pointer items-center justify-center rounded-full outline-none ring-offset-background focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
                 aria-label="User menu"
               >
                 <Avatar className="h-7 w-7 ring-2 ring-primary-soft">
@@ -327,12 +176,16 @@ export function DashboardShell({
                 </div>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem
+                  className="cursor-pointer"
                   onClick={() => router.push('/dashboard/profile')}
                 >
                   <UserIcon className="h-4 w-4" />
                   Profile
                 </DropdownMenuItem>
-                <DropdownMenuItem onClick={handleSignOut}>
+                <DropdownMenuItem
+                  className="cursor-pointer"
+                  onClick={handleSignOut}
+                >
                   <LogOut className="h-4 w-4" />
                   Sign out
                 </DropdownMenuItem>

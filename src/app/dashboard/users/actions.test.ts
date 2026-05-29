@@ -28,9 +28,25 @@ vi.mock('@/lib/supabase/admin', () => ({
 
 const mockRecordAudit = vi.fn();
 const mockNotify = vi.fn();
+const mockMailerSend = vi.fn();
 
-vi.mock('@/lib/audit', () => ({ recordAudit: mockRecordAudit }));
-vi.mock('@/lib/notify', () => ({ notify: mockNotify }));
+vi.mock('@/lib/features/audit', () => ({ recordAudit: mockRecordAudit }));
+vi.mock('@/lib/features/notify', () => ({ notify: mockNotify }));
+vi.mock('@/lib/features/email', () => ({
+  getMailer: () => ({ send: mockMailerSend }),
+  EMAIL_TEMPLATES: {
+    'user.invite_resent': {
+      templateId: 2,
+      buildParams: (input: {
+        first_name?: string | null;
+        invite_link: string;
+      }) => ({
+        first_name: input.first_name ?? '',
+        invite_link: input.invite_link,
+      }),
+    },
+  },
+}));
 
 // ── Auth mock helpers ──────────────────────────────────────────────────────────
 
@@ -49,7 +65,17 @@ const makeAdminUser = (overrides: Partial<UserRow> = {}): UserRow => ({
   ...overrides,
 });
 
-vi.mock('@/lib/auth', async (importOriginal) => {
+const makeManagerUser = (overrides: Partial<UserRow> = {}): UserRow =>
+  makeAdminUser({
+    id: 'mgr-1',
+    email: 'mgr@test.com',
+    role: 'Manager',
+    first_name: 'Mgr',
+    last_name: 'User',
+    ...overrides,
+  });
+
+vi.mock('@/lib/features/auth', async (importOriginal) => {
   const actual = await importOriginal<typeof import('@/lib/features/auth')>();
   return {
     ...actual,
@@ -168,30 +194,84 @@ describe('resendInvite()', () => {
 
   it('throws if user not in PENDING status', async () => {
     const chain = makeChain({
-      data: { id: 'u1', email: 'a@b.com', status: 'ACTIVE' },
+      data: { id: 'u1', email: 'a@b.com', status: 'ACTIVE', role: 'Client' },
       error: null,
     });
     mockFrom.mockReturnValue(chain);
     await expect(resendInvite('u1')).rejects.toThrow('PENDING');
   });
 
-  it('updates invited_at and records audit on success', async () => {
+  it('re-sends via inviteUserByEmail and records audit on success', async () => {
     const selectChain = makeChain({
-      data: { id: 'u1', email: 'a@b.com', status: 'PENDING' },
+      data: {
+        id: 'u1',
+        email: 'a@b.com',
+        status: 'PENDING',
+        role: 'Client',
+        first_name: 'A',
+        last_name: 'B',
+        manager_id: null,
+      },
       error: null,
     });
     const updateChain = makeChain({ data: null, error: null });
     mockFrom.mockReturnValueOnce(selectChain).mockReturnValue(updateChain);
-    mockAdminGenerateLink.mockResolvedValue({ data: {}, error: null });
+    mockAdminInvite.mockResolvedValue({
+      data: { user: { id: 'u1' } },
+      error: null,
+    });
 
     await resendInvite('u1');
 
-    expect(mockAdminGenerateLink).toHaveBeenCalledWith({
-      type: 'invite',
-      email: 'a@b.com',
-    });
+    expect(mockAdminInvite).toHaveBeenCalledWith(
+      'a@b.com',
+      expect.objectContaining({
+        data: expect.objectContaining({ resent: true }),
+        redirectTo: expect.stringContaining('/auth/confirm'),
+      }),
+    );
+    expect(mockAdminGenerateLink).not.toHaveBeenCalled();
     expect(mockRecordAudit).toHaveBeenCalledWith(
       expect.objectContaining({ action: 'user.invite_resent', entityId: 'u1' }),
+    );
+  });
+
+  it('falls back to generateLink + mailer when inviteUserByEmail fails', async () => {
+    const selectChain = makeChain({
+      data: {
+        id: 'u1',
+        email: 'a@b.com',
+        status: 'PENDING',
+        role: 'Client',
+        first_name: 'A',
+        last_name: 'B',
+        manager_id: null,
+      },
+      error: null,
+    });
+    const updateChain = makeChain({ data: null, error: null });
+    mockFrom.mockReturnValueOnce(selectChain).mockReturnValue(updateChain);
+    mockAdminInvite.mockResolvedValue({
+      data: null,
+      error: { message: 'User already exists' },
+    });
+    mockAdminGenerateLink.mockResolvedValue({
+      data: { properties: { action_link: 'https://x.test/confirm?token=abc' } },
+      error: null,
+    });
+
+    await resendInvite('u1');
+
+    expect(mockAdminGenerateLink).toHaveBeenCalledWith(
+      expect.objectContaining({ type: 'invite', email: 'a@b.com' }),
+    );
+    expect(mockMailerSend).toHaveBeenCalledWith(
+      expect.objectContaining({
+        to: 'a@b.com',
+        params: expect.objectContaining({
+          invite_link: 'https://x.test/confirm?token=abc',
+        }),
+      }),
     );
   });
 });
@@ -347,14 +427,315 @@ describe('activateUser()', () => {
     expect(mockRecordAudit).toHaveBeenCalledWith(
       expect.objectContaining({ action: 'user.activate', entityId: 'u1' }),
     );
-    expect(mockNotify).toHaveBeenCalledWith(
-      expect.objectContaining({ type: 'user.activated' }),
-    );
+    // Per product: user.* events do not generate notifications.
+    expect(mockNotify).not.toHaveBeenCalled();
   });
 
   it('throws NOT_FOUND when user does not exist', async () => {
     const chain = makeChain({ data: null, error: { message: 'not found' } });
     mockFrom.mockReturnValue(chain);
     await expect(activateUser('missing')).rejects.toThrow('User not found');
+  });
+});
+
+// ── Manager actor permissions ──────────────────────────────────────────────────
+
+describe('inviteUser() — Manager actor', () => {
+  beforeEach(() => vi.clearAllMocks());
+
+  it('defaults manager_id to actor.id when Manager invites a Client with no pick', async () => {
+    vi.mocked(requireRole).mockResolvedValueOnce(makeManagerUser());
+
+    const noUser = makeChain({ data: null, error: null });
+    const updateChain = makeChain({ data: null, error: null });
+    mockFrom.mockReturnValueOnce(noUser).mockReturnValue(updateChain);
+
+    mockAdminInvite.mockResolvedValue({
+      data: { user: { id: 'new-client-1' } },
+      error: null,
+    });
+
+    await inviteUser({
+      email: 'client@test.com',
+      first_name: 'C',
+      last_name: 'L',
+      role: 'Client',
+    });
+
+    expect(mockAdminInvite).toHaveBeenCalledWith(
+      'client@test.com',
+      expect.objectContaining({
+        data: expect.objectContaining({ manager_id: 'mgr-1' }),
+      }),
+    );
+  });
+
+  it('honors explicit manager_id when Manager invites a Client', async () => {
+    vi.mocked(requireRole).mockResolvedValueOnce(makeManagerUser());
+
+    const noUser = makeChain({ data: null, error: null });
+    const updateChain = makeChain({ data: null, error: null });
+    mockFrom.mockReturnValueOnce(noUser).mockReturnValue(updateChain);
+
+    mockAdminInvite.mockResolvedValue({
+      data: { user: { id: 'new-client-2' } },
+      error: null,
+    });
+
+    const otherMgr = '11111111-2222-4333-8444-555555555555';
+    await inviteUser({
+      email: 'client2@test.com',
+      first_name: 'C',
+      last_name: 'L',
+      role: 'Client',
+      manager_id: otherMgr,
+    });
+
+    expect(mockAdminInvite).toHaveBeenCalledWith(
+      'client2@test.com',
+      expect.objectContaining({
+        data: expect.objectContaining({ manager_id: otherMgr }),
+      }),
+    );
+  });
+
+  it.each(['Copywriter', 'Sourcer'] as const)(
+    'succeeds when Manager invites a %s',
+    async (role) => {
+      vi.mocked(requireRole).mockResolvedValueOnce(makeManagerUser());
+      const noUser = makeChain({ data: null, error: null });
+      const updateChain = makeChain({ data: null, error: null });
+      mockFrom.mockReturnValueOnce(noUser).mockReturnValue(updateChain);
+      mockAdminInvite.mockResolvedValue({
+        data: { user: { id: 'new-1' } },
+        error: null,
+      });
+
+      const result = await inviteUser({
+        email: `${role}@test.com`,
+        first_name: 'X',
+        last_name: 'Y',
+        role,
+      });
+
+      expect(result.userId).toBe('new-1');
+    },
+  );
+
+  it.each(['Manager', 'Admin'] as const)(
+    'throws FORBIDDEN when Manager invites a %s',
+    async (role) => {
+      vi.mocked(requireRole).mockResolvedValueOnce(makeManagerUser());
+      const noUser = makeChain({ data: null, error: null });
+      mockFrom.mockReturnValue(noUser);
+
+      await expect(
+        inviteUser({
+          email: `${role}@test.com`,
+          first_name: 'X',
+          last_name: 'Y',
+          role,
+        }),
+      ).rejects.toThrow('permission');
+      expect(mockAdminInvite).not.toHaveBeenCalled();
+    },
+  );
+});
+
+describe('resendInvite() — Manager actor', () => {
+  beforeEach(() => vi.clearAllMocks());
+
+  it.each(['Client', 'Copywriter', 'Sourcer'] as const)(
+    'succeeds for PENDING %s target',
+    async (role) => {
+      vi.mocked(requireRole).mockResolvedValueOnce(makeManagerUser());
+      const selectChain = makeChain({
+        data: {
+          id: 'u1',
+          email: 'a@b.com',
+          status: 'PENDING',
+          role,
+          first_name: 'A',
+          last_name: 'B',
+          manager_id: null,
+        },
+        error: null,
+      });
+      const updateChain = makeChain({ data: null, error: null });
+      mockFrom.mockReturnValueOnce(selectChain).mockReturnValue(updateChain);
+      mockAdminInvite.mockResolvedValue({
+        data: { user: { id: 'u1' } },
+        error: null,
+      });
+
+      await resendInvite('u1');
+      expect(mockAdminInvite).toHaveBeenCalled();
+    },
+  );
+
+  it.each(['Manager', 'Admin'] as const)(
+    'throws FORBIDDEN when target is %s',
+    async (role) => {
+      vi.mocked(requireRole).mockResolvedValueOnce(makeManagerUser());
+      const selectChain = makeChain({
+        data: {
+          id: 'u1',
+          email: 'a@b.com',
+          status: 'PENDING',
+          role,
+          first_name: 'X',
+          last_name: 'Y',
+          manager_id: null,
+        },
+        error: null,
+      });
+      mockFrom.mockReturnValue(selectChain);
+
+      await expect(resendInvite('u1')).rejects.toThrow('permission');
+      expect(mockAdminInvite).not.toHaveBeenCalled();
+    },
+  );
+});
+
+describe('editUser() — Manager actor', () => {
+  beforeEach(() => vi.clearAllMocks());
+
+  it('persists name changes for a Client target', async () => {
+    vi.mocked(requireRole).mockResolvedValueOnce(makeManagerUser());
+    const selectChain = makeChain({
+      data: {
+        id: 'u1',
+        role: 'Client',
+        manager_id: 'mgr-1',
+        status: 'ACTIVE',
+      },
+      error: null,
+    });
+    const updateChain = makeChain({ data: null, error: null });
+    mockFrom.mockReturnValueOnce(selectChain).mockReturnValue(updateChain);
+
+    const result = await editUser('u1', {
+      first_name: 'New',
+      last_name: 'Name',
+    });
+    expect(result).toEqual({ done: true });
+    expect(mockRecordAudit).toHaveBeenCalledWith(
+      expect.objectContaining({ action: 'user.edit' }),
+    );
+  });
+
+  it('rejects a patch that contains a role change', async () => {
+    vi.mocked(requireRole).mockResolvedValueOnce(makeManagerUser());
+    const selectChain = makeChain({
+      data: {
+        id: 'u1',
+        role: 'Client',
+        manager_id: 'mgr-1',
+        status: 'ACTIVE',
+      },
+      error: null,
+    });
+    mockFrom.mockReturnValue(selectChain);
+
+    await expect(
+      editUser('u1', { role: 'Copywriter' }),
+    ).rejects.toThrow('role');
+  });
+
+  it.each(['Manager', 'Admin'] as const)(
+    'throws FORBIDDEN when target is %s',
+    async (role) => {
+      vi.mocked(requireRole).mockResolvedValueOnce(makeManagerUser());
+      const selectChain = makeChain({
+        data: { id: 'u1', role, manager_id: null, status: 'ACTIVE' },
+        error: null,
+      });
+      mockFrom.mockReturnValue(selectChain);
+
+      await expect(
+        editUser('u1', { first_name: 'X' }),
+      ).rejects.toThrow('permission');
+    },
+  );
+
+  it('allows reassigning a Client they currently manage to another Manager', async () => {
+    vi.mocked(requireRole).mockResolvedValueOnce(makeManagerUser());
+    const selectChain = makeChain({
+      data: {
+        id: 'u1',
+        role: 'Client',
+        manager_id: 'mgr-1',
+        status: 'ACTIVE',
+      },
+      error: null,
+    });
+    const updateChain = makeChain({ data: null, error: null });
+    mockFrom.mockReturnValueOnce(selectChain).mockReturnValue(updateChain);
+
+    const result = await editUser('u1', {
+      manager_id: '11111111-2222-4333-8444-555555555555',
+    });
+    expect(result).toEqual({ done: true });
+  });
+
+  it('throws FORBIDDEN reassigning a Client managed by a different Manager', async () => {
+    vi.mocked(requireRole).mockResolvedValueOnce(makeManagerUser());
+    const selectChain = makeChain({
+      data: {
+        id: 'u1',
+        role: 'Client',
+        manager_id: 'other-mgr',
+        status: 'ACTIVE',
+      },
+      error: null,
+    });
+    mockFrom.mockReturnValue(selectChain);
+
+    await expect(
+      editUser('u1', {
+        manager_id: '11111111-2222-4333-8444-555555555555',
+      }),
+    ).rejects.toThrow('permission');
+  });
+});
+
+describe('editUser() — Admin actor manager reassignment', () => {
+  beforeEach(() => vi.clearAllMocks());
+
+  it('allows reassigning any Client to any Manager', async () => {
+    const selectChain = makeChain({
+      data: {
+        id: 'u1',
+        role: 'Client',
+        manager_id: 'someone-else',
+        status: 'ACTIVE',
+      },
+      error: null,
+    });
+    const updateChain = makeChain({ data: null, error: null });
+    mockFrom.mockReturnValueOnce(selectChain).mockReturnValue(updateChain);
+
+    const result = await editUser('u1', {
+      manager_id: '11111111-2222-4333-8444-555555555555',
+    });
+    expect(result).toEqual({ done: true });
+  });
+});
+
+describe('disableUser()/activateUser() — Manager actor blocked', () => {
+  beforeEach(() => vi.clearAllMocks());
+
+  it('throws FORBIDDEN for Manager actor on disableUser', async () => {
+    vi.mocked(requireRole).mockRejectedValueOnce(
+      new Error('FORBIDDEN: requires role Admin'),
+    );
+    await expect(disableUser('u1', 'reason xyz')).rejects.toThrow('permission');
+  });
+
+  it('throws FORBIDDEN for Manager actor on activateUser', async () => {
+    vi.mocked(requireRole).mockRejectedValueOnce(
+      new Error('FORBIDDEN: requires role Admin'),
+    );
+    await expect(activateUser('u1')).rejects.toThrow('permission');
   });
 });

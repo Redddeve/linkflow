@@ -15,6 +15,7 @@ import { ApproveOrderDialog } from '@/components/orders/approve-order-dialog';
 import { RejectOrderDialog } from '@/components/orders/reject-order-dialog';
 import { CommentsTimeline } from '@/components/orders/comments-timeline';
 import { AddCommentForm } from '@/components/orders/add-comment-form';
+import { AuditTimeline } from '@/components/orders/audit-timeline';
 import { listCopywriters } from '../actions';
 import { BackLink } from '@/components/ui/back-link';
 import { StartChatButton } from '@/components/orders/start-chat-button';
@@ -391,6 +392,15 @@ export default async function OrderDetailPage({ params }: PageProps) {
                   </div>
                 ))}
               </dl>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>Activity</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <AuditTimeline orderId={id} />
             </CardContent>
           </Card>
         </div>
