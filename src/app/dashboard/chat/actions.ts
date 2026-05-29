@@ -3,6 +3,7 @@
 import { revalidatePath } from 'next/cache';
 import { createClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
+import { fetchActiveUsers, type ChatParticipant } from '@/lib/data/chat';
 import { requireUser, getCurrentUser } from '@/lib/features/auth';
 import { recordAudit } from '@/lib/features/audit';
 import { notify } from '@/lib/features/notify';
@@ -292,23 +293,16 @@ export async function sendMessage(input: SendMessageInput): Promise<void> {
   revalidatePath(`/dashboard/chat/${chatId}`);
 }
 
-export async function markChatRead(chatId: string): Promise<void> {
-  const actor = await requireUser();
-  const supabase = await createClient();
-  await supabase.rpc('mark_messages_read', { p_chat_id: chatId });
-
-  // Also mark any in-app notifications that point at this chat as read, so
-  // opening the thread clears the bell/nav indicators in one trip.
-  await supabase
-    .from('notifications')
-    .update({ read_at: new Date().toISOString() })
-    .eq('recipient_id', actor.id)
-    .is('read_at', null)
-    .in('type', ['chat.message_sent', 'chat.created', 'chat.participant_added'])
-    .contains('payload', { chatId });
-
-  revalidatePath('/dashboard', 'layout');
+export async function listActiveUsersForChat(): Promise<ChatParticipant[]> {
+  await requireUser();
+  return fetchActiveUsers();
 }
+
+// markChatRead intentionally lives at /api/chat/mark-read (POST) instead of
+// here. The client fires it with `fetch({ keepalive: true })` so it survives
+// route changes without blocking the UI. Calling it as a Server Action would
+// queue it behind React's transition and add a `revalidatePath` cost the side
+// effect doesn't need.
 
 export async function startOrderChat(
   input: StartOrderChatInput,

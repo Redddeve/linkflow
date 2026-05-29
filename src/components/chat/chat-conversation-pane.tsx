@@ -34,14 +34,12 @@ export interface SelectedChat {
 
 interface Props {
   selected: SelectedChat;
-  allUsers: ChatParticipant[];
   actorId: string;
   viewerRole: UserRole | null;
 }
 
 export function ChatConversationPane({
   selected,
-  allUsers,
   actorId,
   viewerRole,
 }: Props) {
@@ -57,6 +55,14 @@ export function ChatConversationPane({
   const visibleCount = masked.filter((p) => !p.masked).length;
   const hasMasked = masked.some((p) => p.masked);
   const memberCount = visibleCount + (hasMasked ? 1 : 0);
+
+  // Skip the mark-read network call entirely when the user has no unread
+  // messages in this chat. Edge case: stale chat notifications without an
+  // unread message will linger until "Clear read" is used or a new message
+  // arrives — accepted trade-off for zero round-trips on every revisit.
+  const hasUnreadForActor = messages.some(
+    (m) => m.created_by_id !== actorId && !m.read_by.includes(actorId),
+  );
 
   return (
     <>
@@ -75,7 +81,6 @@ export function ChatConversationPane({
           <RoomDetailsPanel
             chat={chat}
             participants={participants}
-            allUsers={allUsers}
             actorId={actorId}
             viewerRole={viewerRole}
             relatedOrder={relatedOrder}
@@ -108,7 +113,7 @@ export function ChatConversationPane({
         )}
       </OptimisticMessagesProvider>
 
-      <MarkReadOnMount chatId={chat.id} />
+      {hasUnreadForActor && <MarkReadOnMount chatId={chat.id} />}
       <ChatPoller />
     </>
   );

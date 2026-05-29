@@ -29,7 +29,6 @@ type ChatRow = Database['public']['Tables']['chats']['Row'];
 interface Props {
   chat: ChatRow;
   participants: ChatParticipant[];
-  allUsers: ChatParticipant[];
   actorId: string;
   viewerRole: UserRole | null;
   relatedOrder: RelatedOrderSummary | null;
@@ -47,7 +46,6 @@ function shouldMaskCategory(
 export function RoomDetailsPanel({
   chat,
   participants,
-  allUsers,
   actorId,
   viewerRole,
   relatedOrder,
@@ -174,7 +172,6 @@ export function RoomDetailsPanel({
               chatId={chat.id}
               currentTitle={chat.title}
               currentParticipants={participants}
-              allUsers={allUsers}
               creatorId={chat.created_by_id}
               actorId={actorId}
             />

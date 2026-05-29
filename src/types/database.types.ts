@@ -821,6 +821,7 @@ export type Database = {
       is_active_user: { Args: never; Returns: boolean }
       is_admin: { Args: never; Returns: boolean }
       is_chat_participant: { Args: { p_chat_id: string }; Returns: boolean }
+      mark_chat_read: { Args: { p_chat_id: string }; Returns: undefined }
       mark_messages_read: { Args: { p_chat_id: string }; Returns: undefined }
       reassign_order_billing_months: {
         Args: { p_changes: Json }

@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState, useTransition } from 'react';
+import { useEffect, useMemo, useState, useTransition } from 'react';
 import { X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
@@ -15,14 +15,16 @@ import {
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
-import { editChat } from '@/app/dashboard/chat/actions';
+import {
+  editChat,
+  listActiveUsersForChat,
+} from '@/app/dashboard/chat/actions';
 import type { ChatParticipant } from '@/lib/data/chat';
 
 interface Props {
   chatId: string;
   currentTitle: string;
   currentParticipants: ChatParticipant[];
-  allUsers: ChatParticipant[];
   creatorId: string;
   actorId: string;
 }
@@ -35,11 +37,12 @@ export function EditChatDialog({
   chatId,
   currentTitle,
   currentParticipants,
-  allUsers,
   creatorId,
   actorId,
 }: Props) {
   const [open, setOpen] = useState(false);
+  const [allUsers, setAllUsers] = useState<ChatParticipant[]>(currentParticipants);
+  const [usersLoaded, setUsersLoaded] = useState(false);
   const [title, setTitle] = useState(currentTitle);
   const [selectedIds, setSelectedIds] = useState<string[]>(
     currentParticipants.map((p) => p.id),
@@ -47,6 +50,24 @@ export function EditChatDialog({
   const [query, setQuery] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
+
+  useEffect(() => {
+    if (!open || usersLoaded) return;
+    let cancelled = false;
+    listActiveUsersForChat()
+      .then((rows) => {
+        if (!cancelled) {
+          setAllUsers(rows);
+          setUsersLoaded(true);
+        }
+      })
+      .catch(() => {
+        if (!cancelled) setError('Failed to load users');
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [open, usersLoaded]);
 
   const usersById = useMemo(
     () => Object.fromEntries(allUsers.map((u) => [u.id, u])),

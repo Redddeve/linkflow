@@ -128,22 +128,15 @@ export async function fetchChatParticipants(
   chatId: string,
 ): Promise<ChatParticipant[]> {
   const supabase = await createClient();
-  const { data: rows } = await supabase
+  // Single round-trip: embed the users row through the chat_participants FK.
+  const { data } = await supabase
     .from('chat_participants')
-    .select('user_id')
+    .select('users(id, first_name, last_name, role)')
     .eq('chat_id', chatId);
 
-  if (!rows?.length) return [];
-
-  const { data: users } = await supabase
-    .from('users')
-    .select('id, first_name, last_name, role')
-    .in(
-      'id',
-      rows.map((r) => r.user_id),
-    );
-
-  return (users ?? []) as ChatParticipant[];
+  return (data ?? [])
+    .map((r) => r.users)
+    .filter((u): u is ChatParticipant => u != null) as ChatParticipant[];
 }
 
 export async function fetchChatMessages(chatId: string): Promise<MessageRow[]> {
