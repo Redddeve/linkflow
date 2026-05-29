@@ -1,7 +1,7 @@
 import { createClient } from '@/lib/supabase/client';
 import { updatePasswordSchema } from '@/lib/schemas/auth';
 
-export async function updatePassword(password: string) {
+export async function setPassword(password: string) {
   const parsed = updatePasswordSchema.safeParse({ password });
   if (!parsed.success) throw new Error(parsed.error.issues[0].message);
 
