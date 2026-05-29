@@ -1,6 +1,6 @@
 'use client';
 
-import { useRouter } from 'next/navigation';
+import { useTransition } from 'react';
 import { useForm, useWatch } from 'react-hook-form';
 import { Button } from '@/components/ui/button';
 import {
@@ -44,7 +44,7 @@ type FormValues = {
 };
 
 export default function LoginForm() {
-  const router = useRouter();
+  const [isPending, startTransition] = useTransition();
 
   const {
     register,
@@ -52,20 +52,18 @@ export default function LoginForm() {
     setValue,
     control,
     setError,
-    formState: { errors, isSubmitting },
+    formState: { errors },
   } = useForm<FormValues>();
 
   const email = useWatch({ control, name: 'email', defaultValue: '' });
 
-  async function onSubmit(data: FormValues) {
-    try {
-      await loginWithPassword(data.email, data.password);
-      router.push('/dashboard');
-    } catch (err: unknown) {
-      setError('root', {
-        message: err instanceof Error ? err.message : 'An error occurred',
-      });
-    }
+  function onSubmit(data: FormValues) {
+    startTransition(async () => {
+      const result = await loginWithPassword(data.email, data.password);
+      if (result?.error) {
+        setError('root', { message: result.error });
+      }
+    });
   }
 
   function fillRole(role: UserRole) {
@@ -187,12 +185,12 @@ export default function LoginForm() {
                 <Button
                   type="submit"
                   className="w-full"
-                  disabled={isSubmitting}
+                  disabled={isPending}
                 >
-                  {isSubmitting && (
+                  {isPending && (
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                   )}
-                  {isSubmitting ? 'Signing in…' : 'Sign in'}
+                  {isPending ? 'Signing in…' : 'Sign in'}
                 </Button>
               </form>
             </CardContent>

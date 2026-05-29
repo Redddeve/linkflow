@@ -12,13 +12,13 @@ import {
 } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { setPassword } from '../set-password/actions';
+import { setPassword } from './actions';
 
 type FormValues = {
   password: string;
 };
 
-export default function UpdatePasswordForm() {
+export default function SetPasswordForm() {
   const router = useRouter();
   const {
     register,
@@ -44,20 +44,21 @@ export default function UpdatePasswordForm() {
         <div className="flex flex-col gap-6">
           <Card>
             <CardHeader>
-              <CardTitle className="text-2xl">Reset Your Password</CardTitle>
+              <CardTitle className="text-2xl">Set Your Password</CardTitle>
               <CardDescription>
-                Please enter your new password below.
+                Welcome! Please create a password to finish setting up your
+                account.
               </CardDescription>
             </CardHeader>
             <CardContent>
               <form onSubmit={handleSubmit(onSubmit)}>
                 <div className="flex flex-col gap-6">
                   <div className="grid gap-2">
-                    <Label htmlFor="password">New password</Label>
+                    <Label htmlFor="password">Password</Label>
                     <Input
                       id="password"
                       type="password"
-                      placeholder="New password"
+                      placeholder="Create a password"
                       {...register('password', {
                         required: 'Password is required',
                         minLength: {
@@ -82,7 +83,7 @@ export default function UpdatePasswordForm() {
                     className="w-full"
                     disabled={isSubmitting}
                   >
-                    {isSubmitting ? 'Saving...' : 'Save new password'}
+                    {isSubmitting ? 'Saving...' : 'Set password'}
                   </Button>
                 </div>
               </form>

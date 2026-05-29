@@ -48,6 +48,7 @@ Route group [src/app/(auth)/](../src/app/(auth)/) — all public, sits outside t
 - [login/page.tsx](../src/app/(auth)/login/page.tsx) + `actions.ts` — email/password sign-in.
 - [auth/forgot-password/](../src/app/(auth)/auth/forgot-password/) — password-reset request.
 - [auth/update-password/](../src/app/(auth)/auth/update-password/) — set new password after reset.
+- [auth/set-password/](../src/app/(auth)/auth/set-password/) — invitee creates their first password.
 - [auth/confirm/route.ts](../src/app/(auth)/auth/confirm/route.ts) — email-link callback.
 - [auth/error/page.tsx](../src/app/(auth)/auth/error/page.tsx) — generic auth error page.
 
@@ -55,4 +56,4 @@ Sign-out: server action invalidates the session and redirects to `/`.
 
 ## Invitations
 
-Admin-only flow ([src/app/dashboard/users/invite/](../src/app/dashboard/users/invite/)) uses Supabase Auth `admin.inviteUserByEmail`. The DB trigger on `auth.users` inserts the matching `public.users` row with `status = PENDING` and the role passed in invite metadata; first sign-in promotes to `ACTIVE` via `getCurrentUser`.
+Admin-only flow ([src/app/dashboard/users/invite/](../src/app/dashboard/users/invite/)) uses Supabase Auth `admin.inviteUserByEmail`. The DB trigger on `auth.users` inserts the matching `public.users` row with `status = PENDING` and the role passed in invite metadata; first sign-in promotes to `ACTIVE` via `getCurrentUser`. The invite email links into [auth/confirm/route.ts](../src/app/(auth)/auth/confirm/route.ts) and hands off to [auth/set-password/](../src/app/(auth)/auth/set-password/) so the invitee chooses their initial password.
