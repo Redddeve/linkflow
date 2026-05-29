@@ -19,7 +19,6 @@ import type { TablesUpdate } from '@/types/database.types';
 
 const ACTION_RESULT_STATUS: Record<SiteStatusAction, SiteStatus> = {
   APPROVE: 'Active',
-  NEEDS_CHANGES: 'Needs changes',
   ARCHIVE: 'Archived',
   REACTIVATE: 'Active',
 };
@@ -163,11 +162,10 @@ export async function editSite(
 export async function setSiteStatus(
   id: string,
   action: SiteStatusAction,
-  change_note?: string,
 ): Promise<void> {
   const actor = await requireRole(['Admin']).catch(mapForbidden);
 
-  const parsed = setSiteStatusSchema.safeParse({ action, change_note });
+  const parsed = setSiteStatusSchema.safeParse({ action });
   if (!parsed.success)
     throw new AppError('VALIDATION', parsed.error.issues[0].message);
 
@@ -196,9 +194,6 @@ export async function setSiteStatus(
   if (action === 'APPROVE') {
     updatePayload.approved_by_id = actor.id;
     updatePayload.approved_at = now;
-  } else if (action === 'NEEDS_CHANGES') {
-    updatePayload.needs_changes_by_id = actor.id;
-    updatePayload.needs_changes_at = now;
   }
 
   const { error: updateError } = await supabase
@@ -212,10 +207,7 @@ export async function setSiteStatus(
     entityId: id,
     action: `site.${action.toLowerCase()}`,
     before: { status: site.status },
-    after: {
-      status: ACTION_RESULT_STATUS[action],
-      change_note: change_note ?? null,
-    },
+    after: { status: ACTION_RESULT_STATUS[action] },
   });
 
   // §6.11: notify the site owner (and the sourcer if different) that the
@@ -235,7 +227,6 @@ export async function setSiteStatus(
           domain: site.domain,
           from_status: site.status,
           to_status: ACTION_RESULT_STATUS[action],
-          change_note: change_note ?? null,
         },
       }),
     ),

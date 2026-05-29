@@ -16,10 +16,9 @@ type SiteStatus = Database['public']['Enums']['site_status'];
 
 function statusVariant(
   status: SiteStatus,
-): 'success' | 'warning' | 'destructive' | 'outline' {
+): 'success' | 'warning' | 'outline' {
   if (status === 'Active') return 'success';
   if (status === 'Pending') return 'warning';
-  if (status === 'Needs changes') return 'destructive';
   return 'outline';
 }
 

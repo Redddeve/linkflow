@@ -7,6 +7,7 @@ import {
   fetchChatMessages,
   fetchActiveUsers,
   fetchOrderByChatId,
+  fetchUnreadCountsByChat,
 } from '@/lib/data/chat';
 import { fetchUsersByIds } from '@/lib/data/users';
 import { ChatShell } from '@/components/chat/chat-shell';
@@ -52,6 +53,13 @@ export default async function ChatDetailPage({
   const userRows = await fetchUsersByIds(allUserIds);
   const userMap = Object.fromEntries(userRows.map((u) => [u.id, u]));
 
+  // Per-thread unread counts for the chat list panel. The currently selected
+  // chat is dropped from the map since opening it will mark its messages read.
+  const unreadByChat = await fetchUnreadCountsByChat(
+    actor.id,
+    chats.map((c) => c.id).filter((cid) => cid !== id),
+  );
+
   return (
     <ChatShell
       chats={chats}
@@ -66,6 +74,7 @@ export default async function ChatDetailPage({
         isParticipant,
         relatedOrder,
       }}
+      unreadByChat={unreadByChat}
     />
   );
 }

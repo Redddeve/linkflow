@@ -3,19 +3,7 @@
 import Image from 'next/image';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import {
-  LayoutDashboard,
-  Users,
-  Globe,
-  ShoppingCart,
-  FileText,
-  Receipt,
-  LogOut,
-  Tag,
-  MessageSquare,
-  Wallet,
-  User as UserIcon,
-} from 'lucide-react';
+import { LogOut, User as UserIcon } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { avatarPublicUrl } from '@/lib/features/avatar';
@@ -27,161 +15,8 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import type { UserRow, UserRole } from '@/lib/features/auth';
-
-interface NavItem {
-  href: string;
-  label: string;
-  icon: React.ReactNode;
-}
-
-const NAV_ITEMS: Record<UserRole, NavItem[]> = {
-  Client: [
-    {
-      href: '/dashboard',
-      label: 'Dashboard',
-      icon: <LayoutDashboard className="nav-icon" />,
-    },
-    {
-      href: '/dashboard/catalog',
-      label: 'Catalog',
-      icon: <Globe className="nav-icon" />,
-    },
-    {
-      href: '/dashboard/cart',
-      label: 'Cart',
-      icon: <ShoppingCart className="nav-icon" />,
-    },
-    {
-      href: '/dashboard/orders',
-      label: 'Orders',
-      icon: <FileText className="nav-icon" />,
-    },
-    {
-      href: '/dashboard/invoices',
-      label: 'Invoices',
-      icon: <Receipt className="nav-icon" />,
-    },
-    {
-      href: '/dashboard/chat',
-      label: 'Chat',
-      icon: <MessageSquare className="nav-icon" />,
-    },
-  ],
-  Manager: [
-    {
-      href: '/dashboard',
-      label: 'Dashboard',
-      icon: <LayoutDashboard className="nav-icon" />,
-    },
-    {
-      href: '/dashboard/users',
-      label: 'Users',
-      icon: <Users className="nav-icon" />,
-    },
-    {
-      href: '/dashboard/orders',
-      label: 'Orders',
-      icon: <FileText className="nav-icon" />,
-    },
-    {
-      href: '/dashboard/sites',
-      label: 'Sites',
-      icon: <Globe className="nav-icon" />,
-    },
-    {
-      href: '/dashboard/invoices',
-      label: 'Invoices',
-      icon: <Receipt className="nav-icon" />,
-    },
-    {
-      href: '/dashboard/chat',
-      label: 'Chat',
-      icon: <MessageSquare className="nav-icon" />,
-    },
-  ],
-  Copywriter: [
-    {
-      href: '/dashboard',
-      label: 'Dashboard',
-      icon: <LayoutDashboard className="nav-icon" />,
-    },
-    {
-      href: '/dashboard/orders',
-      label: 'My Orders',
-      icon: <FileText className="nav-icon" />,
-    },
-    {
-      href: '/dashboard/chat',
-      label: 'Chat',
-      icon: <MessageSquare className="nav-icon" />,
-    },
-  ],
-  Sourcer: [
-    {
-      href: '/dashboard',
-      label: 'Dashboard',
-      icon: <LayoutDashboard className="nav-icon" />,
-    },
-    {
-      href: '/dashboard/sites',
-      label: 'My Sites',
-      icon: <Globe className="nav-icon" />,
-    },
-    {
-      href: '/dashboard/earnings',
-      label: 'Earnings',
-      icon: <Wallet className="nav-icon" />,
-    },
-    {
-      href: '/dashboard/chat',
-      label: 'Chat',
-      icon: <MessageSquare className="nav-icon" />,
-    },
-  ],
-  Admin: [
-    {
-      href: '/dashboard',
-      label: 'Dashboard',
-      icon: <LayoutDashboard className="nav-icon" />,
-    },
-    {
-      href: '/dashboard/users',
-      label: 'Users',
-      icon: <Users className="nav-icon" />,
-    },
-    {
-      href: '/dashboard/sites',
-      label: 'Sites',
-      icon: <Globe className="nav-icon" />,
-    },
-    {
-      href: '/dashboard/categories',
-      label: 'Categories',
-      icon: <Tag className="nav-icon" />,
-    },
-    {
-      href: '/dashboard/orders',
-      label: 'Orders',
-      icon: <FileText className="nav-icon" />,
-    },
-    {
-      href: '/dashboard/invoices',
-      label: 'Invoices',
-      icon: <Receipt className="nav-icon" />,
-    },
-    {
-      href: '/dashboard/earnings',
-      label: 'Earnings',
-      icon: <Wallet className="nav-icon" />,
-    },
-    {
-      href: '/dashboard/chat',
-      label: 'Chat',
-      icon: <MessageSquare className="nav-icon" />,
-    },
-  ],
-};
+import { NAV_ITEMS } from '@/lib/features/dashboard/nav';
+import type { UserRow } from '@/lib/features/auth';
 
 function userInitials(user: UserRow): string {
   const f = user.first_name.trim();
@@ -202,10 +37,12 @@ export function DashboardShell({
   user,
   children,
   notificationsSlot,
+  chatUnreadCount = 0,
 }: {
   user: UserRow;
   children: React.ReactNode;
   notificationsSlot?: React.ReactNode;
+  chatUnreadCount?: number;
 }) {
   const pathname = usePathname();
   const router = useRouter();
@@ -245,6 +82,8 @@ export function DashboardShell({
                   ? pathname === '/dashboard'
                   : pathname === item.href ||
                     pathname.startsWith(`${item.href}/`);
+              const showChatUnread =
+                item.href === '/dashboard/chat' && chatUnreadCount > 0;
               return (
                 <Link
                   key={item.href}
@@ -253,6 +92,12 @@ export function DashboardShell({
                 >
                   {item.icon}
                   <span>{item.label}</span>
+                  {showChatUnread && (
+                    <span
+                      aria-label={`${chatUnreadCount} unread message${chatUnreadCount === 1 ? '' : 's'}`}
+                      className="ml-auto h-2 w-2 rounded-full bg-primary"
+                    />
+                  )}
                 </Link>
               );
             })}

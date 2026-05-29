@@ -1,5 +1,9 @@
 import { requireUser } from '@/lib/features/auth';
-import { fetchChatsList, fetchActiveUsers } from '@/lib/data/chat';
+import {
+  fetchChatsList,
+  fetchActiveUsers,
+  fetchUnreadCountsByChat,
+} from '@/lib/data/chat';
 import { ChatShell } from '@/components/chat/chat-shell';
 
 export const metadata = { title: 'Chats' };
@@ -17,6 +21,11 @@ export default async function ChatsPage({ searchParams }: PageProps) {
     fetchActiveUsers(),
   ]);
 
+  const unreadByChat = await fetchUnreadCountsByChat(
+    actor.id,
+    chats.map((c) => c.id),
+  );
+
   return (
     <ChatShell
       chats={chats}
@@ -24,6 +33,7 @@ export default async function ChatsPage({ searchParams }: PageProps) {
       actorId={actor.id}
       viewerRole={actor.role}
       selected={null}
+      unreadByChat={unreadByChat}
     />
   );
 }

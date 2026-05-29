@@ -427,9 +427,8 @@ describe('activateUser()', () => {
     expect(mockRecordAudit).toHaveBeenCalledWith(
       expect.objectContaining({ action: 'user.activate', entityId: 'u1' }),
     );
-    expect(mockNotify).toHaveBeenCalledWith(
-      expect.objectContaining({ type: 'user.activated' }),
-    );
+    // Per product: user.* events do not generate notifications.
+    expect(mockNotify).not.toHaveBeenCalled();
   });
 
   it('throws NOT_FOUND when user does not exist', async () => {

@@ -65,7 +65,7 @@ export function NotificationsPopover({ unreadCount, items }: Props) {
               aria-hidden="true"
               className="absolute -top-0.5 -right-0.5 inline-flex h-4 min-w-4 items-center justify-center rounded-full bg-primary px-1 text-[10px] font-semibold leading-none text-primary-foreground"
             >
-              {unreadCount > 99 ? '99+' : unreadCount}
+              {unreadCount > 9 ? '9+' : unreadCount}
             </span>
           )}
         </TooltipTrigger>
@@ -89,7 +89,7 @@ export function NotificationsPopover({ unreadCount, items }: Props) {
           )}
         </div>
 
-        <ScrollArea className="max-h-96">
+        <ScrollArea className="max-h-80">
           {items.length === 0 ? (
             <div className="px-3 py-8 text-center text-sm text-muted-foreground">
               You&apos;re all caught up.

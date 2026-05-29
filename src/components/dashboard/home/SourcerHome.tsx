@@ -11,15 +11,12 @@ function formatCurrency(cents: number) {
 
 export async function SourcerHome({ user }: { user: UserRow }) {
   const lastMonth = addMonths(firstOfMonth(new Date()), -1);
-  const [pending, active, needsChanges, archived, earnings] = await Promise.all(
-    [
-      countSitesByStatusForSourcer(user.id, 'Pending'),
-      countSitesByStatusForSourcer(user.id, 'Active'),
-      countSitesByStatusForSourcer(user.id, 'Needs changes'),
-      countSitesByStatusForSourcer(user.id, 'Archived'),
-      fetchEarningsTotals({ month: lastMonth, sourcerId: user.id }),
-    ],
-  );
+  const [pending, active, archived, earnings] = await Promise.all([
+    countSitesByStatusForSourcer(user.id, 'Pending'),
+    countSitesByStatusForSourcer(user.id, 'Active'),
+    countSitesByStatusForSourcer(user.id, 'Archived'),
+    fetchEarningsTotals({ month: lastMonth, sourcerId: user.id }),
+  ]);
 
   return (
     <div className="space-y-6">
@@ -27,7 +24,7 @@ export async function SourcerHome({ user }: { user: UserRow }) {
 
       <div>
         <SectionHeading title="My sites" />
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+        <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
           <StatCard
             label="Pending"
             value={pending}
@@ -39,12 +36,6 @@ export async function SourcerHome({ user }: { user: UserRow }) {
             value={active}
             href="/dashboard/sites?status=Active"
             tone="success"
-          />
-          <StatCard
-            label="Needs changes"
-            value={needsChanges}
-            href="/dashboard/sites?status=Needs+changes"
-            tone="warn"
           />
           <StatCard
             label="Archived"

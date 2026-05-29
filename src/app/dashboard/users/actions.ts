@@ -4,7 +4,6 @@ import { createClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { requireRole } from '@/lib/features/auth';
 import { recordAudit } from '@/lib/features/audit';
-import { notify } from '@/lib/features/notify';
 import { EMAIL_TEMPLATES, getMailer } from '@/lib/features/email';
 import { AppError } from '@/lib/errors';
 import { canManageTargetRole, canReassignClientManager } from '@/lib/rbac';
@@ -113,12 +112,6 @@ export async function inviteUser(
     after: { email, role, manager_id },
   });
 
-  await notify({
-    recipientId: userId,
-    type: 'user.invited',
-    payload: { invited_by: actor.id, role },
-  });
-
   return { userId };
 }
 
@@ -198,12 +191,6 @@ export async function resendInvite(userId: string): Promise<void> {
     entityId: userId,
     action: 'user.invite_resent',
   });
-
-  await notify({
-    recipientId: userId,
-    type: 'user.invited',
-    payload: { resent: true },
-  });
 }
 
 export async function editUser(
@@ -278,7 +265,7 @@ export async function editUser(
         .from('sites')
         .select('id', { count: 'exact', head: true })
         .eq('sourcer_id', userId)
-        .in('status', ['Pending', 'Active', 'Needs changes']),
+        .in('status', ['Pending', 'Active']),
     ]);
 
     const activeOrders = ordersResult.count ?? 0;
@@ -302,12 +289,6 @@ export async function editUser(
     action: 'user.edit',
     before: { role: current.role, manager_id: current.manager_id },
     after: parsed.data,
-  });
-
-  await notify({
-    recipientId: userId,
-    type: 'user.edited',
-    payload: { changes: parsed.data },
   });
 
   return { done: true };
@@ -381,12 +362,6 @@ export async function disableUser(
     after: { status: 'DISABLED', disabled_reason: parsed.data.reason },
   });
 
-  await notify({
-    recipientId: userId,
-    type: 'user.disabled',
-    payload: { reason: parsed.data.reason },
-  });
-
   return { ok: true };
 }
 
@@ -415,12 +390,6 @@ export async function activateUser(userId: string): Promise<void> {
     action: 'user.activate',
     before: { status: target.status },
     after: { status: 'ACTIVE' },
-  });
-
-  await notify({
-    recipientId: userId,
-    type: 'user.activated',
-    payload: {},
   });
 }
 

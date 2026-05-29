@@ -293,9 +293,21 @@ export async function sendMessage(input: SendMessageInput): Promise<void> {
 }
 
 export async function markChatRead(chatId: string): Promise<void> {
-  await requireUser();
+  const actor = await requireUser();
   const supabase = await createClient();
   await supabase.rpc('mark_messages_read', { p_chat_id: chatId });
+
+  // Also mark any in-app notifications that point at this chat as read, so
+  // opening the thread clears the bell/nav indicators in one trip.
+  await supabase
+    .from('notifications')
+    .update({ read_at: new Date().toISOString() })
+    .eq('recipient_id', actor.id)
+    .is('read_at', null)
+    .in('type', ['chat.message_sent', 'chat.created', 'chat.participant_added'])
+    .contains('payload', { chatId });
+
+  revalidatePath('/dashboard', 'layout');
 }
 
 export async function startOrderChat(

@@ -4,6 +4,7 @@ import { parsePagination } from '@/lib/features/pagination';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { NotificationItem } from '@/components/notifications/notification-item';
 import { MarkAllReadButton } from '@/components/notifications/mark-all-read-button';
+import { ClearReadButton } from '@/components/notifications/clear-read-button';
 import Link from 'next/link';
 
 interface PageProps {
@@ -21,6 +22,7 @@ export default async function NotificationsPage({ searchParams }: PageProps) {
   });
 
   const totalPages = Math.max(1, Math.ceil(total / pageSize));
+  const readCount = total - unread;
 
   return (
     <div className="mx-auto max-w-3xl space-y-6">
@@ -31,11 +33,14 @@ export default async function NotificationsPage({ searchParams }: PageProps) {
           </h1>
           <p className="text-sm text-muted-foreground">
             {unread > 0
-              ? `${unread} unread, ${total} total`
-              : `${total} notifications`}
+              ? `${unread} unread, ${total} total · auto-deleted after 30 days`
+              : `${total} notifications · auto-deleted after 30 days`}
           </p>
         </div>
-        {unread > 0 && <MarkAllReadButton />}
+        <div className="flex gap-2">
+          {unread > 0 && <MarkAllReadButton />}
+          {readCount > 0 && <ClearReadButton />}
+        </div>
       </div>
 
       <Card>
@@ -57,6 +62,7 @@ export default async function NotificationsPage({ searchParams }: PageProps) {
                   payload={n.payload}
                   readAt={n.read_at}
                   createdAt={n.created_at}
+                  showDelete
                 />
               ))}
             </div>

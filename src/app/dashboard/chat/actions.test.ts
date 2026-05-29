@@ -428,12 +428,31 @@ describe('sendMessage()', () => {
 describe('markChatRead()', () => {
   beforeEach(() => vi.clearAllMocks());
 
-  it('calls the mark_messages_read RPC with the chat id', async () => {
+  it('calls the mark_messages_read RPC and clears chat notifications', async () => {
     mockRpc.mockResolvedValueOnce({ data: null, error: null });
+
+    const containsFn = vi.fn().mockResolvedValue({ error: null });
+    const inFn = vi.fn(() => ({ contains: containsFn }));
+    const isFn = vi.fn(() => ({ in: inFn }));
+    const eqFn = vi.fn(() => ({ is: isFn }));
+    const updateFn = vi.fn(() => ({ eq: eqFn }));
+    mockFrom.mockReturnValueOnce({ update: updateFn });
+
     await markChatRead(CHAT_1);
+
     expect(mockRpc).toHaveBeenCalledWith('mark_messages_read', {
       p_chat_id: CHAT_1,
     });
+    expect(updateFn).toHaveBeenCalledWith(
+      expect.objectContaining({ read_at: expect.any(String) }),
+    );
+    expect(eqFn).toHaveBeenCalledWith('recipient_id', 'user-1');
+    expect(isFn).toHaveBeenCalledWith('read_at', null);
+    expect(inFn).toHaveBeenCalledWith(
+      'type',
+      expect.arrayContaining(['chat.message_sent']),
+    );
+    expect(containsFn).toHaveBeenCalledWith('payload', { chatId: CHAT_1 });
   });
 });
 

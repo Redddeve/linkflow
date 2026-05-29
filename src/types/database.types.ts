@@ -857,7 +857,7 @@ export type Database = {
         | "Published"
         | "Completed"
         | "Canceled"
-      site_status: "Pending" | "Active" | "Needs changes" | "Archived"
+      site_status: "Pending" | "Active" | "Archived"
       user_role: "Client" | "Sourcer" | "Copywriter" | "Manager" | "Admin"
       user_status: "PENDING" | "ACTIVE" | "DISABLED"
     }
@@ -1016,7 +1016,7 @@ export const Constants = {
         "Completed",
         "Canceled",
       ],
-      site_status: ["Pending", "Active", "Needs changes", "Archived"],
+      site_status: ["Pending", "Active", "Archived"],
       user_role: ["Client", "Sourcer", "Copywriter", "Manager", "Admin"],
       user_status: ["PENDING", "ACTIVE", "DISABLED"],
     },

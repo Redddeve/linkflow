@@ -398,7 +398,7 @@ describe('assignCopywriter()', () => {
 describe('reassignCopywriter()', () => {
   beforeEach(() => vi.clearAllMocks());
 
-  it('reassigns and notifies both old and new copywriter', async () => {
+  it('reassigns and notifies only the new copywriter', async () => {
     mockRequireRole.mockResolvedValueOnce(
       makeUser({ id: MGR_1, role: 'Manager' }),
     );
@@ -426,11 +426,9 @@ describe('reassignCopywriter()', () => {
     expect(mockNotify).toHaveBeenCalledWith(
       expect.objectContaining({ recipientId: CW_NEW, type: 'order.assigned' }),
     );
-    expect(mockNotify).toHaveBeenCalledWith(
-      expect.objectContaining({
-        recipientId: CW_OLD,
-        type: 'order.reassigned_away',
-      }),
+    // The previous copywriter is intentionally NOT notified on reassignment.
+    expect(mockNotify).not.toHaveBeenCalledWith(
+      expect.objectContaining({ type: 'order.reassigned_away' }),
     );
     expect(mockRecordAudit).toHaveBeenCalledWith(
       expect.objectContaining({ action: 'order.reassign' }),
@@ -861,7 +859,7 @@ describe('rejectOrder()', () => {
 describe('addComment()', () => {
   beforeEach(() => vi.clearAllMocks());
 
-  it('allows Manager to comment and notifies client + copywriter', async () => {
+  it('allows Manager to comment without firing notifications', async () => {
     mockRequireRole.mockResolvedValueOnce(
       makeUser({ id: MGR_1, role: 'Manager' }),
     );
@@ -881,11 +879,10 @@ describe('addComment()', () => {
       text: 'Please double-check the facts.',
     });
 
-    expect(mockNotify).toHaveBeenCalledWith(
-      expect.objectContaining({ recipientId: CLIENT_1 }),
-    );
-    expect(mockNotify).toHaveBeenCalledWith(
-      expect.objectContaining({ recipientId: CW_1 }),
+    // Per product: comments no longer generate notifications.
+    expect(mockNotify).not.toHaveBeenCalled();
+    expect(mockRecordAudit).toHaveBeenCalledWith(
+      expect.objectContaining({ action: 'order.comment_added' }),
     );
   });
 

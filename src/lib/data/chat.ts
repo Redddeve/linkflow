@@ -186,6 +186,58 @@ export async function fetchOrderByChatId(
   return data ?? null;
 }
 
+/**
+ * Total unread messages across every chat the user participates in. Used for
+ * the nav-item dot indicator.
+ */
+export async function fetchTotalUnreadChatCount(
+  actorId: string,
+): Promise<number> {
+  const supabase = await createClient();
+
+  const { data: participantRows } = await supabase
+    .from('chat_participants')
+    .select('chat_id')
+    .eq('user_id', actorId);
+
+  const chatIds = (participantRows ?? []).map((r) => r.chat_id);
+  if (!chatIds.length) return 0;
+
+  const { count } = await supabase
+    .from('chat_messages')
+    .select('id', { count: 'exact', head: true })
+    .in('chat_id', chatIds)
+    .neq('created_by_id', actorId)
+    .not('read_by', 'cs', `{${actorId}}`);
+
+  return count ?? 0;
+}
+
+/**
+ * Per-chat unread counts for the supplied chat IDs. Returns a map of chatId
+ * → count. Used for the per-thread badge in the chat list.
+ */
+export async function fetchUnreadCountsByChat(
+  actorId: string,
+  chatIds: string[],
+): Promise<Record<string, number>> {
+  if (!chatIds.length) return {};
+  const supabase = await createClient();
+
+  const { data } = await supabase
+    .from('chat_messages')
+    .select('chat_id')
+    .in('chat_id', chatIds)
+    .neq('created_by_id', actorId)
+    .not('read_by', 'cs', `{${actorId}}`);
+
+  const counts: Record<string, number> = {};
+  for (const row of data ?? []) {
+    counts[row.chat_id] = (counts[row.chat_id] ?? 0) + 1;
+  }
+  return counts;
+}
+
 export async function fetchActiveUsers(): Promise<ChatParticipant[]> {
   const supabase = await createClient();
   const { data } = await supabase

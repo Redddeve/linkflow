@@ -78,9 +78,21 @@ export function MessageThread({
   const author = userMap[actorId];
   const ownInitials = author ? initials(author) : '?';
 
+  // Only the LAST of the actor's own messages that has been read by anyone else
+  // gets the "Read ✓✓" indicator. Earlier reads are implied.
+  let lastReadOwnIndex = -1;
+  for (let i = messages.length - 1; i >= 0; i--) {
+    const m = messages[i];
+    if (m.created_by_id !== actorId) continue;
+    if (m.read_by.some((id) => id !== actorId)) {
+      lastReadOwnIndex = i;
+      break;
+    }
+  }
+
   return (
     <div className="space-y-4">
-      {messages.map((msg) => {
+      {messages.map((msg, idx) => {
         const isOwn = msg.created_by_id === actorId;
         const msgAuthor = userMap[msg.created_by_id];
         const maskAuthor =
@@ -138,9 +150,9 @@ export function MessageThread({
               <span className="text-xs text-muted-foreground">
                 {relativeTime(msg.created_at)}
               </span>
-              {isOwn && uniqueReadBy.length > 0 && (
+              {isOwn && idx === lastReadOwnIndex && uniqueReadBy.length > 0 && (
                 <span className="text-xs text-muted-foreground">
-                  Read by {uniqueReadBy.join(', ')}
+                  Read ✓✓ {uniqueReadBy.join(', ')}
                 </span>
               )}
             </div>

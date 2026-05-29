@@ -348,23 +348,14 @@ export async function reassignCopywriter(
     after: { copywriter_id: copywriterId },
   });
 
-  const notifications = [
-    notify({
-      recipientId: copywriterId,
-      type: 'order.assigned',
-      payload: { orderId, reassigned: true },
-    }),
-  ];
-  if (previousCopywriterId && previousCopywriterId !== copywriterId) {
-    notifications.push(
-      notify({
-        recipientId: previousCopywriterId,
-        type: 'order.reassigned_away',
-        payload: { orderId },
-      }),
-    );
-  }
-  await Promise.all(notifications);
+  // Per product: notify only the newly assigned copywriter on reassign.
+  // The previous copywriter is NOT notified.
+  void previousCopywriterId;
+  await notify({
+    recipientId: copywriterId,
+    type: 'order.assigned',
+    payload: { orderId, reassigned: true },
+  });
 
   revalidatePath('/dashboard/orders');
   revalidatePath(`/dashboard/orders/${orderId}`);
@@ -553,30 +544,36 @@ export async function approveOrder(input: ApproveOrderInput): Promise<void> {
   });
 
   const notifications: Promise<void>[] = [];
-  if (order.manager_id) {
-    notifications.push(
-      notify({
-        recipientId: order.manager_id,
-        type: 'order.content_approved',
-        payload: { orderId },
-      }),
-    );
-  } else {
-    const { data: managers } = await supabase
-      .from('users')
-      .select('id')
-      .eq('role', 'Manager')
-      .eq('status', 'ACTIVE');
-    (managers ?? []).forEach((m) =>
+
+  // Per product: notify the manager only when the approval came from the client.
+  // When a manager/admin approves on behalf, the manager already knows.
+  if (actor.role === 'Client') {
+    if (order.manager_id) {
       notifications.push(
         notify({
-          recipientId: m.id,
+          recipientId: order.manager_id,
           type: 'order.content_approved',
           payload: { orderId },
         }),
-      ),
-    );
+      );
+    } else {
+      const { data: managers } = await supabase
+        .from('users')
+        .select('id')
+        .eq('role', 'Manager')
+        .eq('status', 'ACTIVE');
+      (managers ?? []).forEach((m) =>
+        notifications.push(
+          notify({
+            recipientId: m.id,
+            type: 'order.content_approved',
+            payload: { orderId },
+          }),
+        ),
+      );
+    }
   }
+
   if (order.copywriter_id) {
     notifications.push(
       notify({
@@ -649,12 +646,6 @@ export async function rejectOrder(input: RejectOrderInput): Promise<void> {
       notify({
         recipientId: order.copywriter_id,
         type: 'order.needs_changes',
-        payload: { orderId },
-      }),
-      // §6.11: "Change Request created" → Assigned Copywriter
-      notify({
-        recipientId: order.copywriter_id,
-        type: 'change_request.created',
         payload: { orderId, comment: parsed.data.comment },
       }),
     );
@@ -718,24 +709,7 @@ export async function addComment(input: AddCommentInput): Promise<void> {
     after: { actor_id: actor.id },
   });
 
-  // Notify everyone on the order except the actor
-  const recipientIds = new Set<string>();
-  if (order.created_by_id && order.created_by_id !== actor.id)
-    recipientIds.add(order.created_by_id);
-  if (order.copywriter_id && order.copywriter_id !== actor.id)
-    recipientIds.add(order.copywriter_id);
-  if (order.manager_id && order.manager_id !== actor.id)
-    recipientIds.add(order.manager_id);
-
-  await Promise.all(
-    [...recipientIds].map((id) =>
-      notify({
-        recipientId: id,
-        type: 'order.comment_added',
-        payload: { orderId },
-      }),
-    ),
-  );
+  // Per product: comments do not generate notifications.
 
   revalidatePath(`/dashboard/orders/${orderId}`);
 }
@@ -810,14 +784,30 @@ export async function publishOrder(input: PublishOrderInput): Promise<void> {
     },
   });
 
-  const notifications: Promise<void>[] = [
-    notify({
-      recipientId: order.created_by_id,
-      type: 'order.published',
-      payload: { orderId, published_url },
-    }),
-  ];
-  if (order.copywriter_id) {
+  // Per product: recipient depends on who published.
+  //   Manager / Admin publishes → notify the client.
+  //   Client publishes          → notify the assigned manager.
+  const notifications: Promise<void>[] = [];
+  if (actor.role === 'Client') {
+    if (order.manager_id) {
+      notifications.push(
+        notify({
+          recipientId: order.manager_id,
+          type: 'order.published',
+          payload: { orderId, published_url },
+        }),
+      );
+    }
+  } else {
+    notifications.push(
+      notify({
+        recipientId: order.created_by_id,
+        type: 'order.published',
+        payload: { orderId, published_url },
+      }),
+    );
+  }
+  if (order.copywriter_id && order.copywriter_id !== actor.id) {
     notifications.push(
       notify({
         recipientId: order.copywriter_id,
