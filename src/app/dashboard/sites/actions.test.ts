@@ -74,12 +74,13 @@ describe('VALID_TRANSITIONS', () => {
 describe('createSite()', () => {
   beforeEach(() => vi.clearAllMocks());
 
-  it('throws CONFLICT when domain already exists', async () => {
+  it('returns CONFLICT when domain already exists', async () => {
     mockRequireRole.mockResolvedValue(sourcerUser);
     mockMaybeSingle.mockResolvedValue({ data: { id: 'existing' }, error: null });
 
-    await expect(createSite({ domain: 'example.com' })).rejects.toThrow(
-      expect.objectContaining({ code: 'CONFLICT' }),
+    const result = await createSite({ domain: 'example.com' });
+    expect(result).toEqual(
+      expect.objectContaining({ success: false, code: 'CONFLICT' }),
     );
   });
 
@@ -92,18 +93,19 @@ describe('createSite()', () => {
     mockInsert.mockReturnValue({ select: insertSelect });
 
     const result = await createSite({ domain: 'new-site.com' });
-    expect(result).toEqual({ siteId: 'new-site' });
+    expect(result).toEqual({ success: true, data: { siteId: 'new-site' } });
 
     const insertCall = mockInsert.mock.calls[0][0];
     expect(insertCall.sourcer_id).toBe('sourcer-1');
     expect(insertCall.status).toBe('Pending');
   });
 
-  it('throws FORBIDDEN when role is not allowed', async () => {
+  it('returns FORBIDDEN when role is not allowed', async () => {
     mockRequireRole.mockRejectedValue(new Error('FORBIDDEN: requires role'));
 
-    await expect(createSite({ domain: 'x.com' })).rejects.toThrow(
-      expect.objectContaining({ code: 'FORBIDDEN' }),
+    const result = await createSite({ domain: 'x.com' });
+    expect(result).toEqual(
+      expect.objectContaining({ success: false, code: 'FORBIDDEN' }),
     );
   });
 });
@@ -111,12 +113,13 @@ describe('createSite()', () => {
 describe('editSite()', () => {
   beforeEach(() => vi.clearAllMocks());
 
-  it('throws FORBIDDEN when sourcer tries to edit another sourcer site', async () => {
+  it('returns FORBIDDEN when sourcer tries to edit another sourcer site', async () => {
     mockRequireRole.mockResolvedValue({ ...sourcerUser, id: 'other-sourcer' });
     mockSingle.mockResolvedValue({ data: { ...baseSite, sourcer_id: 'sourcer-1' }, error: null });
 
-    await expect(editSite('site-1', { description: 'test' })).rejects.toThrow(
-      expect.objectContaining({ code: 'FORBIDDEN' }),
+    const result = await editSite('site-1', { description: 'test' });
+    expect(result).toEqual(
+      expect.objectContaining({ success: false, code: 'FORBIDDEN' }),
     );
   });
 
@@ -128,7 +131,8 @@ describe('editSite()', () => {
     const updateEq = vi.fn().mockResolvedValue({ error: null });
     mockUpdate.mockReturnValue({ eq: updateEq });
 
-    await editSite('site-1', { description: 'updated' });
+    const result = await editSite('site-1', { description: 'updated' });
+    expect(result).toEqual({ success: true });
 
     const updatePayload = mockUpdate.mock.calls[0][0];
     expect(updatePayload.status).toBe('Pending');
@@ -141,7 +145,8 @@ describe('editSite()', () => {
     const updateEq = vi.fn().mockResolvedValue({ error: null });
     mockUpdate.mockReturnValue({ eq: updateEq });
 
-    await editSite('site-1', { description: 'updated by manager' });
+    const result = await editSite('site-1', { description: 'updated by manager' });
+    expect(result).toEqual({ success: true });
 
     const updatePayload = mockUpdate.mock.calls[0][0];
     expect(updatePayload.status).toBeUndefined();
@@ -151,20 +156,22 @@ describe('editSite()', () => {
 describe('setSiteStatus()', () => {
   beforeEach(() => vi.clearAllMocks());
 
-  it('throws FORBIDDEN for non-Admin', async () => {
+  it('returns FORBIDDEN for non-Admin', async () => {
     mockRequireRole.mockRejectedValue(new Error('FORBIDDEN: requires role'));
 
-    await expect(setSiteStatus('site-1', 'APPROVE')).rejects.toThrow(
-      expect.objectContaining({ code: 'FORBIDDEN' }),
+    const result = await setSiteStatus('site-1', 'APPROVE');
+    expect(result).toEqual(
+      expect.objectContaining({ success: false, code: 'FORBIDDEN' }),
     );
   });
 
-  it('throws CONFLICT when transition is invalid', async () => {
+  it('returns CONFLICT when transition is invalid', async () => {
     mockRequireRole.mockResolvedValue(adminUser);
     mockSingle.mockResolvedValue({ data: { ...baseSite, status: 'Active' as const }, error: null });
 
-    await expect(setSiteStatus('site-1', 'APPROVE')).rejects.toThrow(
-      expect.objectContaining({ code: 'CONFLICT' }),
+    const result = await setSiteStatus('site-1', 'APPROVE');
+    expect(result).toEqual(
+      expect.objectContaining({ success: false, code: 'CONFLICT' }),
     );
   });
 
@@ -175,7 +182,8 @@ describe('setSiteStatus()', () => {
     const updateEq = vi.fn().mockResolvedValue({ error: null });
     mockUpdate.mockReturnValue({ eq: updateEq });
 
-    await setSiteStatus('site-1', 'APPROVE');
+    const result = await setSiteStatus('site-1', 'APPROVE');
+    expect(result).toEqual({ success: true });
 
     const updatePayload = mockUpdate.mock.calls[0][0];
     expect(updatePayload.status).toBe('Active');
@@ -189,7 +197,8 @@ describe('setSiteStatus()', () => {
     const updateEq = vi.fn().mockResolvedValue({ error: null });
     mockUpdate.mockReturnValue({ eq: updateEq });
 
-    await setSiteStatus('site-1', 'ARCHIVE');
+    const result = await setSiteStatus('site-1', 'ARCHIVE');
+    expect(result).toEqual({ success: true });
 
     const updatePayload = mockUpdate.mock.calls[0][0];
     expect(updatePayload.status).toBe('Archived');
@@ -202,7 +211,8 @@ describe('setSiteStatus()', () => {
     const updateEq = vi.fn().mockResolvedValue({ error: null });
     mockUpdate.mockReturnValue({ eq: updateEq });
 
-    await setSiteStatus('site-1', 'REACTIVATE');
+    const result = await setSiteStatus('site-1', 'REACTIVATE');
+    expect(result).toEqual({ success: true });
 
     const updatePayload = mockUpdate.mock.calls[0][0];
     expect(updatePayload.status).toBe('Active');

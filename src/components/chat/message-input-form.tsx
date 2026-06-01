@@ -25,7 +25,11 @@ export function MessageInputForm({ chatId }: Props) {
     const tempId = addPending(trimmed);
 
     try {
-      await sendMessage({ chatId, content: trimmed });
+      const result = await sendMessage({ chatId, content: trimmed });
+      if (!result.success) {
+        markFailed(tempId, result.message);
+        return;
+      }
       remove(tempId);
       router.refresh();
     } catch (err) {

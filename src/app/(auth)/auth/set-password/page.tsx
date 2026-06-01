@@ -28,13 +28,11 @@ export default function SetPasswordForm() {
   } = useForm<FormValues>();
 
   async function onSubmit(data: FormValues) {
-    try {
-      await setPassword(data.password);
+    const result = await setPassword(data.password);
+    if (result.success) {
       router.push('/dashboard');
-    } catch (err: unknown) {
-      setError('root', {
-        message: err instanceof Error ? err.message : 'An error occurred',
-      });
+    } else {
+      setError('root', { message: result.message });
     }
   }
 

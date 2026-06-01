@@ -5,30 +5,36 @@ import { createClient } from '@/lib/supabase/server';
 import { requireRole } from '@/lib/features/auth';
 import { recordAudit } from '@/lib/features/audit';
 import { notify } from '@/lib/features/notify';
-import { AppError } from '@/lib/errors';
+import type { ActionResult } from '@/lib/errors';
 import {
   markOrdersPayoutPaidSchema,
   type MarkOrdersPayoutPaidInput,
 } from '@/lib/schemas/earnings';
 
-function mapForbidden(e: unknown): never {
-  if (e instanceof Error && e.message.startsWith('FORBIDDEN')) {
-    throw new AppError(
-      'FORBIDDEN',
-      'You do not have permission to perform this action',
-    );
-  }
-  throw e;
-}
-
 export async function markOrdersPayoutPaid(
   input: MarkOrdersPayoutPaidInput,
-): Promise<{ updated: number }> {
-  await requireRole(['Admin']).catch(mapForbidden);
+): Promise<ActionResult<{ updated: number }>> {
+  try {
+    await requireRole(['Admin']);
+  } catch (e) {
+    if (e instanceof Error && e.message.startsWith('FORBIDDEN')) {
+      return {
+        success: false,
+        code: 'FORBIDDEN',
+        message: 'You do not have permission to perform this action',
+      };
+    }
+    throw e;
+  }
 
   const parsed = markOrdersPayoutPaidSchema.safeParse(input);
-  if (!parsed.success)
-    throw new AppError('VALIDATION', parsed.error.issues[0].message);
+  if (!parsed.success) {
+    return {
+      success: false,
+      code: 'VALIDATION',
+      message: parsed.error.issues[0].message,
+    };
+  }
 
   const { orderIds, payoutReference } = parsed.data;
   const supabase = await createClient();
@@ -45,7 +51,9 @@ export async function markOrdersPayoutPaid(
     .is('sourcer_paid_at', null)
     .not('sourcer_payout_cents', 'is', null);
 
-  if (fetchError) throw new Error(fetchError.message);
+  if (fetchError) {
+    return { success: false, code: 'UNKNOWN', message: fetchError.message };
+  }
 
   type Row = {
     id: string;
@@ -65,7 +73,7 @@ export async function markOrdersPayoutPaid(
     return sourcerId != null;
   });
 
-  if (eligible.length === 0) return { updated: 0 };
+  if (eligible.length === 0) return { success: true, data: { updated: 0 } };
 
   const eligibleIds = eligible.map((r) => r.id);
   const { error: updateError } = await supabase
@@ -77,7 +85,9 @@ export async function markOrdersPayoutPaid(
     .in('id', eligibleIds)
     .is('sourcer_paid_at', null);
 
-  if (updateError) throw new Error(updateError.message);
+  if (updateError) {
+    return { success: false, code: 'UNKNOWN', message: updateError.message };
+  }
 
   await Promise.all(
     eligible.map((r) => {
@@ -111,5 +121,5 @@ export async function markOrdersPayoutPaid(
   );
 
   revalidatePath('/dashboard/earnings');
-  return { updated: eligible.length };
+  return { success: true, data: { updated: eligible.length } };
 }

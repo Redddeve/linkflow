@@ -70,26 +70,26 @@ export function CategoriesTable({ categories, siteCountMap }: Props) {
     if (!editTarget) return;
     setEditError('');
     startTransition(async () => {
-      try {
-        await editCategory(editTarget.id, { name: editName });
-        closeEdit();
-        router.refresh();
-      } catch (e: unknown) {
-        setEditError(e instanceof Error ? e.message : 'An error occurred');
+      const result = await editCategory(editTarget.id, { name: editName });
+      if (!result.success) {
+        setEditError(result.message);
+        return;
       }
+      closeEdit();
+      router.refresh();
     });
   }
 
   async function handleArchive() {
     if (!deleteTarget) return;
     startTransition(async () => {
-      try {
-        await deleteCategory(deleteTarget.id);
-        setDeleteTarget(null);
-        router.refresh();
-      } catch (e: unknown) {
-        console.error(e);
+      const result = await deleteCategory(deleteTarget.id);
+      if (!result.success) {
+        console.error(result);
+        return;
       }
+      setDeleteTarget(null);
+      router.refresh();
     });
   }
 

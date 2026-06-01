@@ -143,22 +143,24 @@ export function SiteForm({
       sourcer_payout_cents: Math.round(priceCents * (1 - APP_COMMISSION_RATE)),
     };
 
-    try {
-      if (mode === 'create') {
-        const { siteId: newId } = await createSite(payload);
-        router.push(`/dashboard/sites/${newId}`);
-      } else if (siteId) {
-        await editSite(siteId, payload);
-        if (onSuccess) {
-          onSuccess();
-        } else {
-          router.push(`/dashboard/sites/${siteId}`);
-        }
+    if (mode === 'create') {
+      const result = await createSite(payload);
+      if (!result.success) {
+        setError('root', { message: result.message });
+        return;
       }
-    } catch (err: unknown) {
-      setError('root', {
-        message: err instanceof Error ? err.message : 'An error occurred',
-      });
+      router.push(`/dashboard/sites/${result.data.siteId}`);
+    } else if (siteId) {
+      const result = await editSite(siteId, payload);
+      if (!result.success) {
+        setError('root', { message: result.message });
+        return;
+      }
+      if (onSuccess) {
+        onSuccess();
+      } else {
+        router.push(`/dashboard/sites/${siteId}`);
+      }
     }
   }
 

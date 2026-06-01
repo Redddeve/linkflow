@@ -3,10 +3,19 @@
 import { createClient } from '@/lib/supabase/server';
 import { emailSchema } from '@/lib/schemas/auth';
 import { getAppUrl } from '@/lib/utils';
+import type { ActionResult } from '@/lib/errors';
 
-export async function resetPasswordForEmail(email: string) {
+export async function resetPasswordForEmail(
+  email: string,
+): Promise<ActionResult> {
   const parsed = emailSchema.safeParse({ email });
-  if (!parsed.success) throw new Error(parsed.error.issues[0].message);
+  if (!parsed.success) {
+    return {
+      success: false,
+      code: 'VALIDATION',
+      message: parsed.error.issues[0].message,
+    };
+  }
 
   const supabase = await createClient();
 
@@ -18,14 +27,16 @@ export async function resetPasswordForEmail(email: string) {
   if (lookupError) {
     return {
       success: false,
-      error: 'Something went wrong. Please try again later.',
+      code: 'UNKNOWN',
+      message: 'Something went wrong. Please try again later.',
     };
   }
 
   if (!exists) {
     return {
       success: false,
-      error: 'No account found with that email address.',
+      code: 'NOT_FOUND',
+      message: 'No account found with that email address.',
     };
   }
 
@@ -39,7 +50,8 @@ export async function resetPasswordForEmail(email: string) {
   if (error) {
     return {
       success: false,
-      error: 'Something went wrong. Please try again later.',
+      code: 'UNKNOWN',
+      message: 'Something went wrong. Please try again later.',
     };
   }
 

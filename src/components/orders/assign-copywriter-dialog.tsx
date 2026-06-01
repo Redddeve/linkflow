@@ -54,17 +54,15 @@ export function AssignCopywriterDialog({
     if (!copywriterId) return;
     setError(null);
     startTransition(async () => {
-      try {
-        if (isReassign) {
-          await reassignCopywriter({ orderId, copywriterId });
-        } else {
-          await assignCopywriter({ orderId, copywriterId });
-        }
-        setOpen(false);
-        setCopywriterId(isReassign ? (currentCopywriterId ?? '') : '');
-      } catch (e) {
-        setError(e instanceof Error ? e.message : 'Something went wrong');
+      const result = isReassign
+        ? await reassignCopywriter({ orderId, copywriterId })
+        : await assignCopywriter({ orderId, copywriterId });
+      if (!result.success) {
+        setError(result.message);
+        return;
       }
+      setOpen(false);
+      setCopywriterId(isReassign ? (currentCopywriterId ?? '') : '');
     });
   }
 

@@ -51,10 +51,9 @@ export function NotificationItem({
       // tag so the bell + page refresh in the background while the user
       // navigates to the linked resource.
       startTransition(async () => {
-        try {
-          await markNotificationRead(id);
-        } catch (e) {
-          console.error('[notifications] mark-read failed', e);
+        const result = await markNotificationRead(id);
+        if (!result.success) {
+          console.error('[notifications] mark-read failed', result.message);
         }
       });
     }
@@ -65,10 +64,9 @@ export function NotificationItem({
     e.preventDefault();
     e.stopPropagation();
     startTransition(async () => {
-      try {
-        await deleteNotification(id);
-      } catch (err) {
-        console.error('[notifications] delete failed', err);
+      const result = await deleteNotification(id);
+      if (!result.success) {
+        console.error('[notifications] delete failed', result.message);
       }
     });
   }

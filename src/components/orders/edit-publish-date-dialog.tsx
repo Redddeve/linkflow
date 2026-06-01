@@ -29,12 +29,15 @@ export function EditPublishDateDialog({ orderId, currentDate }: Props) {
   function handleSubmit() {
     setError(null);
     startTransition(async () => {
-      try {
-        await editOrderPublishDate({ orderId, publish_date: date });
-        setOpen(false);
-      } catch (e) {
-        setError(e instanceof Error ? e.message : 'Something went wrong');
+      const result = await editOrderPublishDate({
+        orderId,
+        publish_date: date,
+      });
+      if (!result.success) {
+        setError(result.message);
+        return;
       }
+      setOpen(false);
     });
   }
 

@@ -1,7 +1,7 @@
-﻿import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 import type { UserRow } from '@/lib/features/auth';
 
-// в”Ђв”Ђ Shared mock state в”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђ
+// ── Shared mock state ────────────────────────────────────────────────────────
 
 const mockFrom = vi.fn();
 const mockRpc = vi.fn();
@@ -51,7 +51,7 @@ const {
   generateInvoicesForMonth,
 } = await import('./actions');
 
-// в”Ђв”Ђ Fluent Supabase stub builder в”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђ
+// ── Fluent Supabase stub builder ─────────────────────────────────────────────
 
 type ChainResult = { data: unknown; error: unknown; count?: number };
 
@@ -75,7 +75,7 @@ function makeChain(result: ChainResult) {
   (chain['single'] as ReturnType<typeof vi.fn>).mockResolvedValue(result);
   (chain['maybeSingle'] as ReturnType<typeof vi.fn>).mockResolvedValue(result);
   // For `select(..., { count: 'exact', head: true })` callers that await the
-  // chain directly without `.single()` вЂ” return a thenable terminal.
+  // chain directly without `.single()` — return a thenable terminal.
   return chain;
 }
 
@@ -92,7 +92,7 @@ const MGR_1 = 'e0000002-0000-4000-8000-000000000002';
 function makeFromQueue(results: ChainResult[]) {
   const chains = results.map(makeChain);
   // The count query reads `chain` directly via thenable from select().eq()
-  // вЂ” emulate by adding a `then` on every chain that resolves to the result.
+  // — emulate by adding a `then` on every chain that resolves to the result.
   results.forEach((r, i) => {
     const chain = chains[i] as Record<string, unknown>;
     chain.then = (resolve: (v: ChainResult) => unknown) => resolve(r);
@@ -101,7 +101,7 @@ function makeFromQueue(results: ChainResult[]) {
   return () => chains[i++] ?? makeChain({ data: null, error: null });
 }
 
-// в”Ђв”Ђ sendInvoice в”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђ
+// ── sendInvoice ──────────────────────────────────────────────────────────────
 
 describe('sendInvoice()', () => {
   beforeEach(() => {
@@ -135,8 +135,9 @@ describe('sendInvoice()', () => {
       ]),
     );
 
-    await sendInvoice({ invoiceId: INV_1 });
+    const res = await sendInvoice({ invoiceId: INV_1 });
 
+    expect(res).toEqual({ success: true });
     expect(mockRecordAudit).toHaveBeenCalledWith(
       expect.objectContaining({
         action: 'invoice.sent',
@@ -149,13 +150,16 @@ describe('sendInvoice()', () => {
     );
   });
 
-  it('throws FORBIDDEN when caller is Client', async () => {
+  it('returns FORBIDDEN when caller is Client', async () => {
     mockRequireRole.mockRejectedValueOnce(
       new Error('FORBIDDEN: requires role Manager or Admin'),
     );
-    await expect(sendInvoice({ invoiceId: INV_1 })).rejects.toThrow(
-      'permission',
-    );
+    const res = await sendInvoice({ invoiceId: INV_1 });
+    expect(res.success).toBe(false);
+    if (!res.success) {
+      expect(res.code).toBe('FORBIDDEN');
+      expect(res.message).toMatch(/permission/);
+    }
   });
 
   it('refuses to send a Draft with $0 total', async () => {
@@ -176,9 +180,12 @@ describe('sendInvoice()', () => {
         },
       ]),
     );
-    await expect(sendInvoice({ invoiceId: INV_1 })).rejects.toThrow(
-      'empty invoice',
-    );
+    const res = await sendInvoice({ invoiceId: INV_1 });
+    expect(res.success).toBe(false);
+    if (!res.success) {
+      expect(res.code).toBe('VALIDATION');
+      expect(res.message).toMatch(/empty invoice/);
+    }
   });
 
   it('refuses to send a Draft with zero attached orders', async () => {
@@ -200,12 +207,14 @@ describe('sendInvoice()', () => {
         { data: null, error: null, count: 0 },
       ]),
     );
-    await expect(sendInvoice({ invoiceId: INV_1 })).rejects.toThrow(
-      'no attached orders',
-    );
+    const res = await sendInvoice({ invoiceId: INV_1 });
+    expect(res.success).toBe(false);
+    if (!res.success) {
+      expect(res.message).toMatch(/no attached orders/);
+    }
   });
 
-  it('throws VALIDATION when invoice is not Draft', async () => {
+  it('returns VALIDATION when invoice is not Draft', async () => {
     mockRequireRole.mockResolvedValueOnce(
       makeUser({ id: MGR_1, role: 'Manager' }),
     );
@@ -223,11 +232,16 @@ describe('sendInvoice()', () => {
         },
       ]),
     );
-    await expect(sendInvoice({ invoiceId: INV_1 })).rejects.toThrow('Sent');
+    const res = await sendInvoice({ invoiceId: INV_1 });
+    expect(res.success).toBe(false);
+    if (!res.success) {
+      expect(res.code).toBe('VALIDATION');
+      expect(res.message).toMatch(/Sent/);
+    }
   });
 });
 
-// в”Ђв”Ђ markInvoicePaid в”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђ
+// ── markInvoicePaid ──────────────────────────────────────────────────────────
 
 describe('markInvoicePaid()', () => {
   beforeEach(() => {
@@ -253,8 +267,9 @@ describe('markInvoicePaid()', () => {
     const updateChain = makeChain({ data: null, error: null });
     mockFrom.mockReturnValueOnce(selectChain).mockReturnValue(updateChain);
 
-    await markInvoicePaid({ invoiceId: INV_1 });
+    const res = await markInvoicePaid({ invoiceId: INV_1 });
 
+    expect(res).toEqual({ success: true });
     expect(updateChain.update).toHaveBeenCalledWith(
       expect.objectContaining({
         status: 'Paid',
@@ -267,16 +282,19 @@ describe('markInvoicePaid()', () => {
     );
   });
 
-  it('throws FORBIDDEN when caller is Manager (Admin-only)', async () => {
+  it('returns FORBIDDEN when caller is Manager (Admin-only)', async () => {
     mockRequireRole.mockRejectedValueOnce(
       new Error('FORBIDDEN: requires role Admin'),
     );
-    await expect(markInvoicePaid({ invoiceId: INV_1 })).rejects.toThrow(
-      'permission',
-    );
+    const res = await markInvoicePaid({ invoiceId: INV_1 });
+    expect(res.success).toBe(false);
+    if (!res.success) {
+      expect(res.code).toBe('FORBIDDEN');
+      expect(res.message).toMatch(/permission/);
+    }
   });
 
-  it('throws VALIDATION when invoice is Draft', async () => {
+  it('returns VALIDATION when invoice is Draft', async () => {
     mockRequireRole.mockResolvedValueOnce(
       makeUser({ id: ADMIN_1, role: 'Admin' }),
     );
@@ -290,13 +308,16 @@ describe('markInvoicePaid()', () => {
       error: null,
     });
     mockFrom.mockReturnValue(selectChain);
-    await expect(markInvoicePaid({ invoiceId: INV_1 })).rejects.toThrow(
-      'Draft',
-    );
+    const res = await markInvoicePaid({ invoiceId: INV_1 });
+    expect(res.success).toBe(false);
+    if (!res.success) {
+      expect(res.code).toBe('VALIDATION');
+      expect(res.message).toMatch(/Draft/);
+    }
   });
 });
 
-// в”Ђв”Ђ reassignOrders (batch RPC) в”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђ
+// ── reassignOrders (batch RPC) ───────────────────────────────────────────────
 
 describe('reassignOrders()', () => {
   beforeEach(() => {
@@ -315,40 +336,47 @@ describe('reassignOrders()', () => {
       error: null,
     });
 
-    const result = await reassignOrders({
+    const res = await reassignOrders({
       changes: [{ orderId: ORD_1, billing_month: '2026-05-01' }],
     });
 
     expect(mockRpc).toHaveBeenCalledWith('reassign_order_billing_months', {
       p_changes: [{ order_id: ORD_1, new_billing_month: '2026-05-01' }],
     });
-    expect(result.targets_touched).toEqual([INV_2]);
+    expect(res.success).toBe(true);
+    if (res.success) {
+      expect(res.data.targets_touched).toEqual([INV_2]);
+    }
     expect(mockRecordAudit).toHaveBeenCalledWith(
       expect.objectContaining({ action: 'invoice.orders_reassigned' }),
     );
   });
 
-  it('returns early without RPC call when changes is empty', async () => {
+  it('returns VALIDATION error when changes is empty (Zod min(1))', async () => {
     mockRequireRole.mockResolvedValueOnce(
       makeUser({ id: MGR_1, role: 'Manager' }),
     );
-    // The Zod schema requires min(1), so an empty array fails validation
-    // before reaching the early-return. Confirm the error.
-    await expect(reassignOrders({ changes: [] })).rejects.toThrow(
-      'At least one',
-    );
+    const res = await reassignOrders({ changes: [] });
+    expect(res.success).toBe(false);
+    if (!res.success) {
+      expect(res.code).toBe('VALIDATION');
+      expect(res.message).toMatch(/At least one/);
+    }
     expect(mockRpc).not.toHaveBeenCalled();
   });
 
-  it('throws FORBIDDEN when caller is Client', async () => {
+  it('returns FORBIDDEN when caller is Client', async () => {
     mockRequireRole.mockRejectedValueOnce(
       new Error('FORBIDDEN: requires role Manager or Admin'),
     );
-    await expect(
-      reassignOrders({
-        changes: [{ orderId: ORD_1, billing_month: '2026-05-01' }],
-      }),
-    ).rejects.toThrow('permission');
+    const res = await reassignOrders({
+      changes: [{ orderId: ORD_1, billing_month: '2026-05-01' }],
+    });
+    expect(res.success).toBe(false);
+    if (!res.success) {
+      expect(res.code).toBe('FORBIDDEN');
+      expect(res.message).toMatch(/permission/);
+    }
   });
 
   it('maps RPC source_invoice_not_draft error to a friendly VALIDATION error', async () => {
@@ -359,28 +387,34 @@ describe('reassignOrders()', () => {
       data: null,
       error: { message: 'source_invoice_not_draft:abc' },
     });
-    await expect(
-      reassignOrders({
-        changes: [{ orderId: ORD_1, billing_month: '2026-05-01' }],
-      }),
-    ).rejects.toThrow('Only Draft invoices');
+    const res = await reassignOrders({
+      changes: [{ orderId: ORD_1, billing_month: '2026-05-01' }],
+    });
+    expect(res.success).toBe(false);
+    if (!res.success) {
+      expect(res.code).toBe('VALIDATION');
+      expect(res.message).toMatch(/Only Draft invoices/);
+    }
   });
 
   it('rejects malformed billing_month strings at the Zod boundary', async () => {
     mockRequireRole.mockResolvedValueOnce(
       makeUser({ id: MGR_1, role: 'Manager' }),
     );
-    await expect(
-      reassignOrders({
-        changes: [{ orderId: ORD_1, billing_month: '2026-05-15' }],
-      }),
-    ).rejects.toThrow('first day');
+    const res = await reassignOrders({
+      changes: [{ orderId: ORD_1, billing_month: '2026-05-15' }],
+    });
+    expect(res.success).toBe(false);
+    if (!res.success) {
+      expect(res.code).toBe('VALIDATION');
+      expect(res.message).toMatch(/first day/);
+    }
   });
 });
 
-// в”Ђв”Ђ reassignOrderBillingMonth (legacy single wrapper) в”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђ
+// ── reassignOrderBillingMonth (legacy single wrapper) ────────────────────────
 
-describe('reassignOrderBillingMonth() вЂ” single wrapper', () => {
+describe('reassignOrderBillingMonth() — single wrapper', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockFrom.mockReset();
@@ -395,18 +429,19 @@ describe('reassignOrderBillingMonth() вЂ” single wrapper', () => {
       error: null,
     });
 
-    await reassignOrderBillingMonth({
+    const res = await reassignOrderBillingMonth({
       orderId: ORD_1,
       billing_month: '2026-05-01',
     });
 
+    expect(res.success).toBe(true);
     expect(mockRpc).toHaveBeenCalledWith('reassign_order_billing_months', {
       p_changes: [{ order_id: ORD_1, new_billing_month: '2026-05-01' }],
     });
   });
 });
 
-// в”Ђв”Ђ generateInvoicesForMonth в”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђ
+// ── generateInvoicesForMonth ─────────────────────────────────────────────────
 
 describe('generateInvoicesForMonth()', () => {
   beforeEach(() => {
@@ -425,11 +460,14 @@ describe('generateInvoicesForMonth()', () => {
       error: null,
     });
 
-    const result = await generateInvoicesForMonth({
+    const res = await generateInvoicesForMonth({
       billing_month: '2026-04-01',
     });
 
-    expect(result).toEqual({ created: 0, updated: 0 });
+    expect(res.success).toBe(true);
+    if (res.success) {
+      expect(res.data).toEqual({ created: 0, updated: 0 });
+    }
     expect(mockFrom).not.toHaveBeenCalled();
     expect(mockNotify).not.toHaveBeenCalled();
   });
@@ -456,16 +494,19 @@ describe('generateInvoicesForMonth()', () => {
     };
     const freshChain = makeChain(freshResult) as Record<string, unknown>;
     // The production code does `.select(...).eq(...).eq(...)` and awaits
-    // directly вЂ” make the chain thenable so the awaited value is the result.
+    // directly — make the chain thenable so the awaited value is the result.
     freshChain.then = (resolve: (v: ChainResult) => unknown) =>
       resolve(freshResult);
     mockFrom.mockReturnValueOnce(freshChain);
 
-    const result = await generateInvoicesForMonth({
+    const res = await generateInvoicesForMonth({
       billing_month: '2026-04-01',
     });
 
-    expect(result.created).toBe(2);
+    expect(res.success).toBe(true);
+    if (res.success) {
+      expect(res.data.created).toBe(2);
+    }
     expect(mockNotify).toHaveBeenCalledTimes(2);
     expect(mockNotify).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -484,29 +525,42 @@ describe('generateInvoicesForMonth()', () => {
       error: null,
     });
 
-    const result = await generateInvoicesForMonth({
+    const res = await generateInvoicesForMonth({
       billing_month: '2026-04-01',
     });
 
-    expect(result.updated).toBe(1);
+    expect(res.success).toBe(true);
+    if (res.success) {
+      expect(res.data.updated).toBe(1);
+    }
     expect(mockNotify).not.toHaveBeenCalled();
   });
 
-  it('throws FORBIDDEN when caller is not Admin', async () => {
+  it('returns FORBIDDEN when caller is not Admin', async () => {
     mockRequireRole.mockRejectedValueOnce(
       new Error('FORBIDDEN: requires role Admin'),
     );
-    await expect(
-      generateInvoicesForMonth({ billing_month: '2026-04-01' }),
-    ).rejects.toThrow('permission');
+    const res = await generateInvoicesForMonth({
+      billing_month: '2026-04-01',
+    });
+    expect(res.success).toBe(false);
+    if (!res.success) {
+      expect(res.code).toBe('FORBIDDEN');
+      expect(res.message).toMatch(/permission/);
+    }
   });
 
   it('rejects malformed billing_month strings', async () => {
     mockRequireRole.mockResolvedValueOnce(
       makeUser({ id: ADMIN_1, role: 'Admin' }),
     );
-    await expect(
-      generateInvoicesForMonth({ billing_month: '2026-04-15' }),
-    ).rejects.toThrow('first day');
+    const res = await generateInvoicesForMonth({
+      billing_month: '2026-04-15',
+    });
+    expect(res.success).toBe(false);
+    if (!res.success) {
+      expect(res.code).toBe('VALIDATION');
+      expect(res.message).toMatch(/first day/);
+    }
   });
 });

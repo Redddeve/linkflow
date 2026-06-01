@@ -44,21 +44,20 @@ export function ChangeCredentialsDialog() {
 
   function submit(data: FormValues) {
     startTransition(async () => {
-      try {
-        await updateOwnPassword(data.current_password, data.password);
+      const result = await updateOwnPassword(data.current_password, data.password);
+      if (result.success) {
         setSuccess(true);
         reset();
         setTimeout(() => {
           setOpen(false);
           setSuccess(false);
         }, 1200);
-      } catch (e: unknown) {
-        const message = e instanceof Error ? e.message : 'An error occurred';
-        if (/current password/i.test(message)) {
-          setError('current_password', { message });
-        } else {
-          setError('root', { message });
-        }
+        return;
+      }
+      if (/current password/i.test(result.message)) {
+        setError('current_password', { message: result.message });
+      } else {
+        setError('root', { message: result.message });
       }
     });
   }
@@ -66,12 +65,12 @@ export function ChangeCredentialsDialog() {
   async function handleForgotPassword() {
     setResetState('sending');
     setResetError(null);
-    try {
-      await sendOwnPasswordReset();
+    const result = await sendOwnPasswordReset();
+    if (result.success) {
       setResetState('sent');
-    } catch (e: unknown) {
+    } else {
       setResetState('error');
-      setResetError(e instanceof Error ? e.message : 'Failed to send reset email');
+      setResetError(result.message);
     }
   }
 

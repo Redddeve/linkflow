@@ -25,12 +25,12 @@ export function ApproveOrderDialog({ orderId }: Props) {
   function handleApprove() {
     setError(null);
     startTransition(async () => {
-      try {
-        await approveOrder({ orderId });
-        setOpen(false);
-      } catch (e) {
-        setError(e instanceof Error ? e.message : 'Something went wrong');
+      const result = await approveOrder({ orderId });
+      if (!result.success) {
+        setError(result.message);
+        return;
       }
+      setOpen(false);
     });
   }
 

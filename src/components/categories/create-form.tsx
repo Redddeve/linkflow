@@ -17,13 +17,13 @@ export function CreateCategoryForm() {
     e.preventDefault();
     setError('');
     startTransition(async () => {
-      try {
-        await createCategory({ name });
-        setName('');
-        router.refresh();
-      } catch (err: unknown) {
-        setError(err instanceof Error ? err.message : 'An error occurred');
+      const result = await createCategory({ name });
+      if (!result.success) {
+        setError(result.message);
+        return;
       }
+      setName('');
+      router.refresh();
     });
   }
 

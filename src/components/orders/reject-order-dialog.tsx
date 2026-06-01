@@ -34,13 +34,13 @@ export function RejectOrderDialog({ orderId }: Props) {
     if (!isValid) return;
     setError(null);
     startTransition(async () => {
-      try {
-        await rejectOrder({ orderId, comment: comment.trim() });
-        setOpen(false);
-        setComment('');
-      } catch (e) {
-        setError(e instanceof Error ? e.message : 'Something went wrong');
+      const result = await rejectOrder({ orderId, comment: comment.trim() });
+      if (!result.success) {
+        setError(result.message);
+        return;
       }
+      setOpen(false);
+      setComment('');
     });
   }
 

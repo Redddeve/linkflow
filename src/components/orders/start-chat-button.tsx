@@ -31,8 +31,12 @@ export function StartChatButton({ orderId, existingChatId }: Props) {
     setError(null);
     startTransition(async () => {
       try {
-        const { chatId } = await startOrderChat({ orderId });
-        router.push(`/dashboard/chat/${chatId}`);
+        const result = await startOrderChat({ orderId });
+        if (!result.success) {
+          setError(result.message);
+          return;
+        }
+        router.push(`/dashboard/chat/${result.data.chatId}`);
       } catch (e) {
         setError(e instanceof Error ? e.message : 'Something went wrong');
       }

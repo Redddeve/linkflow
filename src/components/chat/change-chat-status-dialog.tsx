@@ -29,10 +29,12 @@ export function ChangeChatStatusDialog({ chatId, action }: Props) {
     setError(null);
     startTransition(async () => {
       try {
-        if (isArchive) {
-          await archiveChat({ chatId });
-        } else {
-          await unarchiveChat({ chatId });
+        const result = isArchive
+          ? await archiveChat({ chatId })
+          : await unarchiveChat({ chatId });
+        if (!result.success) {
+          setError(result.message);
+          return;
         }
         setOpen(false);
       } catch (e) {

@@ -91,14 +91,12 @@ export function EditProfileDialog({ user }: Props) {
 
   async function submit(data: UpdateProfileInput) {
     startTransition(async () => {
-      try {
-        await updateProfile({ ...data, avatar: avatarPath });
+      const result = await updateProfile({ ...data, avatar: avatarPath });
+      if (result.success) {
         setOpen(false);
         router.refresh();
-      } catch (e: unknown) {
-        setError('root', {
-          message: e instanceof Error ? e.message : 'An error occurred',
-        });
+      } else {
+        setError('root', { message: result.message });
       }
     });
   }

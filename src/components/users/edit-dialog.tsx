@@ -105,22 +105,20 @@ export function EditUserDialog({
       ? data
       : { ...data, role: undefined };
     startTransition(async () => {
-      try {
-        const result = await editUser(user.id, patch, {
-          confirmRoleChange: confirmed,
-        });
-        if ('requiresConfirm' in result && result.requiresConfirm) {
-          setPendingPatch(data);
-          setConfirmDeps(result.requiresConfirm);
-        } else {
-          setOpen(false);
-          router.refresh();
-        }
-      } catch (e: unknown) {
-        setError('root', {
-          message: e instanceof Error ? e.message : 'An error occurred',
-        });
+      const result = await editUser(user.id, patch, {
+        confirmRoleChange: confirmed,
+      });
+      if (!result.success) {
+        setError('root', { message: result.message });
+        return;
       }
+      if (result.requiresConfirm) {
+        setPendingPatch(data);
+        setConfirmDeps(result.requiresConfirm);
+        return;
+      }
+      setOpen(false);
+      router.refresh();
     });
   }
 

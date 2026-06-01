@@ -30,21 +30,11 @@ export default function ForgotPasswordForm() {
   } = useForm<FormValues>();
 
   async function onSubmit(data: FormValues) {
-    try {
-      console.log(data.email);
-      const result = await resetPasswordForEmail(data.email);
-      if (!result.success) {
-        setError('root', {
-          message: result.error,
-        });
-        console.log('Something went wrong. Please try again.');
-        return;
-      }
+    const result = await resetPasswordForEmail(data.email);
+    if (result.success) {
       setSuccess(true);
-    } catch (err: unknown) {
-      setError('root', {
-        message: err instanceof Error ? err.message : 'An error occurred',
-      });
+    } else {
+      setError('root', { message: result.message });
     }
   }
 

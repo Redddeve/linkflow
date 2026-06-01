@@ -75,10 +75,14 @@ export function EarningsTable({ rows, showSourcer, canMarkPaid }: Props) {
     setError(null);
     startTransition(async () => {
       try {
-        await markOrdersPayoutPaid({
+        const result = await markOrdersPayoutPaid({
           orderIds: Array.from(selected),
           payoutReference: reference,
         });
+        if (!result.success) {
+          setError(result.message);
+          return;
+        }
         setDialogOpen(false);
         setSelected(new Set());
         setReference('');

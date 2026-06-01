@@ -35,8 +35,9 @@ describe('markNotificationRead()', () => {
     const chain = makeUpdateChain();
     mockFrom.mockReturnValue(chain);
 
-    await markNotificationRead('n1');
+    const result = await markNotificationRead('n1');
 
+    expect(result).toEqual({ success: true });
     expect(chain.update).toHaveBeenCalledWith(
       expect.objectContaining({ read_at: expect.any(String) }),
     );
@@ -45,11 +46,17 @@ describe('markNotificationRead()', () => {
     expect(chain.is).toHaveBeenCalledWith('read_at', null);
   });
 
-  it('throws on supabase error', async () => {
+  it('returns a failure result on supabase error', async () => {
     const chain = makeUpdateChain({ error: { message: 'boom' } });
     mockFrom.mockReturnValue(chain);
 
-    await expect(markNotificationRead('n1')).rejects.toThrow('boom');
+    const result = await markNotificationRead('n1');
+
+    expect(result).toEqual({
+      success: false,
+      code: 'UNKNOWN',
+      message: 'boom',
+    });
   });
 });
 
@@ -60,8 +67,9 @@ describe('markAllNotificationsRead()', () => {
     const chain = makeUpdateChain();
     mockFrom.mockReturnValue(chain);
 
-    await markAllNotificationsRead();
+    const result = await markAllNotificationsRead();
 
+    expect(result).toEqual({ success: true });
     expect(chain.update).toHaveBeenCalledWith(
       expect.objectContaining({ read_at: expect.any(String) }),
     );

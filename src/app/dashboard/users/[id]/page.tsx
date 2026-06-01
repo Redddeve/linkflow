@@ -44,7 +44,9 @@ export default async function UserDetailPage({ params }: PageProps) {
     targetManagerId: user.manager_id,
   });
   const canResend = canEdit && user.status === 'PENDING';
-  const managers = canReassignManager ? await listManagers() : [];
+  const managersResult = canReassignManager ? await listManagers() : null;
+  const managers =
+    managersResult && managersResult.success ? managersResult.data : [];
 
   const details: { label: string; value: React.ReactNode }[] = [
     { label: 'First Name', value: user.first_name ?? '—' },

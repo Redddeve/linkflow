@@ -113,7 +113,7 @@ describe('createChat()', () => {
       userIds: [USER_2, USER_3],
     });
 
-    expect(result).toEqual({ chatId: CHAT_1 });
+    expect(result).toEqual({ success: true, data: { chatId: CHAT_1 } });
     expect(mockAdminFrom).toHaveBeenCalledWith('chats');
     expect(chatInsert.insert).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -149,16 +149,22 @@ describe('createChat()', () => {
     expect(mockRevalidatePath).toHaveBeenCalledWith('/dashboard/chat');
   });
 
-  it('throws VALIDATION when title is empty', async () => {
-    await expect(
-      createChat({ title: '', userIds: [USER_2, USER_3] }),
-    ).rejects.toThrow('Title');
+  it('returns VALIDATION when title is empty', async () => {
+    const result = await createChat({ title: '', userIds: [USER_2, USER_3] });
+    expect(result).toMatchObject({
+      success: false,
+      code: 'VALIDATION',
+      message: expect.stringContaining('Title'),
+    });
   });
 
-  it('throws VALIDATION when fewer than 2 userIds', async () => {
-    await expect(createChat({ title: 'X', userIds: [USER_2] })).rejects.toThrow(
-      'participants',
-    );
+  it('returns VALIDATION when fewer than 2 userIds', async () => {
+    const result = await createChat({ title: 'X', userIds: [USER_2] });
+    expect(result).toMatchObject({
+      success: false,
+      code: 'VALIDATION',
+      message: expect.stringContaining('participants'),
+    });
   });
 });
 
@@ -193,8 +199,13 @@ describe('editChat()', () => {
       .mockReturnValueOnce(addInsert)
       .mockReturnValueOnce(removeDelete);
 
-    await editChat({ chatId: CHAT_1, title: 'New', userIds: [USER_3, USER_1] });
+    const result = await editChat({
+      chatId: CHAT_1,
+      title: 'New',
+      userIds: [USER_3, USER_1],
+    });
 
+    expect(result).toEqual({ success: true });
     expect(titleUpdate.update).toHaveBeenCalledWith({ title: 'New' });
     expect(addInsert.insert).toHaveBeenCalledWith([
       { chat_id: CHAT_1, user_id: USER_3 },
@@ -212,7 +223,7 @@ describe('editChat()', () => {
     );
   });
 
-  it('throws FORBIDDEN when caller is not creator or admin', async () => {
+  it('returns FORBIDDEN when caller is not creator or admin', async () => {
     mockRequireUser.mockResolvedValueOnce(
       makeUser({ id: USER_2, role: 'Client' }),
     );
@@ -222,12 +233,19 @@ describe('editChat()', () => {
     });
     mockAdminFrom.mockReturnValueOnce(chatSelect);
 
-    await expect(
-      editChat({ chatId: CHAT_1, title: 'X', userIds: [USER_2, USER_3] }),
-    ).rejects.toThrow('creator or an admin');
+    const result = await editChat({
+      chatId: CHAT_1,
+      title: 'X',
+      userIds: [USER_2, USER_3],
+    });
+    expect(result).toMatchObject({
+      success: false,
+      code: 'FORBIDDEN',
+      message: expect.stringContaining('creator or an admin'),
+    });
   });
 
-  it('throws FORBIDDEN when category is not Standard', async () => {
+  it('returns FORBIDDEN when category is not Standard', async () => {
     mockRequireUser.mockResolvedValueOnce(makeUser({ id: USER_1 }));
     const chatSelect = makeChain({
       data: { id: CHAT_1, category: 'Support', created_by_id: USER_1 },
@@ -235,19 +253,33 @@ describe('editChat()', () => {
     });
     mockAdminFrom.mockReturnValueOnce(chatSelect);
 
-    await expect(
-      editChat({ chatId: CHAT_1, title: 'X', userIds: [USER_2, USER_3] }),
-    ).rejects.toThrow('Standard');
+    const result = await editChat({
+      chatId: CHAT_1,
+      title: 'X',
+      userIds: [USER_2, USER_3],
+    });
+    expect(result).toMatchObject({
+      success: false,
+      code: 'FORBIDDEN',
+      message: expect.stringContaining('Standard'),
+    });
   });
 
-  it('throws NOT_FOUND when chat does not exist', async () => {
+  it('returns NOT_FOUND when chat does not exist', async () => {
     mockRequireUser.mockResolvedValueOnce(makeUser());
     const chatSelect = makeChain({ data: null, error: null });
     mockAdminFrom.mockReturnValueOnce(chatSelect);
 
-    await expect(
-      editChat({ chatId: CHAT_1, title: 'X', userIds: [USER_2, USER_3] }),
-    ).rejects.toThrow('Chat not found');
+    const result = await editChat({
+      chatId: CHAT_1,
+      title: 'X',
+      userIds: [USER_2, USER_3],
+    });
+    expect(result).toMatchObject({
+      success: false,
+      code: 'NOT_FOUND',
+      message: 'Chat not found',
+    });
   });
 });
 
@@ -270,15 +302,16 @@ describe('archiveChat()', () => {
       .mockReturnValueOnce(chatSelect)
       .mockReturnValueOnce(updateChain);
 
-    await archiveChat({ chatId: CHAT_1 });
+    const result = await archiveChat({ chatId: CHAT_1 });
 
+    expect(result).toEqual({ success: true });
     expect(updateChain.update).toHaveBeenCalledWith({ status: 'Archived' });
     expect(mockRecordAudit).toHaveBeenCalledWith(
       expect.objectContaining({ action: 'chat.archived' }),
     );
   });
 
-  it('throws VALIDATION when chat is not active', async () => {
+  it('returns VALIDATION when chat is not active', async () => {
     mockRequireUser.mockResolvedValueOnce(makeUser({ id: USER_1 }));
     const chatSelect = makeChain({
       data: {
@@ -291,10 +324,15 @@ describe('archiveChat()', () => {
     });
     mockAdminFrom.mockReturnValueOnce(chatSelect);
 
-    await expect(archiveChat({ chatId: CHAT_1 })).rejects.toThrow('not active');
+    const result = await archiveChat({ chatId: CHAT_1 });
+    expect(result).toMatchObject({
+      success: false,
+      code: 'VALIDATION',
+      message: expect.stringContaining('not active'),
+    });
   });
 
-  it('throws FORBIDDEN when caller is not creator or admin', async () => {
+  it('returns FORBIDDEN when caller is not creator or admin', async () => {
     mockRequireUser.mockResolvedValueOnce(
       makeUser({ id: USER_2, role: 'Client' }),
     );
@@ -309,9 +347,12 @@ describe('archiveChat()', () => {
     });
     mockAdminFrom.mockReturnValueOnce(chatSelect);
 
-    await expect(archiveChat({ chatId: CHAT_1 })).rejects.toThrow(
-      'creator or an admin',
-    );
+    const result = await archiveChat({ chatId: CHAT_1 });
+    expect(result).toMatchObject({
+      success: false,
+      code: 'FORBIDDEN',
+      message: expect.stringContaining('creator or an admin'),
+    });
   });
 });
 
@@ -331,15 +372,16 @@ describe('unarchiveChat()', () => {
       .mockReturnValueOnce(chatSelect)
       .mockReturnValueOnce(updateChain);
 
-    await unarchiveChat({ chatId: CHAT_1 });
+    const result = await unarchiveChat({ chatId: CHAT_1 });
 
+    expect(result).toEqual({ success: true });
     expect(updateChain.update).toHaveBeenCalledWith({ status: 'Active' });
     expect(mockRecordAudit).toHaveBeenCalledWith(
       expect.objectContaining({ action: 'chat.unarchived' }),
     );
   });
 
-  it('throws VALIDATION when chat is not archived', async () => {
+  it('returns VALIDATION when chat is not archived', async () => {
     mockRequireUser.mockResolvedValueOnce(makeUser({ id: USER_1 }));
     const chatSelect = makeChain({
       data: { id: CHAT_1, status: 'Active', created_by_id: USER_1 },
@@ -347,9 +389,12 @@ describe('unarchiveChat()', () => {
     });
     mockAdminFrom.mockReturnValueOnce(chatSelect);
 
-    await expect(unarchiveChat({ chatId: CHAT_1 })).rejects.toThrow(
-      'not archived',
-    );
+    const result = await unarchiveChat({ chatId: CHAT_1 });
+    expect(result).toMatchObject({
+      success: false,
+      code: 'VALIDATION',
+      message: expect.stringContaining('not archived'),
+    });
   });
 });
 
@@ -371,8 +416,9 @@ describe('sendMessage()', () => {
       .mockReturnValueOnce(msgInsert)
       .mockReturnValueOnce(allPartsSelect);
 
-    await sendMessage({ chatId: CHAT_1, content: 'Hello team' });
+    const result = await sendMessage({ chatId: CHAT_1, content: 'Hello team' });
 
+    expect(result).toEqual({ success: true });
     expect(msgInsert.insert).toHaveBeenCalledWith(
       expect.objectContaining({
         chat_id: CHAT_1,
@@ -394,17 +440,20 @@ describe('sendMessage()', () => {
     );
   });
 
-  it('throws FORBIDDEN when chat is archived', async () => {
+  it('returns FORBIDDEN when chat is archived', async () => {
     mockRequireUser.mockResolvedValueOnce(makeUser({ id: USER_1 }));
     const chatSelect = makeChain({ data: { status: 'Archived' }, error: null });
     mockAdminFrom.mockReturnValueOnce(chatSelect);
 
-    await expect(
-      sendMessage({ chatId: CHAT_1, content: 'hi' }),
-    ).rejects.toThrow('archived');
+    const result = await sendMessage({ chatId: CHAT_1, content: 'hi' });
+    expect(result).toMatchObject({
+      success: false,
+      code: 'FORBIDDEN',
+      message: expect.stringContaining('archived'),
+    });
   });
 
-  it('throws FORBIDDEN when caller is not a participant', async () => {
+  it('returns FORBIDDEN when caller is not a participant', async () => {
     mockRequireUser.mockResolvedValueOnce(makeUser({ id: USER_1 }));
     const chatSelect = makeChain({ data: { status: 'Active' }, error: null });
     const partSelect = makeChain({ data: null, error: null });
@@ -412,15 +461,21 @@ describe('sendMessage()', () => {
       .mockReturnValueOnce(chatSelect)
       .mockReturnValueOnce(partSelect);
 
-    await expect(
-      sendMessage({ chatId: CHAT_1, content: 'hi' }),
-    ).rejects.toThrow('participant');
+    const result = await sendMessage({ chatId: CHAT_1, content: 'hi' });
+    expect(result).toMatchObject({
+      success: false,
+      code: 'FORBIDDEN',
+      message: expect.stringContaining('participant'),
+    });
   });
 
-  it('throws VALIDATION when content is empty', async () => {
-    await expect(sendMessage({ chatId: CHAT_1, content: '' })).rejects.toThrow(
-      'empty',
-    );
+  it('returns VALIDATION when content is empty', async () => {
+    const result = await sendMessage({ chatId: CHAT_1, content: '' });
+    expect(result).toMatchObject({
+      success: false,
+      code: 'VALIDATION',
+      message: expect.stringContaining('empty'),
+    });
   });
 });
 
@@ -449,7 +504,7 @@ describe('startOrderChat()', () => {
     mockAdminFrom.mockReturnValueOnce(orderSelect);
 
     const result = await startOrderChat({ orderId: ORD_1 });
-    expect(result).toEqual({ chatId: CHAT_1 });
+    expect(result).toEqual({ success: true, data: { chatId: CHAT_1 } });
     // No new chat created, no audit, no notifications
     expect(mockAdminFrom).toHaveBeenCalledTimes(1);
     expect(mockRecordAudit).not.toHaveBeenCalled();
@@ -482,7 +537,7 @@ describe('startOrderChat()', () => {
 
     const result = await startOrderChat({ orderId: ORD_1 });
 
-    expect(result).toEqual({ chatId: CHAT_1 });
+    expect(result).toEqual({ success: true, data: { chatId: CHAT_1 } });
     expect(chatInsert.insert).toHaveBeenCalledWith(
       expect.objectContaining({
         title: 'example.com',
@@ -508,7 +563,7 @@ describe('startOrderChat()', () => {
     );
   });
 
-  it('throws FORBIDDEN when Client did not create the order', async () => {
+  it('returns FORBIDDEN when Client did not create the order', async () => {
     mockRequireUser.mockResolvedValueOnce(
       makeUser({ id: USER_2, role: 'Client' }),
     );
@@ -525,12 +580,15 @@ describe('startOrderChat()', () => {
     });
     mockAdminFrom.mockReturnValueOnce(orderSelect);
 
-    await expect(startOrderChat({ orderId: ORD_1 })).rejects.toThrow(
-      'Access denied',
-    );
+    const result = await startOrderChat({ orderId: ORD_1 });
+    expect(result).toMatchObject({
+      success: false,
+      code: 'FORBIDDEN',
+      message: 'Access denied',
+    });
   });
 
-  it('throws FORBIDDEN when Copywriter is not assigned', async () => {
+  it('returns FORBIDDEN when Copywriter is not assigned', async () => {
     mockRequireUser.mockResolvedValueOnce(
       makeUser({ id: 'other-cw', role: 'Copywriter' }),
     );
@@ -547,12 +605,15 @@ describe('startOrderChat()', () => {
     });
     mockAdminFrom.mockReturnValueOnce(orderSelect);
 
-    await expect(startOrderChat({ orderId: ORD_1 })).rejects.toThrow(
-      'Access denied',
-    );
+    const result = await startOrderChat({ orderId: ORD_1 });
+    expect(result).toMatchObject({
+      success: false,
+      code: 'FORBIDDEN',
+      message: 'Access denied',
+    });
   });
 
-  it('throws VALIDATION when order has no copywriter assigned', async () => {
+  it('returns VALIDATION when order has no copywriter assigned', async () => {
     mockRequireUser.mockResolvedValueOnce(
       makeUser({ id: USER_1, role: 'Client' }),
     );
@@ -569,19 +630,25 @@ describe('startOrderChat()', () => {
     });
     mockAdminFrom.mockReturnValueOnce(orderSelect);
 
-    await expect(startOrderChat({ orderId: ORD_1 })).rejects.toThrow(
-      'copywriter',
-    );
+    const result = await startOrderChat({ orderId: ORD_1 });
+    expect(result).toMatchObject({
+      success: false,
+      code: 'VALIDATION',
+      message: expect.stringContaining('copywriter'),
+    });
   });
 
-  it('throws NOT_FOUND when order does not exist', async () => {
+  it('returns NOT_FOUND when order does not exist', async () => {
     mockRequireUser.mockResolvedValueOnce(makeUser());
     const orderSelect = makeChain({ data: null, error: null });
     mockAdminFrom.mockReturnValueOnce(orderSelect);
 
-    await expect(startOrderChat({ orderId: ORD_1 })).rejects.toThrow(
-      'Order not found',
-    );
+    const result = await startOrderChat({ orderId: ORD_1 });
+    expect(result).toMatchObject({
+      success: false,
+      code: 'NOT_FOUND',
+      message: 'Order not found',
+    });
   });
 });
 

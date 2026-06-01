@@ -6,7 +6,7 @@ import { createClient } from '@/lib/supabase/server';
 import { requireRole, requireUser } from '@/lib/features/auth';
 import { recordAudit } from '@/lib/features/audit';
 import { notify } from '@/lib/features/notify';
-import { AppError } from '@/lib/errors';
+import { AppError, type ActionResult } from '@/lib/errors';
 import { firstOfMonth } from '@/lib/features/billing';
 import { fetchOrdersList } from '@/lib/data/orders';
 import { fetchUsersByIds } from '@/lib/data/users';
@@ -50,24 +50,34 @@ const TRANSITION_GUARDS = {
   publish: ['Content Approved'] as OrderStatus[],
 } as const;
 
-function mapForbidden(e: unknown): never {
-  if (e instanceof Error && e.message.startsWith('FORBIDDEN')) {
-    throw new AppError(
-      'FORBIDDEN',
-      'You do not have permission to perform this action',
-    );
-  }
-  throw e;
+const FORBIDDEN_RESULT: ActionResult = {
+  success: false,
+  code: 'FORBIDDEN',
+  message: 'You do not have permission to perform this action',
+};
+
+function isForbiddenError(e: unknown): boolean {
+  return e instanceof Error && e.message.startsWith('FORBIDDEN');
 }
 
 export async function editOrderPublishDate(
   input: EditOrderPublishDateInput,
-): Promise<void> {
-  const actor = await requireRole(['Client']).catch(mapForbidden);
+): Promise<ActionResult> {
+  let actor;
+  try {
+    actor = await requireRole(['Client']);
+  } catch (e) {
+    if (isForbiddenError(e)) return FORBIDDEN_RESULT;
+    throw e;
+  }
 
   const parsed = editOrderPublishDateSchema.safeParse(input);
   if (!parsed.success)
-    throw new AppError('VALIDATION', parsed.error.issues[0].message);
+    return {
+      success: false,
+      code: 'VALIDATION',
+      message: parsed.error.issues[0].message,
+    };
 
   const { orderId, publish_date } = parsed.data;
 
@@ -78,14 +88,20 @@ export async function editOrderPublishDate(
     .eq('id', orderId)
     .single();
 
-  if (error || !order) throw new AppError('NOT_FOUND', 'Order not found');
+  if (error || !order)
+    return { success: false, code: 'NOT_FOUND', message: 'Order not found' };
   if (order.created_by_id !== actor.id)
-    throw new AppError('FORBIDDEN', 'You do not own this order');
+    return {
+      success: false,
+      code: 'FORBIDDEN',
+      message: 'You do not own this order',
+    };
   if (!TRANSITION_GUARDS.editPublishDate.includes(order.status)) {
-    throw new AppError(
-      'VALIDATION',
-      `Cannot edit publish date on an order with status "${order.status}"`,
-    );
+    return {
+      success: false,
+      code: 'VALIDATION',
+      message: `Cannot edit publish date on an order with status "${order.status}"`,
+    };
   }
 
   const dateStr = publish_date.toISOString().split('T')[0];
@@ -95,7 +111,8 @@ export async function editOrderPublishDate(
     .eq('id', orderId)
     .eq('status', 'New');
 
-  if (updateError) throw new Error(updateError.message);
+  if (updateError)
+    return { success: false, code: 'UNKNOWN', message: updateError.message };
 
   await recordAudit({
     entityType: 'order',
@@ -115,14 +132,27 @@ export async function editOrderPublishDate(
 
   revalidatePath('/dashboard/orders');
   revalidatePath(`/dashboard/orders/${orderId}`);
+  return { success: true };
 }
 
-export async function cancelOrder(input: CancelOrderInput): Promise<void> {
-  const actor = await requireRole(['Client']).catch(mapForbidden);
+export async function cancelOrder(
+  input: CancelOrderInput,
+): Promise<ActionResult> {
+  let actor;
+  try {
+    actor = await requireRole(['Client']);
+  } catch (e) {
+    if (isForbiddenError(e)) return FORBIDDEN_RESULT;
+    throw e;
+  }
 
   const parsed = cancelOrderSchema.safeParse(input);
   if (!parsed.success)
-    throw new AppError('VALIDATION', parsed.error.issues[0].message);
+    return {
+      success: false,
+      code: 'VALIDATION',
+      message: parsed.error.issues[0].message,
+    };
 
   const { orderId, reason } = parsed.data;
 
@@ -133,14 +163,20 @@ export async function cancelOrder(input: CancelOrderInput): Promise<void> {
     .eq('id', orderId)
     .single();
 
-  if (error || !order) throw new AppError('NOT_FOUND', 'Order not found');
+  if (error || !order)
+    return { success: false, code: 'NOT_FOUND', message: 'Order not found' };
   if (order.created_by_id !== actor.id)
-    throw new AppError('FORBIDDEN', 'You do not own this order');
+    return {
+      success: false,
+      code: 'FORBIDDEN',
+      message: 'You do not own this order',
+    };
   if (!TRANSITION_GUARDS.cancel.includes(order.status)) {
-    throw new AppError(
-      'VALIDATION',
-      `Cannot cancel an order with status "${order.status}"`,
-    );
+    return {
+      success: false,
+      code: 'VALIDATION',
+      message: `Cannot cancel an order with status "${order.status}"`,
+    };
   }
 
   const { error: updateError } = await supabase
@@ -153,7 +189,8 @@ export async function cancelOrder(input: CancelOrderInput): Promise<void> {
     .eq('id', orderId)
     .eq('status', 'New');
 
-  if (updateError) throw new Error(updateError.message);
+  if (updateError)
+    return { success: false, code: 'UNKNOWN', message: updateError.message };
 
   await recordAudit({
     entityType: 'order',
@@ -191,16 +228,27 @@ export async function cancelOrder(input: CancelOrderInput): Promise<void> {
 
   revalidatePath('/dashboard/orders');
   revalidatePath(`/dashboard/orders/${orderId}`);
+  return { success: true };
 }
 
 export async function assignCopywriter(
   input: AssignCopywriterInput,
-): Promise<void> {
-  const actor = await requireRole(['Manager', 'Admin']).catch(mapForbidden);
+): Promise<ActionResult> {
+  let actor;
+  try {
+    actor = await requireRole(['Manager', 'Admin']);
+  } catch (e) {
+    if (isForbiddenError(e)) return FORBIDDEN_RESULT;
+    throw e;
+  }
 
   const parsed = assignCopywriterSchema.safeParse(input);
   if (!parsed.success)
-    throw new AppError('VALIDATION', parsed.error.issues[0].message);
+    return {
+      success: false,
+      code: 'VALIDATION',
+      message: parsed.error.issues[0].message,
+    };
 
   const { orderId, copywriterId } = parsed.data;
 
@@ -220,24 +268,37 @@ export async function assignCopywriter(
   ]);
 
   if (orderResult.error || !orderResult.data)
-    throw new AppError('NOT_FOUND', 'Order not found');
+    return { success: false, code: 'NOT_FOUND', message: 'Order not found' };
   if (copywriterResult.error || !copywriterResult.data)
-    throw new AppError('NOT_FOUND', 'Copywriter not found');
+    return {
+      success: false,
+      code: 'NOT_FOUND',
+      message: 'Copywriter not found',
+    };
 
   const order = orderResult.data;
   const copywriter = copywriterResult.data;
 
   if (!TRANSITION_GUARDS.assign.includes(order.status)) {
-    throw new AppError(
-      'VALIDATION',
-      `Cannot assign copywriter to an order with status "${order.status}"`,
-    );
+    return {
+      success: false,
+      code: 'VALIDATION',
+      message: `Cannot assign copywriter to an order with status "${order.status}"`,
+    };
   }
   if (copywriter.role !== 'Copywriter') {
-    throw new AppError('VALIDATION', 'Target user is not a Copywriter');
+    return {
+      success: false,
+      code: 'VALIDATION',
+      message: 'Target user is not a Copywriter',
+    };
   }
   if (copywriter.status !== 'ACTIVE') {
-    throw new AppError('VALIDATION', 'Copywriter is not active');
+    return {
+      success: false,
+      code: 'VALIDATION',
+      message: 'Copywriter is not active',
+    };
   }
 
   const newManagerId = order.manager_id ?? actor.id;
@@ -252,7 +313,8 @@ export async function assignCopywriter(
     .eq('id', orderId)
     .eq('status', 'New');
 
-  if (updateError) throw new Error(updateError.message);
+  if (updateError)
+    return { success: false, code: 'UNKNOWN', message: updateError.message };
 
   await recordAudit({
     entityType: 'order',
@@ -281,16 +343,26 @@ export async function assignCopywriter(
 
   revalidatePath('/dashboard/orders');
   revalidatePath(`/dashboard/orders/${orderId}`);
+  return { success: true };
 }
 
 export async function reassignCopywriter(
   input: AssignCopywriterInput,
-): Promise<void> {
-  await requireRole(['Manager', 'Admin']).catch(mapForbidden);
+): Promise<ActionResult> {
+  try {
+    await requireRole(['Manager', 'Admin']);
+  } catch (e) {
+    if (isForbiddenError(e)) return FORBIDDEN_RESULT;
+    throw e;
+  }
 
   const parsed = assignCopywriterSchema.safeParse(input);
   if (!parsed.success)
-    throw new AppError('VALIDATION', parsed.error.issues[0].message);
+    return {
+      success: false,
+      code: 'VALIDATION',
+      message: parsed.error.issues[0].message,
+    };
 
   const { orderId, copywriterId } = parsed.data;
 
@@ -310,24 +382,37 @@ export async function reassignCopywriter(
   ]);
 
   if (orderResult.error || !orderResult.data)
-    throw new AppError('NOT_FOUND', 'Order not found');
+    return { success: false, code: 'NOT_FOUND', message: 'Order not found' };
   if (copywriterResult.error || !copywriterResult.data)
-    throw new AppError('NOT_FOUND', 'Copywriter not found');
+    return {
+      success: false,
+      code: 'NOT_FOUND',
+      message: 'Copywriter not found',
+    };
 
   const order = orderResult.data;
   const copywriter = copywriterResult.data;
 
   if (!TRANSITION_GUARDS.reassign.includes(order.status)) {
-    throw new AppError(
-      'VALIDATION',
-      `Cannot reassign copywriter on an order with status "${order.status}"`,
-    );
+    return {
+      success: false,
+      code: 'VALIDATION',
+      message: `Cannot reassign copywriter on an order with status "${order.status}"`,
+    };
   }
   if (copywriter.role !== 'Copywriter') {
-    throw new AppError('VALIDATION', 'Target user is not a Copywriter');
+    return {
+      success: false,
+      code: 'VALIDATION',
+      message: 'Target user is not a Copywriter',
+    };
   }
   if (copywriter.status !== 'ACTIVE') {
-    throw new AppError('VALIDATION', 'Copywriter is not active');
+    return {
+      success: false,
+      code: 'VALIDATION',
+      message: 'Copywriter is not active',
+    };
   }
 
   const previousCopywriterId = order.copywriter_id;
@@ -338,7 +423,8 @@ export async function reassignCopywriter(
     .eq('id', orderId)
     .in('status', ['In Progress', 'Needs changes']);
 
-  if (updateError) throw new Error(updateError.message);
+  if (updateError)
+    return { success: false, code: 'UNKNOWN', message: updateError.message };
 
   await recordAudit({
     entityType: 'order',
@@ -359,16 +445,27 @@ export async function reassignCopywriter(
 
   revalidatePath('/dashboard/orders');
   revalidatePath(`/dashboard/orders/${orderId}`);
+  return { success: true };
 }
 
 export async function saveOrderContent(
   input: SaveOrderContentInput,
-): Promise<void> {
-  const actor = await requireRole(['Copywriter']).catch(mapForbidden);
+): Promise<ActionResult> {
+  let actor;
+  try {
+    actor = await requireRole(['Copywriter']);
+  } catch (e) {
+    if (isForbiddenError(e)) return FORBIDDEN_RESULT;
+    throw e;
+  }
 
   const parsed = saveOrderContentSchema.safeParse(input);
   if (!parsed.success)
-    throw new AppError('VALIDATION', parsed.error.issues[0].message);
+    return {
+      success: false,
+      code: 'VALIDATION',
+      message: parsed.error.issues[0].message,
+    };
 
   const { orderId, body } = parsed.data;
 
@@ -379,14 +476,20 @@ export async function saveOrderContent(
     .eq('id', orderId)
     .single();
 
-  if (error || !order) throw new AppError('NOT_FOUND', 'Order not found');
+  if (error || !order)
+    return { success: false, code: 'NOT_FOUND', message: 'Order not found' };
   if (order.copywriter_id !== actor.id)
-    throw new AppError('FORBIDDEN', 'You are not assigned to this order');
+    return {
+      success: false,
+      code: 'FORBIDDEN',
+      message: 'You are not assigned to this order',
+    };
   if (!TRANSITION_GUARDS.saveContent.includes(order.status)) {
-    throw new AppError(
-      'VALIDATION',
-      `Cannot edit content on an order with status "${order.status}"`,
-    );
+    return {
+      success: false,
+      code: 'VALIDATION',
+      message: `Cannot edit content on an order with status "${order.status}"`,
+    };
   }
 
   const { error: updateError } = await supabase
@@ -395,7 +498,8 @@ export async function saveOrderContent(
     .eq('id', orderId)
     .in('status', ['In Progress', 'Needs changes']);
 
-  if (updateError) throw new Error(updateError.message);
+  if (updateError)
+    return { success: false, code: 'UNKNOWN', message: updateError.message };
 
   await recordAudit({
     entityType: 'order',
@@ -405,16 +509,27 @@ export async function saveOrderContent(
   });
 
   revalidatePath(`/dashboard/orders/${orderId}/edit`);
+  return { success: true };
 }
 
 export async function submitOrderContent(
   input: SubmitOrderContentInput,
-): Promise<void> {
-  const actor = await requireRole(['Copywriter']).catch(mapForbidden);
+): Promise<ActionResult> {
+  let actor;
+  try {
+    actor = await requireRole(['Copywriter']);
+  } catch (e) {
+    if (isForbiddenError(e)) return FORBIDDEN_RESULT;
+    throw e;
+  }
 
   const parsed = submitOrderContentSchema.safeParse(input);
   if (!parsed.success)
-    throw new AppError('VALIDATION', parsed.error.issues[0].message);
+    return {
+      success: false,
+      code: 'VALIDATION',
+      message: parsed.error.issues[0].message,
+    };
 
   const { orderId, body } = parsed.data;
 
@@ -427,14 +542,20 @@ export async function submitOrderContent(
     .eq('id', orderId)
     .single();
 
-  if (error || !order) throw new AppError('NOT_FOUND', 'Order not found');
+  if (error || !order)
+    return { success: false, code: 'NOT_FOUND', message: 'Order not found' };
   if (order.copywriter_id !== actor.id)
-    throw new AppError('FORBIDDEN', 'You are not assigned to this order');
+    return {
+      success: false,
+      code: 'FORBIDDEN',
+      message: 'You are not assigned to this order',
+    };
   if (!TRANSITION_GUARDS.submitContent.includes(order.status)) {
-    throw new AppError(
-      'VALIDATION',
-      `Cannot submit content on an order with status "${order.status}"`,
-    );
+    return {
+      success: false,
+      code: 'VALIDATION',
+      message: `Cannot submit content on an order with status "${order.status}"`,
+    };
   }
 
   const { error: updateError } = await supabase
@@ -447,7 +568,8 @@ export async function submitOrderContent(
     .eq('id', orderId)
     .in('status', ['In Progress', 'Needs changes']);
 
-  if (updateError) throw new Error(updateError.message);
+  if (updateError)
+    return { success: false, code: 'UNKNOWN', message: updateError.message };
 
   await recordAudit({
     entityType: 'order',
@@ -485,7 +607,12 @@ export async function submitOrderContent(
 export async function listCopywriters(): Promise<
   { id: string; first_name: string; last_name: string }[]
 > {
-  await requireRole(['Manager', 'Admin']).catch(mapForbidden);
+  try {
+    await requireRole(['Manager', 'Admin']);
+  } catch (e) {
+    if (isForbiddenError(e)) return [];
+    throw e;
+  }
   const supabase = await createClient();
   const { data } = await supabase
     .from('users')
@@ -496,14 +623,24 @@ export async function listCopywriters(): Promise<
   return data ?? [];
 }
 
-export async function approveOrder(input: ApproveOrderInput): Promise<void> {
-  const actor = await requireRole(['Client', 'Manager', 'Admin']).catch(
-    mapForbidden,
-  );
+export async function approveOrder(
+  input: ApproveOrderInput,
+): Promise<ActionResult> {
+  let actor;
+  try {
+    actor = await requireRole(['Client', 'Manager', 'Admin']);
+  } catch (e) {
+    if (isForbiddenError(e)) return FORBIDDEN_RESULT;
+    throw e;
+  }
 
   const parsed = approveOrderSchema.safeParse(input);
   if (!parsed.success)
-    throw new AppError('VALIDATION', parsed.error.issues[0].message);
+    return {
+      success: false,
+      code: 'VALIDATION',
+      message: parsed.error.issues[0].message,
+    };
 
   const { orderId } = parsed.data;
 
@@ -514,14 +651,20 @@ export async function approveOrder(input: ApproveOrderInput): Promise<void> {
     .eq('id', orderId)
     .single();
 
-  if (error || !order) throw new AppError('NOT_FOUND', 'Order not found');
+  if (error || !order)
+    return { success: false, code: 'NOT_FOUND', message: 'Order not found' };
   if (actor.role === 'Client' && order.created_by_id !== actor.id)
-    throw new AppError('FORBIDDEN', 'You do not own this order');
+    return {
+      success: false,
+      code: 'FORBIDDEN',
+      message: 'You do not own this order',
+    };
   if (!TRANSITION_GUARDS.approve.includes(order.status)) {
-    throw new AppError(
-      'VALIDATION',
-      `Cannot approve an order with status "${order.status}"`,
-    );
+    return {
+      success: false,
+      code: 'VALIDATION',
+      message: `Cannot approve an order with status "${order.status}"`,
+    };
   }
 
   const { error: updateError } = await supabase
@@ -533,7 +676,8 @@ export async function approveOrder(input: ApproveOrderInput): Promise<void> {
     .eq('id', orderId)
     .eq('status', 'Content Sent');
 
-  if (updateError) throw new Error(updateError.message);
+  if (updateError)
+    return { success: false, code: 'UNKNOWN', message: updateError.message };
 
   await recordAudit({
     entityType: 'order',
@@ -587,16 +731,27 @@ export async function approveOrder(input: ApproveOrderInput): Promise<void> {
 
   revalidatePath('/dashboard/orders');
   revalidatePath(`/dashboard/orders/${orderId}`);
+  return { success: true };
 }
 
-export async function rejectOrder(input: RejectOrderInput): Promise<void> {
-  const actor = await requireRole(['Client', 'Manager', 'Admin']).catch(
-    mapForbidden,
-  );
+export async function rejectOrder(
+  input: RejectOrderInput,
+): Promise<ActionResult> {
+  let actor;
+  try {
+    actor = await requireRole(['Client', 'Manager', 'Admin']);
+  } catch (e) {
+    if (isForbiddenError(e)) return FORBIDDEN_RESULT;
+    throw e;
+  }
 
   const parsed = rejectOrderSchema.safeParse(input);
   if (!parsed.success)
-    throw new AppError('VALIDATION', parsed.error.issues[0].message);
+    return {
+      success: false,
+      code: 'VALIDATION',
+      message: parsed.error.issues[0].message,
+    };
 
   const { orderId, comment } = parsed.data;
 
@@ -607,14 +762,20 @@ export async function rejectOrder(input: RejectOrderInput): Promise<void> {
     .eq('id', orderId)
     .single();
 
-  if (error || !order) throw new AppError('NOT_FOUND', 'Order not found');
+  if (error || !order)
+    return { success: false, code: 'NOT_FOUND', message: 'Order not found' };
   if (actor.role === 'Client' && order.created_by_id !== actor.id)
-    throw new AppError('FORBIDDEN', 'You do not own this order');
+    return {
+      success: false,
+      code: 'FORBIDDEN',
+      message: 'You do not own this order',
+    };
   if (!TRANSITION_GUARDS.reject.includes(order.status)) {
-    throw new AppError(
-      'VALIDATION',
-      `Cannot reject an order with status "${order.status}"`,
-    );
+    return {
+      success: false,
+      code: 'VALIDATION',
+      message: `Cannot reject an order with status "${order.status}"`,
+    };
   }
 
   // Insert comment row first
@@ -622,7 +783,8 @@ export async function rejectOrder(input: RejectOrderInput): Promise<void> {
     .from('comments')
     .insert({ order_id: orderId, created_by_id: actor.id, text: comment });
 
-  if (commentError) throw new Error(commentError.message);
+  if (commentError)
+    return { success: false, code: 'UNKNOWN', message: commentError.message };
 
   const { error: updateError } = await supabase
     .from('orders')
@@ -630,7 +792,8 @@ export async function rejectOrder(input: RejectOrderInput): Promise<void> {
     .eq('id', orderId)
     .eq('status', 'Content Sent');
 
-  if (updateError) throw new Error(updateError.message);
+  if (updateError)
+    return { success: false, code: 'UNKNOWN', message: updateError.message };
 
   await recordAudit({
     entityType: 'order',
@@ -663,19 +826,27 @@ export async function rejectOrder(input: RejectOrderInput): Promise<void> {
 
   revalidatePath('/dashboard/orders');
   revalidatePath(`/dashboard/orders/${orderId}`);
+  return { success: true };
 }
 
-export async function addComment(input: AddCommentInput): Promise<void> {
-  const actor = await requireRole([
-    'Client',
-    'Copywriter',
-    'Manager',
-    'Admin',
-  ]).catch(mapForbidden);
+export async function addComment(
+  input: AddCommentInput,
+): Promise<ActionResult> {
+  let actor;
+  try {
+    actor = await requireRole(['Client', 'Copywriter', 'Manager', 'Admin']);
+  } catch (e) {
+    if (isForbiddenError(e)) return FORBIDDEN_RESULT;
+    throw e;
+  }
 
   const parsed = addCommentSchema.safeParse(input);
   if (!parsed.success)
-    throw new AppError('VALIDATION', parsed.error.issues[0].message);
+    return {
+      success: false,
+      code: 'VALIDATION',
+      message: parsed.error.issues[0].message,
+    };
 
   const { orderId, text } = parsed.data;
 
@@ -686,21 +857,31 @@ export async function addComment(input: AddCommentInput): Promise<void> {
     .eq('id', orderId)
     .single();
 
-  if (error || !order) throw new AppError('NOT_FOUND', 'Order not found');
+  if (error || !order)
+    return { success: false, code: 'NOT_FOUND', message: 'Order not found' };
 
   // Enforce viewer-level access per role
   if (actor.role === 'Client' && order.created_by_id !== actor.id) {
-    throw new AppError('FORBIDDEN', 'You do not have access to this order');
+    return {
+      success: false,
+      code: 'FORBIDDEN',
+      message: 'You do not have access to this order',
+    };
   }
   if (actor.role === 'Copywriter' && order.copywriter_id !== actor.id) {
-    throw new AppError('FORBIDDEN', 'You are not assigned to this order');
+    return {
+      success: false,
+      code: 'FORBIDDEN',
+      message: 'You are not assigned to this order',
+    };
   }
 
   const { error: commentError } = await supabase
     .from('comments')
     .insert({ order_id: orderId, created_by_id: actor.id, text });
 
-  if (commentError) throw new Error(commentError.message);
+  if (commentError)
+    return { success: false, code: 'UNKNOWN', message: commentError.message };
 
   await recordAudit({
     entityType: 'order',
@@ -712,14 +893,27 @@ export async function addComment(input: AddCommentInput): Promise<void> {
   // Per product: comments do not generate notifications.
 
   revalidatePath(`/dashboard/orders/${orderId}`);
+  return { success: true };
 }
 
-export async function publishOrder(input: PublishOrderInput): Promise<void> {
-  const actor = await requireRole(['Manager', 'Admin']).catch(mapForbidden);
+export async function publishOrder(
+  input: PublishOrderInput,
+): Promise<ActionResult> {
+  let actor;
+  try {
+    actor = await requireRole(['Manager', 'Admin']);
+  } catch (e) {
+    if (isForbiddenError(e)) return FORBIDDEN_RESULT;
+    throw e;
+  }
 
   const parsed = publishOrderSchema.safeParse(input);
   if (!parsed.success)
-    throw new AppError('VALIDATION', parsed.error.issues[0].message);
+    return {
+      success: false,
+      code: 'VALIDATION',
+      message: parsed.error.issues[0].message,
+    };
 
   const { orderId, published_url, publish_date } = parsed.data;
 
@@ -730,12 +924,14 @@ export async function publishOrder(input: PublishOrderInput): Promise<void> {
     .eq('id', orderId)
     .single();
 
-  if (error || !order) throw new AppError('NOT_FOUND', 'Order not found');
+  if (error || !order)
+    return { success: false, code: 'NOT_FOUND', message: 'Order not found' };
   if (!TRANSITION_GUARDS.publish.includes(order.status)) {
-    throw new AppError(
-      'VALIDATION',
-      `Cannot publish an order with status "${order.status}"`,
-    );
+    return {
+      success: false,
+      code: 'VALIDATION',
+      message: `Cannot publish an order with status "${order.status}"`,
+    };
   }
 
   // Snapshot the sourcer payout onto the order so future changes to the site
@@ -769,7 +965,8 @@ export async function publishOrder(input: PublishOrderInput): Promise<void> {
     .eq('id', orderId)
     .eq('status', 'Content Approved');
 
-  if (updateError) throw new Error(updateError.message);
+  if (updateError)
+    return { success: false, code: 'UNKNOWN', message: updateError.message };
 
   await recordAudit({
     entityType: 'order',
@@ -820,6 +1017,7 @@ export async function publishOrder(input: PublishOrderInput): Promise<void> {
 
   revalidatePath('/dashboard/orders');
   revalidatePath(`/dashboard/orders/${orderId}`);
+  return { success: true };
 }
 
 // ── Kanban load-more ───────────────────────────────────────────────────────────
@@ -857,6 +1055,7 @@ export async function fetchOrdersColumn(
     throw new AppError('VALIDATION', `Invalid Kanban status "${input.status}"`);
   }
 
+  // These are programmer-bug guards (UI never sends these), so they stay as throws
   if (!Number.isInteger(input.page) || input.page < 1) {
     throw new AppError('VALIDATION', 'page must be a positive integer');
   }

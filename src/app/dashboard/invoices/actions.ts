@@ -5,7 +5,7 @@ import { createClient } from '@/lib/supabase/server';
 import { requireRole } from '@/lib/features/auth';
 import { recordAudit } from '@/lib/features/audit';
 import { notify } from '@/lib/features/notify';
-import { AppError } from '@/lib/errors';
+import { AppError, actionError, type ActionResult } from '@/lib/errors';
 import { z } from 'zod';
 import {
   sendInvoiceSchema,
@@ -24,15 +24,15 @@ import {
   type RemoveOrdersFromInvoiceInput,
 } from '@/lib/schemas/invoices';
 
-function mapForbidden(e: unknown): never {
-  if (e instanceof Error && e.message.startsWith('FORBIDDEN')) {
-    throw new AppError(
-      'FORBIDDEN',
-      'You do not have permission to perform this action',
-    );
-  }
-  throw e;
+function isForbidden(e: unknown): boolean {
+  return e instanceof Error && e.message.startsWith('FORBIDDEN');
 }
+
+const forbiddenResult = {
+  success: false as const,
+  code: 'FORBIDDEN' as const,
+  message: 'You do not have permission to perform this action',
+};
 
 // Postgres error code → AppError mapping for our RPCs.
 function mapRpcError(message: string): AppError {
@@ -68,12 +68,25 @@ function mapRpcError(message: string): AppError {
 
 // ── sendInvoice ────────────────────────────────────────────────────────────────
 
-export async function sendInvoice(input: SendInvoiceInput): Promise<void> {
-  const actor = await requireRole(['Manager', 'Admin']).catch(mapForbidden);
+export async function sendInvoice(
+  input: SendInvoiceInput,
+): Promise<ActionResult> {
+  let actor;
+  try {
+    actor = await requireRole(['Manager', 'Admin']);
+  } catch (e) {
+    if (isForbidden(e)) return forbiddenResult;
+    throw e;
+  }
 
   const parsed = sendInvoiceSchema.safeParse(input);
-  if (!parsed.success)
-    throw new AppError('VALIDATION', parsed.error.issues[0].message);
+  if (!parsed.success) {
+    return {
+      success: false,
+      code: 'VALIDATION',
+      message: parsed.error.issues[0].message,
+    };
+  }
   const { invoiceId } = parsed.data;
 
   const supabase = await createClient();
@@ -85,15 +98,22 @@ export async function sendInvoice(input: SendInvoiceInput): Promise<void> {
     .eq('id', invoiceId)
     .single();
 
-  if (error || !invoice) throw new AppError('NOT_FOUND', 'Invoice not found');
+  if (error || !invoice) {
+    return { success: false, code: 'NOT_FOUND', message: 'Invoice not found' };
+  }
   if (invoice.status !== 'Draft') {
-    throw new AppError(
-      'VALIDATION',
-      `Cannot send an invoice with status "${invoice.status}"`,
-    );
+    return {
+      success: false,
+      code: 'VALIDATION',
+      message: `Cannot send an invoice with status "${invoice.status}"`,
+    };
   }
   if (invoice.total_price_cents <= 0) {
-    throw new AppError('VALIDATION', 'Cannot send an empty invoice ($0 total)');
+    return {
+      success: false,
+      code: 'VALIDATION',
+      message: 'Cannot send an empty invoice ($0 total)',
+    };
   }
 
   const { count: orderCount } = await supabase
@@ -102,10 +122,11 @@ export async function sendInvoice(input: SendInvoiceInput): Promise<void> {
     .eq('invoice_id', invoiceId);
 
   if (!orderCount || orderCount === 0) {
-    throw new AppError(
-      'VALIDATION',
-      'Cannot send an invoice with no attached orders',
-    );
+    return {
+      success: false,
+      code: 'VALIDATION',
+      message: 'Cannot send an invoice with no attached orders',
+    };
   }
 
   const now = new Date().toISOString();
@@ -115,7 +136,9 @@ export async function sendInvoice(input: SendInvoiceInput): Promise<void> {
     .eq('id', invoiceId)
     .eq('status', 'Draft');
 
-  if (updateError) throw new Error(updateError.message);
+  if (updateError) {
+    return { success: false, code: 'UNKNOWN', message: updateError.message };
+  }
 
   await recordAudit({
     entityType: 'invoice',
@@ -133,18 +156,31 @@ export async function sendInvoice(input: SendInvoiceInput): Promise<void> {
 
   revalidatePath('/dashboard/invoices');
   revalidatePath(`/dashboard/invoices/${invoiceId}`);
+
+  return { success: true };
 }
 
 // ── markInvoicePaid ────────────────────────────────────────────────────────────
 
 export async function markInvoicePaid(
   input: MarkInvoicePaidInput,
-): Promise<void> {
-  const actor = await requireRole(['Admin']).catch(mapForbidden);
+): Promise<ActionResult> {
+  let actor;
+  try {
+    actor = await requireRole(['Admin']);
+  } catch (e) {
+    if (isForbidden(e)) return forbiddenResult;
+    throw e;
+  }
 
   const parsed = markInvoicePaidSchema.safeParse(input);
-  if (!parsed.success)
-    throw new AppError('VALIDATION', parsed.error.issues[0].message);
+  if (!parsed.success) {
+    return {
+      success: false,
+      code: 'VALIDATION',
+      message: parsed.error.issues[0].message,
+    };
+  }
   const { invoiceId } = parsed.data;
 
   const supabase = await createClient();
@@ -154,12 +190,15 @@ export async function markInvoicePaid(
     .eq('id', invoiceId)
     .single();
 
-  if (error || !invoice) throw new AppError('NOT_FOUND', 'Invoice not found');
+  if (error || !invoice) {
+    return { success: false, code: 'NOT_FOUND', message: 'Invoice not found' };
+  }
   if (invoice.status !== 'Sent') {
-    throw new AppError(
-      'VALIDATION',
-      `Cannot mark as paid an invoice with status "${invoice.status}"`,
-    );
+    return {
+      success: false,
+      code: 'VALIDATION',
+      message: `Cannot mark as paid an invoice with status "${invoice.status}"`,
+    };
   }
 
   const now = new Date().toISOString();
@@ -175,7 +214,9 @@ export async function markInvoicePaid(
     .eq('id', invoiceId)
     .eq('status', 'Sent');
 
-  if (updateError) throw new Error(updateError.message);
+  if (updateError) {
+    return { success: false, code: 'UNKNOWN', message: updateError.message };
+  }
 
   await recordAudit({
     entityType: 'invoice',
@@ -193,6 +234,8 @@ export async function markInvoicePaid(
 
   revalidatePath('/dashboard/invoices');
   revalidatePath(`/dashboard/invoices/${invoiceId}`);
+
+  return { success: true };
 }
 
 // ── reassignOrders (batch — FR-INV-5) ─────────────────────────────────────────
@@ -204,16 +247,29 @@ interface ReassignResult {
 
 export async function reassignOrders(
   input: ReassignOrdersInput,
-): Promise<ReassignResult> {
-  await requireRole(['Manager', 'Admin']).catch(mapForbidden);
+): Promise<ActionResult<ReassignResult>> {
+  try {
+    await requireRole(['Manager', 'Admin']);
+  } catch (e) {
+    if (isForbidden(e)) return forbiddenResult;
+    throw e;
+  }
 
   const parsed = reassignOrdersSchema.safeParse(input);
-  if (!parsed.success)
-    throw new AppError('VALIDATION', parsed.error.issues[0].message);
+  if (!parsed.success) {
+    return {
+      success: false,
+      code: 'VALIDATION',
+      message: parsed.error.issues[0].message,
+    };
+  }
   const { changes } = parsed.data;
 
   if (changes.length === 0) {
-    return { sources_touched: [], targets_touched: [] };
+    return {
+      success: true,
+      data: { sources_touched: [], targets_touched: [] },
+    };
   }
 
   const supabase = await createClient();
@@ -224,7 +280,7 @@ export async function reassignOrders(
     })),
   });
 
-  if (error) throw mapRpcError(error.message);
+  if (error) return actionError(mapRpcError(error.message));
 
   const result = (data ?? {
     sources_touched: [],
@@ -247,7 +303,7 @@ export async function reassignOrders(
     revalidatePath(`/dashboard/invoices/${id}`);
   }
 
-  return result;
+  return { success: true, data: result };
 }
 
 /**
@@ -256,11 +312,16 @@ export async function reassignOrders(
  */
 export async function reassignOrderBillingMonth(
   input: ReassignOrderBillingMonthInput,
-): Promise<void> {
+): Promise<ActionResult<ReassignResult>> {
   const parsed = reassignOrderBillingMonthSchema.safeParse(input);
-  if (!parsed.success)
-    throw new AppError('VALIDATION', parsed.error.issues[0].message);
-  await reassignOrders({
+  if (!parsed.success) {
+    return {
+      success: false,
+      code: 'VALIDATION',
+      message: parsed.error.issues[0].message,
+    };
+  }
+  return reassignOrders({
     changes: [
       {
         orderId: parsed.data.orderId,
@@ -284,12 +345,22 @@ const rpcGenerateResultSchema = z.object({
 
 export async function generateInvoicesForMonth(
   input: GenerateInvoicesInput,
-): Promise<GenerateResult> {
-  await requireRole(['Admin']).catch(mapForbidden);
+): Promise<ActionResult<GenerateResult>> {
+  try {
+    await requireRole(['Admin']);
+  } catch (e) {
+    if (isForbidden(e)) return forbiddenResult;
+    throw e;
+  }
 
   const parsed = generateInvoicesSchema.safeParse(input);
-  if (!parsed.success)
-    throw new AppError('VALIDATION', parsed.error.issues[0].message);
+  if (!parsed.success) {
+    return {
+      success: false,
+      code: 'VALIDATION',
+      message: parsed.error.issues[0].message,
+    };
+  }
   const { billing_month: billingMonth } = parsed.data;
 
   const supabase = await createClient();
@@ -297,7 +368,7 @@ export async function generateInvoicesForMonth(
     p_billing_month: billingMonth,
   });
 
-  if (error) throw mapRpcError(error.message);
+  if (error) return actionError(mapRpcError(error.message));
 
   const result = rpcGenerateResultSchema.parse(
     data ?? { created: 0, updated: 0 },
@@ -338,7 +409,7 @@ export async function generateInvoicesForMonth(
     revalidatePath('/dashboard/invoices');
   }
 
-  return result;
+  return { success: true, data: result };
 }
 
 // ── addOrdersToInvoice / removeOrdersFromInvoice ──────────────────────────────
@@ -346,7 +417,7 @@ export async function generateInvoicesForMonth(
 async function recomputeInvoiceTotal(
   supabase: Awaited<ReturnType<typeof createClient>>,
   invoiceId: string,
-): Promise<number> {
+): Promise<{ ok: true; total: number } | { ok: false; message: string }> {
   const { data: rows } = await supabase
     .from('orders')
     .select('price_cents')
@@ -356,18 +427,28 @@ async function recomputeInvoiceTotal(
     .from('invoices')
     .update({ total_price_cents: total })
     .eq('id', invoiceId);
-  if (error) throw new Error(error.message);
-  return total;
+  if (error) return { ok: false, message: error.message };
+  return { ok: true, total };
 }
 
 export async function addOrdersToInvoice(
   input: AddOrdersToInvoiceInput,
-): Promise<{ added: number; total_price_cents: number }> {
-  await requireRole(['Manager', 'Admin']).catch(mapForbidden);
+): Promise<ActionResult<{ added: number; total_price_cents: number }>> {
+  try {
+    await requireRole(['Manager', 'Admin']);
+  } catch (e) {
+    if (isForbidden(e)) return forbiddenResult;
+    throw e;
+  }
 
   const parsed = addOrdersToInvoiceSchema.safeParse(input);
-  if (!parsed.success)
-    throw new AppError('VALIDATION', parsed.error.issues[0].message);
+  if (!parsed.success) {
+    return {
+      success: false,
+      code: 'VALIDATION',
+      message: parsed.error.issues[0].message,
+    };
+  }
   const { invoiceId, orderIds } = parsed.data;
 
   const supabase = await createClient();
@@ -377,12 +458,15 @@ export async function addOrdersToInvoice(
     .select('id, status, client_id, billing_month')
     .eq('id', invoiceId)
     .single();
-  if (invErr || !invoice) throw new AppError('NOT_FOUND', 'Invoice not found');
+  if (invErr || !invoice) {
+    return { success: false, code: 'NOT_FOUND', message: 'Invoice not found' };
+  }
   if (invoice.status !== 'Draft') {
-    throw new AppError(
-      'VALIDATION',
-      'Orders can only be added to a Draft invoice',
-    );
+    return {
+      success: false,
+      code: 'VALIDATION',
+      message: 'Orders can only be added to a Draft invoice',
+    };
   }
 
   // Only attach orders that match the invoice's client + billing_month, are
@@ -395,23 +479,33 @@ export async function addOrdersToInvoice(
     .eq('billing_month', invoice.billing_month)
     .eq('status', 'Published')
     .is('invoice_id', null);
-  if (eligErr) throw new Error(eligErr.message);
+  if (eligErr) {
+    return { success: false, code: 'UNKNOWN', message: eligErr.message };
+  }
 
   const eligibleIds = (eligible ?? []).map((o) => o.id);
   if (eligibleIds.length === 0) {
-    throw new AppError(
-      'VALIDATION',
-      'None of the selected orders are eligible (must be Published, same client, same billing month, and not already attached).',
-    );
+    return {
+      success: false,
+      code: 'VALIDATION',
+      message:
+        'None of the selected orders are eligible (must be Published, same client, same billing month, and not already attached).',
+    };
   }
 
   const { error: updErr } = await supabase
     .from('orders')
     .update({ invoice_id: invoiceId })
     .in('id', eligibleIds);
-  if (updErr) throw new Error(updErr.message);
+  if (updErr) {
+    return { success: false, code: 'UNKNOWN', message: updErr.message };
+  }
 
-  const total = await recomputeInvoiceTotal(supabase, invoiceId);
+  const recompute = await recomputeInvoiceTotal(supabase, invoiceId);
+  if (!recompute.ok) {
+    return { success: false, code: 'UNKNOWN', message: recompute.message };
+  }
+  const total = recompute.total;
 
   await recordAudit({
     entityType: 'invoice',
@@ -423,17 +517,30 @@ export async function addOrdersToInvoice(
   revalidatePath('/dashboard/invoices');
   revalidatePath(`/dashboard/invoices/${invoiceId}`);
 
-  return { added: eligibleIds.length, total_price_cents: total };
+  return {
+    success: true,
+    data: { added: eligibleIds.length, total_price_cents: total },
+  };
 }
 
 export async function removeOrdersFromInvoice(
   input: RemoveOrdersFromInvoiceInput,
-): Promise<{ removed: number; total_price_cents: number }> {
-  await requireRole(['Manager', 'Admin']).catch(mapForbidden);
+): Promise<ActionResult<{ removed: number; total_price_cents: number }>> {
+  try {
+    await requireRole(['Manager', 'Admin']);
+  } catch (e) {
+    if (isForbidden(e)) return forbiddenResult;
+    throw e;
+  }
 
   const parsed = removeOrdersFromInvoiceSchema.safeParse(input);
-  if (!parsed.success)
-    throw new AppError('VALIDATION', parsed.error.issues[0].message);
+  if (!parsed.success) {
+    return {
+      success: false,
+      code: 'VALIDATION',
+      message: parsed.error.issues[0].message,
+    };
+  }
   const { invoiceId, orderIds } = parsed.data;
 
   const supabase = await createClient();
@@ -443,12 +550,15 @@ export async function removeOrdersFromInvoice(
     .select('id, status')
     .eq('id', invoiceId)
     .single();
-  if (invErr || !invoice) throw new AppError('NOT_FOUND', 'Invoice not found');
+  if (invErr || !invoice) {
+    return { success: false, code: 'NOT_FOUND', message: 'Invoice not found' };
+  }
   if (invoice.status !== 'Draft') {
-    throw new AppError(
-      'VALIDATION',
-      'Orders can only be removed from a Draft invoice',
-    );
+    return {
+      success: false,
+      code: 'VALIDATION',
+      message: 'Orders can only be removed from a Draft invoice',
+    };
   }
 
   // Only unlink orders actually attached to this invoice. Keep billing_month
@@ -459,17 +569,24 @@ export async function removeOrdersFromInvoice(
     .in('id', orderIds)
     .eq('invoice_id', invoiceId)
     .select('id');
-  if (updErr) throw new Error(updErr.message);
+  if (updErr) {
+    return { success: false, code: 'UNKNOWN', message: updErr.message };
+  }
 
   const removedIds = (updated ?? []).map((o) => o.id);
   if (removedIds.length === 0) {
-    throw new AppError(
-      'VALIDATION',
-      'No matching orders were attached to this invoice',
-    );
+    return {
+      success: false,
+      code: 'VALIDATION',
+      message: 'No matching orders were attached to this invoice',
+    };
   }
 
-  const total = await recomputeInvoiceTotal(supabase, invoiceId);
+  const recompute = await recomputeInvoiceTotal(supabase, invoiceId);
+  if (!recompute.ok) {
+    return { success: false, code: 'UNKNOWN', message: recompute.message };
+  }
+  const total = recompute.total;
 
   await recordAudit({
     entityType: 'invoice',
@@ -481,5 +598,8 @@ export async function removeOrdersFromInvoice(
   revalidatePath('/dashboard/invoices');
   revalidatePath(`/dashboard/invoices/${invoiceId}`);
 
-  return { removed: removedIds.length, total_price_cents: total };
+  return {
+    success: true,
+    data: { removed: removedIds.length, total_price_cents: total },
+  };
 }
