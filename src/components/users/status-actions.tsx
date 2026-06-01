@@ -48,32 +48,34 @@ export function StatusActions({ user, currentUserId }: Props) {
   async function handleDisable() {
     setDisableError('');
     startTransition(async () => {
-      try {
-        const result = await disableUser(user.id, disableReason);
-        if (result.ok) {
-          resetDisable();
-          router.refresh();
-        } else if (result.code === 'BLOCKING_ORDERS') {
-          setBlockingOrders(result.orders);
-          setShowDisable(false);
-        } else {
-          setDisableError('You cannot disable your own account.');
-        }
-      } catch (e: unknown) {
-        setDisableError(e instanceof Error ? e.message : 'An error occurred');
+      const result = await disableUser(user.id, disableReason);
+      if (result.ok) {
+        resetDisable();
+        router.refresh();
+        return;
       }
+      if (result.code === 'BLOCKING_ORDERS') {
+        setBlockingOrders(result.orders);
+        setShowDisable(false);
+        return;
+      }
+      if (result.code === 'FORBIDDEN_SELF') {
+        setDisableError('You cannot disable your own account.');
+        return;
+      }
+      setDisableError(result.message);
     });
   }
 
   async function handleActivate() {
     startTransition(async () => {
-      try {
-        await activateUser(user.id);
-        setShowActivate(false);
-        router.refresh();
-      } catch (e: unknown) {
-        console.error(e);
+      const result = await activateUser(user.id);
+      if (!result.success) {
+        console.error(result.message);
+        return;
       }
+      setShowActivate(false);
+      router.refresh();
     });
   }
 

@@ -31,12 +31,12 @@ export function ContentEditorForm({ orderId, initialBody, status }: Props) {
     setSaveError(null);
     setSavedAt(null);
     startSave(async () => {
-      try {
-        await saveOrderContent({ orderId, body });
-        setSavedAt(new Date().toLocaleTimeString());
-      } catch (e) {
-        setSaveError(e instanceof Error ? e.message : 'Failed to save');
+      const result = await saveOrderContent({ orderId, body });
+      if (!result.success) {
+        setSaveError(result.message);
+        return;
       }
+      setSavedAt(new Date().toLocaleTimeString());
     });
   }
 
@@ -44,7 +44,12 @@ export function ContentEditorForm({ orderId, initialBody, status }: Props) {
     setSubmitError(null);
     startSubmit(async () => {
       try {
-        await submitOrderContent({ orderId, body });
+        const result = await submitOrderContent({ orderId, body });
+        // submitOrderContent calls redirect() on success and never returns
+        // normally. If we get a result, it must be an error.
+        if (result && !result.success) {
+          setSubmitError(result.message);
+        }
       } catch (e) {
         if (e instanceof Error && e.message === 'NEXT_REDIRECT') throw e;
         setSubmitError(e instanceof Error ? e.message : 'Failed to submit');

@@ -35,15 +35,15 @@ export function StatusActions({ siteId, currentStatus }: Props) {
   async function handleAction(action: string) {
     setError('');
     startTransition(async () => {
-      try {
-        await setSiteStatus(
-          siteId,
-          action as Parameters<typeof setSiteStatus>[1],
-        );
-        router.refresh();
-      } catch (e: unknown) {
-        setError(e instanceof Error ? e.message : 'An error occurred');
+      const result = await setSiteStatus(
+        siteId,
+        action as Parameters<typeof setSiteStatus>[1],
+      );
+      if (!result.success) {
+        setError(result.message);
+        return;
       }
+      router.refresh();
     });
   }
 

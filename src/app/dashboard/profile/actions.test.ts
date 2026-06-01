@@ -68,12 +68,13 @@ describe('updateProfile()', () => {
     const chain = makeUpdateChain({ error: null });
     mockFrom.mockReturnValue(chain);
 
-    await updateProfile({
+    const result = await updateProfile({
       first_name: 'New',
       last_name: 'Name',
       avatar: 'avatar.png',
     });
 
+    expect(result).toEqual({ success: true });
     expect(mockFrom).toHaveBeenCalledWith('users');
     expect(chain.update).toHaveBeenCalledWith({
       first_name: 'New',
@@ -92,22 +93,28 @@ describe('updateProfile()', () => {
     );
   });
 
-  it('throws VALIDATION when first_name is empty', async () => {
+  it('returns VALIDATION when first_name is empty', async () => {
     mockRequireUser.mockResolvedValueOnce(makeUser());
-    await expect(
-      updateProfile({ first_name: '', last_name: 'Name' }),
-    ).rejects.toThrow('First name is required');
+    const result = await updateProfile({ first_name: '', last_name: 'Name' });
+    expect(result).toEqual({
+      success: false,
+      code: 'VALIDATION',
+      message: 'First name is required',
+    });
     expect(mockFrom).not.toHaveBeenCalled();
   });
 
-  it('throws when the database update fails', async () => {
+  it('returns UNKNOWN when the database update fails', async () => {
     mockRequireUser.mockResolvedValueOnce(makeUser());
     const chain = makeUpdateChain({ error: { message: 'db boom' } });
     mockFrom.mockReturnValue(chain);
 
-    await expect(
-      updateProfile({ first_name: 'A', last_name: 'B' }),
-    ).rejects.toThrow('db boom');
+    const result = await updateProfile({ first_name: 'A', last_name: 'B' });
+    expect(result).toEqual({
+      success: false,
+      code: 'UNKNOWN',
+      message: 'db boom',
+    });
     expect(mockRecordAudit).not.toHaveBeenCalled();
   });
 });
@@ -120,8 +127,9 @@ describe('updateOwnPassword()', () => {
     mockSignInWithPassword.mockResolvedValueOnce({ error: null });
     mockUpdateUser.mockResolvedValueOnce({ error: null });
 
-    await updateOwnPassword('current-pw', 'newpassword123');
+    const result = await updateOwnPassword('current-pw', 'newpassword123');
 
+    expect(result).toEqual({ success: true });
     expect(mockSignInWithPassword).toHaveBeenCalledWith({
       email: 'user@test.com',
       password: 'current-pw',
@@ -135,43 +143,55 @@ describe('updateOwnPassword()', () => {
     );
   });
 
-  it('throws VALIDATION when current password is missing', async () => {
+  it('returns VALIDATION when current password is missing', async () => {
     mockRequireUser.mockResolvedValueOnce(makeUser());
-    await expect(updateOwnPassword('', 'newpassword123')).rejects.toThrow(
-      'Current password is required',
-    );
+    const result = await updateOwnPassword('', 'newpassword123');
+    expect(result).toEqual({
+      success: false,
+      code: 'VALIDATION',
+      message: 'Current password is required',
+    });
     expect(mockSignInWithPassword).not.toHaveBeenCalled();
   });
 
-  it('throws VALIDATION when new password is under 8 chars', async () => {
+  it('returns VALIDATION when new password is under 8 chars', async () => {
     mockRequireUser.mockResolvedValueOnce(makeUser());
-    await expect(updateOwnPassword('current-pw', 'short')).rejects.toThrow(
-      'at least 8 characters',
-    );
+    const result = await updateOwnPassword('current-pw', 'short');
+    expect(result.success).toBe(false);
+    if (!result.success) {
+      expect(result.code).toBe('VALIDATION');
+      expect(result.message).toMatch(/at least 8 characters/);
+    }
     expect(mockSignInWithPassword).not.toHaveBeenCalled();
   });
 
-  it('throws VALIDATION when current password is incorrect', async () => {
+  it('returns VALIDATION when current password is incorrect', async () => {
     mockRequireUser.mockResolvedValueOnce(makeUser());
     mockSignInWithPassword.mockResolvedValueOnce({
       error: { message: 'bad creds' },
     });
 
-    await expect(
-      updateOwnPassword('wrong-pw', 'newpassword123'),
-    ).rejects.toThrow('Current password is incorrect');
+    const result = await updateOwnPassword('wrong-pw', 'newpassword123');
+    expect(result).toEqual({
+      success: false,
+      code: 'VALIDATION',
+      message: 'Current password is incorrect',
+    });
     expect(mockUpdateUser).not.toHaveBeenCalled();
     expect(mockRecordAudit).not.toHaveBeenCalled();
   });
 
-  it('throws when supabase updateUser fails', async () => {
+  it('returns UNKNOWN when supabase updateUser fails', async () => {
     mockRequireUser.mockResolvedValueOnce(makeUser());
     mockSignInWithPassword.mockResolvedValueOnce({ error: null });
     mockUpdateUser.mockResolvedValueOnce({ error: { message: 'update boom' } });
 
-    await expect(
-      updateOwnPassword('current-pw', 'newpassword123'),
-    ).rejects.toThrow('update boom');
+    const result = await updateOwnPassword('current-pw', 'newpassword123');
+    expect(result).toEqual({
+      success: false,
+      code: 'UNKNOWN',
+      message: 'update boom',
+    });
     expect(mockRecordAudit).not.toHaveBeenCalled();
   });
 });
@@ -185,8 +205,9 @@ describe('sendOwnPasswordReset()', () => {
     );
     mockResetPasswordForEmail.mockResolvedValueOnce({ error: null });
 
-    await sendOwnPasswordReset();
+    const result = await sendOwnPasswordReset();
 
+    expect(result).toEqual({ success: true });
     expect(mockResetPasswordForEmail).toHaveBeenCalledWith(
       'user@test.com',
       expect.objectContaining({
@@ -201,13 +222,18 @@ describe('sendOwnPasswordReset()', () => {
     );
   });
 
-  it('throws when supabase returns an error', async () => {
+  it('returns UNKNOWN when supabase returns an error', async () => {
     mockRequireUser.mockResolvedValueOnce(makeUser());
     mockResetPasswordForEmail.mockResolvedValueOnce({
       error: { message: 'reset boom' },
     });
 
-    await expect(sendOwnPasswordReset()).rejects.toThrow('reset boom');
+    const result = await sendOwnPasswordReset();
+    expect(result).toEqual({
+      success: false,
+      code: 'UNKNOWN',
+      message: 'reset boom',
+    });
     expect(mockRecordAudit).not.toHaveBeenCalled();
   });
 });

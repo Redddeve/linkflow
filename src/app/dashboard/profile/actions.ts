@@ -3,7 +3,7 @@
 import { createClient } from '@/lib/supabase/server';
 import { requireUser } from '@/lib/features/auth';
 import { recordAudit } from '@/lib/features/audit';
-import { AppError } from '@/lib/errors';
+import type { ActionResult } from '@/lib/errors';
 import {
   updateProfileSchema,
   type UpdateProfileInput,
@@ -11,12 +11,19 @@ import {
 import { updatePasswordSchema } from '@/lib/schemas/auth';
 import { getAppUrl } from '@/lib/utils';
 
-export async function updateProfile(input: UpdateProfileInput): Promise<void> {
+export async function updateProfile(
+  input: UpdateProfileInput,
+): Promise<ActionResult> {
   const actor = await requireUser();
 
   const parsed = updateProfileSchema.safeParse(input);
-  if (!parsed.success)
-    throw new AppError('VALIDATION', parsed.error.issues[0].message);
+  if (!parsed.success) {
+    return {
+      success: false,
+      code: 'VALIDATION',
+      message: parsed.error.issues[0].message,
+    };
+  }
 
   const supabase = await createClient();
   const { error } = await supabase
@@ -24,7 +31,7 @@ export async function updateProfile(input: UpdateProfileInput): Promise<void> {
     .update(parsed.data)
     .eq('id', actor.id);
 
-  if (error) throw new Error(error.message);
+  if (error) return { success: false, code: 'UNKNOWN', message: error.message };
 
   await recordAudit({
     entityType: 'user',
@@ -37,21 +44,23 @@ export async function updateProfile(input: UpdateProfileInput): Promise<void> {
     },
     after: parsed.data,
   });
+
+  return { success: true };
 }
 
 export async function updateOwnPassword(
   currentPassword: string,
   newPassword: string,
-): Promise<void> {
+): Promise<ActionResult> {
   const actor = await requireUser();
 
   if (!currentPassword) {
-    throw new AppError('VALIDATION', 'Current password is required');
+    return { success: false, code: 'VALIDATION', message: 'Current password is required' };
   }
 
   const parsed = updatePasswordSchema.safeParse({ password: newPassword });
   if (!parsed.success)
-    throw new AppError('VALIDATION', parsed.error.issues[0].message);
+    return { success: false, code: 'VALIDATION', message: parsed.error.issues[0].message };
 
   const supabase = await createClient();
 
@@ -60,33 +69,37 @@ export async function updateOwnPassword(
     password: currentPassword,
   });
   if (verifyError) {
-    throw new AppError('VALIDATION', 'Current password is incorrect');
+    return { success: false, code: 'VALIDATION', message: 'Current password is incorrect' };
   }
 
   const { error } = await supabase.auth.updateUser({
     password: parsed.data.password,
   });
-  if (error) throw new Error(error.message);
+  if (error) return { success: false, code: 'UNKNOWN', message: error.message };
 
   await recordAudit({
     entityType: 'user',
     entityId: actor.id,
     action: 'user.password_update',
   });
+
+  return { success: true };
 }
 
-export async function sendOwnPasswordReset(): Promise<void> {
+export async function sendOwnPasswordReset(): Promise<ActionResult> {
   const actor = await requireUser();
 
   const supabase = await createClient();
   const { error } = await supabase.auth.resetPasswordForEmail(actor.email, {
     redirectTo: `${getAppUrl()}/auth/update-password`,
   });
-  if (error) throw new Error(error.message);
+  if (error) return { success: false, code: 'UNKNOWN', message: error.message };
 
   await recordAudit({
     entityType: 'user',
     entityId: actor.id,
     action: 'user.password_reset_requested',
   });
+
+  return { success: true };
 }

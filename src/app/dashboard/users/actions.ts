@@ -5,7 +5,7 @@ import { createAdminClient } from '@/lib/supabase/admin';
 import { requireRole } from '@/lib/features/auth';
 import { recordAudit } from '@/lib/features/audit';
 import { EMAIL_TEMPLATES, getMailer } from '@/lib/features/email';
-import { AppError } from '@/lib/errors';
+import type { ActionResult, ErrorCode } from '@/lib/errors';
 import { canManageTargetRole, canReassignClientManager } from '@/lib/rbac';
 import { getAppUrl } from '@/lib/utils';
 import {
@@ -15,7 +15,7 @@ import {
   type InviteUserInput,
   type EditUserInput,
 } from '@/lib/schemas/users';
-import type { UserRole } from '@/lib/features/auth';
+import type { UserRole, UserRow } from '@/lib/features/auth';
 
 export type BlockingOrder = {
   id: string;
@@ -26,38 +26,73 @@ export type BlockingOrder = {
 export type DisableResult =
   | { ok: true }
   | { ok: false; code: 'FORBIDDEN_SELF' }
-  | { ok: false; code: 'BLOCKING_ORDERS'; orders: BlockingOrder[] };
+  | { ok: false; code: 'BLOCKING_ORDERS'; orders: BlockingOrder[] }
+  | {
+      ok: false;
+      code: 'VALIDATION' | 'NOT_FOUND' | 'FORBIDDEN' | 'UNKNOWN';
+      message: string;
+    };
 
 export type EditUserResult =
-  | { requiresConfirm: { activeOrders: number; activeSites: number } }
-  | { done: true };
+  | {
+      success: true;
+      requiresConfirm?: { activeOrders: number; activeSites: number };
+    }
+  | { success: false; code: ErrorCode | 'UNKNOWN'; message: string };
 
-function mapForbidden(e: unknown): never {
-  if (e instanceof Error && e.message.startsWith('FORBIDDEN')) {
-    throw new AppError(
-      'FORBIDDEN',
-      'You do not have permission to perform this action',
-    );
+/**
+ * Run requireRole and translate a "FORBIDDEN: ..." error from auth into a
+ * structured ActionResult-shaped failure. Returns a tuple [actor, error].
+ * Re-throws anything that is NOT a forbidden error since those represent
+ * genuine programming/infra failures.
+ */
+async function requireRoleOrError(
+  roles: UserRole[],
+): Promise<
+  | { ok: true; actor: UserRow }
+  | { ok: false; error: { code: 'FORBIDDEN'; message: string } }
+> {
+  try {
+    const actor = await requireRole(roles);
+    return { ok: true, actor };
+  } catch (e) {
+    if (e instanceof Error && e.message.startsWith('FORBIDDEN')) {
+      return {
+        ok: false,
+        error: {
+          code: 'FORBIDDEN',
+          message: 'You do not have permission to perform this action',
+        },
+      };
+    }
+    throw e;
   }
-  throw e;
 }
 
 export async function inviteUser(
   input: InviteUserInput,
-): Promise<{ userId: string }> {
-  const actor = await requireRole(['Admin', 'Manager']).catch(mapForbidden);
+): Promise<ActionResult<{ userId: string }>> {
+  const auth = await requireRoleOrError(['Admin', 'Manager']);
+  if (!auth.ok)
+    return { success: false, code: auth.error.code, message: auth.error.message };
+  const actor = auth.actor;
 
   const parsed = inviteUserSchema.safeParse(input);
   if (!parsed.success)
-    throw new AppError('VALIDATION', parsed.error.issues[0].message);
+    return {
+      success: false,
+      code: 'VALIDATION',
+      message: parsed.error.issues[0].message,
+    };
 
   const { email, first_name, last_name, role } = parsed.data;
 
   if (actor.role && !canManageTargetRole(actor.role, role)) {
-    throw new AppError(
-      'FORBIDDEN',
-      'You do not have permission to invite this role',
-    );
+    return {
+      success: false,
+      code: 'FORBIDDEN',
+      message: 'You do not have permission to invite this role',
+    };
   }
 
   // For Clients invited by a Manager, default to self if no explicit pick
@@ -75,10 +110,11 @@ export async function inviteUser(
     .maybeSingle();
 
   if (existing) {
-    throw new AppError(
-      'EMAIL_EXISTS',
-      `A user with that email already exists (${existing.status})`,
-    );
+    return {
+      success: false,
+      code: 'EMAIL_EXISTS',
+      message: `A user with that email already exists (${existing.status})`,
+    };
   }
 
   const admin = createAdminClient();
@@ -91,10 +127,11 @@ export async function inviteUser(
 
   if (authError || !authData.user) {
     console.error('[inviteUser] Auth error:', authError);
-    throw new AppError(
-      'INVITE_FAILED',
-      authError?.message ?? 'Failed to send invitation',
-    );
+    return {
+      success: false,
+      code: 'INVITE_FAILED',
+      message: authError?.message ?? 'Failed to send invitation',
+    };
   }
 
   const userId = authData.user.id;
@@ -112,11 +149,14 @@ export async function inviteUser(
     after: { email, role, manager_id },
   });
 
-  return { userId };
+  return { success: true, data: { userId } };
 }
 
-export async function resendInvite(userId: string): Promise<void> {
-  const actor = await requireRole(['Admin', 'Manager']).catch(mapForbidden);
+export async function resendInvite(userId: string): Promise<ActionResult> {
+  const auth = await requireRoleOrError(['Admin', 'Manager']);
+  if (!auth.ok)
+    return { success: false, code: auth.error.code, message: auth.error.message };
+  const actor = auth.actor;
 
   const supabase = await createClient();
   const { data: user, error } = await supabase
@@ -125,15 +165,21 @@ export async function resendInvite(userId: string): Promise<void> {
     .eq('id', userId)
     .single();
 
-  if (error || !user) throw new AppError('NOT_FOUND', 'User not found');
+  if (error || !user)
+    return { success: false, code: 'NOT_FOUND', message: 'User not found' };
   if (actor.role && !canManageTargetRole(actor.role, user.role)) {
-    throw new AppError(
-      'FORBIDDEN',
-      'You do not have permission to resend this invitation',
-    );
+    return {
+      success: false,
+      code: 'FORBIDDEN',
+      message: 'You do not have permission to resend this invitation',
+    };
   }
   if (user.status !== 'PENDING')
-    throw new Error('User is not in PENDING status');
+    return {
+      success: false,
+      code: 'VALIDATION',
+      message: 'User is not in PENDING status',
+    };
 
   const admin = createAdminClient();
   const redirectTo = `${getAppUrl()}/auth/confirm?next=/auth/set-password`;
@@ -165,7 +211,8 @@ export async function resendInvite(userId: string): Promise<void> {
         options: { redirectTo },
       });
 
-    if (linkError) throw new Error(linkError.message);
+    if (linkError)
+      return { success: false, code: 'UNKNOWN', message: linkError.message };
 
     const inviteLink = linkData?.properties?.action_link;
     if (inviteLink) {
@@ -191,6 +238,8 @@ export async function resendInvite(userId: string): Promise<void> {
     entityId: userId,
     action: 'user.invite_resent',
   });
+
+  return { success: true };
 }
 
 export async function editUser(
@@ -198,11 +247,18 @@ export async function editUser(
   patch: EditUserInput,
   opts: { confirmRoleChange?: boolean } = {},
 ): Promise<EditUserResult> {
-  const actor = await requireRole(['Admin', 'Manager']).catch(mapForbidden);
+  const auth = await requireRoleOrError(['Admin', 'Manager']);
+  if (!auth.ok)
+    return { success: false, code: auth.error.code, message: auth.error.message };
+  const actor = auth.actor;
 
   const parsed = editUserSchema.safeParse(patch);
   if (!parsed.success)
-    throw new AppError('VALIDATION', parsed.error.issues[0].message);
+    return {
+      success: false,
+      code: 'VALIDATION',
+      message: parsed.error.issues[0].message,
+    };
 
   const supabase = await createClient();
   const { data: current, error } = await supabase
@@ -211,17 +267,23 @@ export async function editUser(
     .eq('id', userId)
     .single();
 
-  if (error || !current) throw new AppError('NOT_FOUND', 'User not found');
+  if (error || !current)
+    return { success: false, code: 'NOT_FOUND', message: 'User not found' };
 
   if (actor.role && !canManageTargetRole(actor.role, current.role)) {
-    throw new AppError(
-      'FORBIDDEN',
-      'You do not have permission to edit this user',
-    );
+    return {
+      success: false,
+      code: 'FORBIDDEN',
+      message: 'You do not have permission to edit this user',
+    };
   }
 
   if (actor.role === 'Manager' && parsed.data.role !== undefined) {
-    throw new AppError('VALIDATION', 'Managers cannot change a user role');
+    return {
+      success: false,
+      code: 'VALIDATION',
+      message: 'Managers cannot change a user role',
+    };
   }
 
   // manager_id reassignment: Admin can set any Client's manager;
@@ -239,10 +301,12 @@ export async function editUser(
         targetManagerId: current.manager_id,
       });
     if (!allowed) {
-      throw new AppError(
-        'FORBIDDEN',
-        'You do not have permission to reassign this user to another manager',
-      );
+      return {
+        success: false,
+        code: 'FORBIDDEN',
+        message:
+          'You do not have permission to reassign this user to another manager',
+      };
     }
   }
 
@@ -269,7 +333,10 @@ export async function editUser(
     const activeSites = sitesResult.count ?? 0;
 
     if (activeOrders > 0 || activeSites > 0) {
-      return { requiresConfirm: { activeOrders, activeSites } };
+      return {
+        success: true,
+        requiresConfirm: { activeOrders, activeSites },
+      };
     }
   }
 
@@ -278,7 +345,8 @@ export async function editUser(
     .update(parsed.data)
     .eq('id', userId);
 
-  if (updateError) throw new Error(updateError.message);
+  if (updateError)
+    return { success: false, code: 'UNKNOWN', message: updateError.message };
 
   await recordAudit({
     entityType: 'user',
@@ -288,18 +356,25 @@ export async function editUser(
     after: parsed.data,
   });
 
-  return { done: true };
+  return { success: true };
 }
 
 export async function disableUser(
   userId: string,
   reason: string,
 ): Promise<DisableResult> {
-  const actor = await requireRole(['Admin']).catch(mapForbidden);
+  const auth = await requireRoleOrError(['Admin']);
+  if (!auth.ok)
+    return { ok: false, code: auth.error.code, message: auth.error.message };
+  const actor = auth.actor;
 
   const parsed = disableUserSchema.safeParse({ reason });
   if (!parsed.success)
-    throw new AppError('VALIDATION', parsed.error.issues[0].message);
+    return {
+      ok: false,
+      code: 'VALIDATION',
+      message: parsed.error.issues[0].message,
+    };
 
   // Cannot disable yourself
   if (actor.id === userId) {
@@ -313,7 +388,8 @@ export async function disableUser(
     .eq('id', userId)
     .single();
 
-  if (error || !target) throw new AppError('NOT_FOUND', 'User not found');
+  if (error || !target)
+    return { ok: false, code: 'NOT_FOUND', message: 'User not found' };
 
   // Copywriter with active orders: return blocking list
   if (target.role === 'Copywriter') {
@@ -342,13 +418,15 @@ export async function disableUser(
       p_user_id: userId,
       p_reason: parsed.data.reason,
     });
-    if (rpcError) throw new Error(rpcError.message);
+    if (rpcError)
+      return { ok: false, code: 'UNKNOWN', message: rpcError.message };
   } else {
     const { error: updateError } = await supabase
       .from('users')
       .update({ status: 'DISABLED', disabled_reason: parsed.data.reason })
       .eq('id', userId);
-    if (updateError) throw new Error(updateError.message);
+    if (updateError)
+      return { ok: false, code: 'UNKNOWN', message: updateError.message };
   }
 
   await recordAudit({
@@ -362,8 +440,10 @@ export async function disableUser(
   return { ok: true };
 }
 
-export async function activateUser(userId: string): Promise<void> {
-  await requireRole(['Admin']).catch(mapForbidden);
+export async function activateUser(userId: string): Promise<ActionResult> {
+  const auth = await requireRoleOrError(['Admin']);
+  if (!auth.ok)
+    return { success: false, code: auth.error.code, message: auth.error.message };
 
   const supabase = await createClient();
   const { data: target, error } = await supabase
@@ -372,14 +452,16 @@ export async function activateUser(userId: string): Promise<void> {
     .eq('id', userId)
     .single();
 
-  if (error || !target) throw new AppError('NOT_FOUND', 'User not found');
+  if (error || !target)
+    return { success: false, code: 'NOT_FOUND', message: 'User not found' };
 
   const { error: updateError } = await supabase
     .from('users')
     .update({ status: 'ACTIVE', disabled_reason: null })
     .eq('id', userId);
 
-  if (updateError) throw new Error(updateError.message);
+  if (updateError)
+    return { success: false, code: 'UNKNOWN', message: updateError.message };
 
   await recordAudit({
     entityType: 'user',
@@ -388,12 +470,17 @@ export async function activateUser(userId: string): Promise<void> {
     before: { status: target.status },
     after: { status: 'ACTIVE' },
   });
+
+  return { success: true };
 }
 
 export async function listManagers(): Promise<
-  { id: string; first_name: string; last_name: string }[]
+  ActionResult<{ id: string; first_name: string; last_name: string }[]>
 > {
-  await requireRole(['Admin', 'Manager']).catch(mapForbidden);
+  const auth = await requireRoleOrError(['Admin', 'Manager']);
+  if (!auth.ok)
+    return { success: false, code: auth.error.code, message: auth.error.message };
+
   const supabase = await createClient();
   const { data } = await supabase
     .from('users')
@@ -401,5 +488,5 @@ export async function listManagers(): Promise<
     .eq('role', 'Manager' as UserRole)
     .in('status', ['ACTIVE', 'PENDING'])
     .order('first_name');
-  return data ?? [];
+  return { success: true, data: data ?? [] };
 }

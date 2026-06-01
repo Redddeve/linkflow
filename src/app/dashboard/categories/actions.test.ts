@@ -1,4 +1,4 @@
-﻿import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 vi.mock('@/lib/features/audit', () => ({ recordAudit: vi.fn().mockResolvedValue(undefined) }));
 
@@ -35,19 +35,21 @@ const { createCategory, editCategory } = await import('./actions');
 describe('createCategory()', () => {
   beforeEach(() => vi.clearAllMocks());
 
-  it('throws FORBIDDEN for non-Admin', async () => {
+  it('returns FORBIDDEN for non-Admin', async () => {
     mockRequireRole.mockRejectedValue(new Error('FORBIDDEN: requires role'));
-    await expect(createCategory({ name: 'Tech' })).rejects.toThrow(
-      expect.objectContaining({ code: 'FORBIDDEN' }),
+    const result = await createCategory({ name: 'Tech' });
+    expect(result).toEqual(
+      expect.objectContaining({ success: false, code: 'FORBIDDEN' }),
     );
   });
 
-  it('throws CONFLICT on duplicate name', async () => {
+  it('returns CONFLICT on duplicate name', async () => {
     mockRequireRole.mockResolvedValue(adminUser);
     mockMaybeSingle.mockResolvedValue({ data: { id: 'existing-cat' }, error: null });
 
-    await expect(createCategory({ name: 'Tech' })).rejects.toThrow(
-      expect.objectContaining({ code: 'CONFLICT' }),
+    const result = await createCategory({ name: 'Tech' });
+    expect(result).toEqual(
+      expect.objectContaining({ success: false, code: 'CONFLICT' }),
     );
   });
 
@@ -60,36 +62,39 @@ describe('createCategory()', () => {
     mockInsert.mockReturnValue({ select: insertSelect });
 
     const result = await createCategory({ name: 'Technology' });
-    expect(result).toEqual({ categoryId: 'new-cat' });
+    expect(result).toEqual({ success: true, data: { categoryId: 'new-cat' } });
   });
 });
 
 describe('editCategory()', () => {
   beforeEach(() => vi.clearAllMocks());
 
-  it('throws FORBIDDEN for non-Admin', async () => {
+  it('returns FORBIDDEN for non-Admin', async () => {
     mockRequireRole.mockRejectedValue(new Error('FORBIDDEN: requires role'));
-    await expect(editCategory('cat-1', { name: 'New Name' })).rejects.toThrow(
-      expect.objectContaining({ code: 'FORBIDDEN' }),
+    const result = await editCategory('cat-1', { name: 'New Name' });
+    expect(result).toEqual(
+      expect.objectContaining({ success: false, code: 'FORBIDDEN' }),
     );
   });
 
-  it('throws NOT_FOUND for unknown category', async () => {
+  it('returns NOT_FOUND for unknown category', async () => {
     mockRequireRole.mockResolvedValue(adminUser);
     mockSingle.mockResolvedValue({ data: null, error: { message: 'Not found' } });
 
-    await expect(editCategory('cat-1', { name: 'New Name' })).rejects.toThrow(
-      expect.objectContaining({ code: 'NOT_FOUND' }),
+    const result = await editCategory('cat-1', { name: 'New Name' });
+    expect(result).toEqual(
+      expect.objectContaining({ success: false, code: 'NOT_FOUND' }),
     );
   });
 
-  it('throws CONFLICT when new name already taken', async () => {
+  it('returns CONFLICT when new name already taken', async () => {
     mockRequireRole.mockResolvedValue(adminUser);
     mockSingle.mockResolvedValue({ data: { id: 'cat-1', name: 'Old Name' }, error: null });
     mockMaybeSingle.mockResolvedValue({ data: { id: 'other-cat' }, error: null });
 
-    await expect(editCategory('cat-1', { name: 'Tech' })).rejects.toThrow(
-      expect.objectContaining({ code: 'CONFLICT' }),
+    const result = await editCategory('cat-1', { name: 'Tech' });
+    expect(result).toEqual(
+      expect.objectContaining({ success: false, code: 'CONFLICT' }),
     );
   });
 
@@ -101,7 +106,8 @@ describe('editCategory()', () => {
     const updateEq = vi.fn().mockResolvedValue({ error: null });
     mockUpdate.mockReturnValue({ eq: updateEq });
 
-    await expect(editCategory('cat-1', { name: 'New Name' })).resolves.toBeUndefined();
+    const result = await editCategory('cat-1', { name: 'New Name' });
+    expect(result).toEqual({ success: true });
     expect(mockUpdate).toHaveBeenCalledWith({ name: 'New Name' });
   });
 });

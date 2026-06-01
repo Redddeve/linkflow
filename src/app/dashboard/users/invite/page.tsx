@@ -7,7 +7,8 @@ import { BackLink } from '@/components/ui/back-link';
 export default async function InviteUserPage() {
   const currentUser = await requireRole(['Admin', 'Manager']);
   const actorRole = currentUser.role as UserRole;
-  const managers = await listManagers();
+  const managersResult = await listManagers();
+  const managers = managersResult.success ? managersResult.data : [];
 
   return (
     <div className="page">

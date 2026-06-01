@@ -100,12 +100,16 @@ export function CreateChatDialog({ actorId }: Props) {
     setError(null);
     startTransition(async () => {
       try {
-        const { chatId } = await createChat({
+        const result = await createChat({
           title: getTitle(),
           userIds: selectedIds,
         });
+        if (!result.success) {
+          setError(result.message);
+          return;
+        }
         setOpen(false);
-        router.push(`/dashboard/chat/${chatId}`);
+        router.push(`/dashboard/chat/${result.data.chatId}`);
       } catch (e) {
         setError(e instanceof Error ? e.message : 'Something went wrong');
       }

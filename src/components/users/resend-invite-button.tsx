@@ -26,13 +26,13 @@ export function ResendInviteButton({ userId, userEmail }: Props) {
   function handleConfirm() {
     setError(null);
     startTransition(async () => {
-      try {
-        await resendInvite(userId);
-        setOpen(false);
-        router.refresh();
-      } catch (e: unknown) {
-        setError(e instanceof Error ? e.message : 'An error occurred');
+      const result = await resendInvite(userId);
+      if (!result.success) {
+        setError(result.message);
+        return;
       }
+      setOpen(false);
+      router.refresh();
     });
   }
 

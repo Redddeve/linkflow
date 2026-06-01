@@ -24,16 +24,16 @@ export function PublishOrderForm({ orderId, defaultPublishDate }: Props) {
     e.preventDefault();
     setError(null);
     startTransition(async () => {
-      try {
-        await publishOrder({
-          orderId,
-          published_url: url.trim(),
-          publish_date: date,
-        });
-        router.push(`/dashboard/orders/${orderId}`);
-      } catch (err) {
-        setError(err instanceof Error ? err.message : 'Something went wrong');
+      const result = await publishOrder({
+        orderId,
+        published_url: url.trim(),
+        publish_date: date,
+      });
+      if (!result.success) {
+        setError(result.message);
+        return;
       }
+      router.push(`/dashboard/orders/${orderId}`);
     });
   }
 

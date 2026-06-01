@@ -35,12 +35,12 @@ export function NotificationsPopover({ unreadCount, items }: Props) {
 
   function handleMarkAll() {
     startTransition(async () => {
-      try {
-        await markAllNotificationsRead();
-        router.refresh();
-      } catch (e) {
-        console.error(e);
+      const result = await markAllNotificationsRead();
+      if (!result.success) {
+        console.error('[notifications] mark-all-read failed', result.message);
+        return;
       }
+      router.refresh();
     });
   }
 

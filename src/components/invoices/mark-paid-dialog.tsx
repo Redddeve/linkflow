@@ -28,7 +28,11 @@ export function MarkPaidDialog({ invoiceId }: Props) {
     setError(null);
     startTransition(async () => {
       try {
-        await markInvoicePaid({ invoiceId });
+        const res = await markInvoicePaid({ invoiceId });
+        if (!res.success) {
+          setError(res.message);
+          return;
+        }
         setOpen(false);
         router.refresh();
       } catch (e) {

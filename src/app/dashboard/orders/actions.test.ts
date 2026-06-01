@@ -132,7 +132,11 @@ describe('editOrderPublishDate()', () => {
     const updateChain = makeChain({ data: null, error: null });
     mockFrom.mockReturnValueOnce(selectChain).mockReturnValue(updateChain);
 
-    await editOrderPublishDate({ orderId: ORD_1, publish_date: tomorrowStr });
+    const result = await editOrderPublishDate({
+      orderId: ORD_1,
+      publish_date: tomorrowStr,
+    });
+    expect(result).toEqual({ success: true });
 
     expect(mockRecordAudit).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -142,16 +146,22 @@ describe('editOrderPublishDate()', () => {
     );
   });
 
-  it('throws FORBIDDEN when caller is not Client', async () => {
+  it('returns FORBIDDEN when caller is not Client', async () => {
     mockRequireRole.mockRejectedValueOnce(
       new Error('FORBIDDEN: requires role Client'),
     );
-    await expect(
-      editOrderPublishDate({ orderId: ORD_1, publish_date: tomorrowStr }),
-    ).rejects.toThrow('permission');
+    const result = await editOrderPublishDate({
+      orderId: ORD_1,
+      publish_date: tomorrowStr,
+    });
+    expect(result).toMatchObject({
+      success: false,
+      code: 'FORBIDDEN',
+      message: expect.stringMatching(/permission/),
+    });
   });
 
-  it('throws FORBIDDEN when order belongs to another client', async () => {
+  it('returns FORBIDDEN when order belongs to another client', async () => {
     mockRequireRole.mockResolvedValueOnce(
       makeUser({ id: CLIENT_1, role: 'Client' }),
     );
@@ -166,12 +176,18 @@ describe('editOrderPublishDate()', () => {
     });
     mockFrom.mockReturnValue(chain);
 
-    await expect(
-      editOrderPublishDate({ orderId: ORD_1, publish_date: tomorrowStr }),
-    ).rejects.toThrow('own this order');
+    const result = await editOrderPublishDate({
+      orderId: ORD_1,
+      publish_date: tomorrowStr,
+    });
+    expect(result).toMatchObject({
+      success: false,
+      code: 'FORBIDDEN',
+      message: expect.stringMatching(/own this order/),
+    });
   });
 
-  it('throws VALIDATION when order is not New', async () => {
+  it('returns VALIDATION when order is not New', async () => {
     mockRequireRole.mockResolvedValueOnce(
       makeUser({ id: CLIENT_1, role: 'Client' }),
     );
@@ -186,18 +202,30 @@ describe('editOrderPublishDate()', () => {
     });
     mockFrom.mockReturnValue(chain);
 
-    await expect(
-      editOrderPublishDate({ orderId: ORD_1, publish_date: tomorrowStr }),
-    ).rejects.toThrow('In Progress');
+    const result = await editOrderPublishDate({
+      orderId: ORD_1,
+      publish_date: tomorrowStr,
+    });
+    expect(result).toMatchObject({
+      success: false,
+      code: 'VALIDATION',
+      message: expect.stringMatching(/In Progress/),
+    });
   });
 
-  it('throws VALIDATION for past date', async () => {
+  it('returns VALIDATION for past date', async () => {
     mockRequireRole.mockResolvedValueOnce(
       makeUser({ id: CLIENT_1, role: 'Client' }),
     );
-    await expect(
-      editOrderPublishDate({ orderId: ORD_1, publish_date: '2020-01-01' }),
-    ).rejects.toThrow('today or later');
+    const result = await editOrderPublishDate({
+      orderId: ORD_1,
+      publish_date: '2020-01-01',
+    });
+    expect(result).toMatchObject({
+      success: false,
+      code: 'VALIDATION',
+      message: expect.stringMatching(/today or later/),
+    });
   });
 });
 
@@ -268,7 +296,7 @@ describe('cancelOrder()', () => {
     expect(mockNotify).toHaveBeenCalledTimes(2);
   });
 
-  it('throws VALIDATION when order is not New', async () => {
+  it('returns VALIDATION when order is not New', async () => {
     mockRequireRole.mockResolvedValueOnce(
       makeUser({ id: CLIENT_1, role: 'Client' }),
     );
@@ -283,9 +311,12 @@ describe('cancelOrder()', () => {
     });
     mockFrom.mockReturnValue(chain);
 
-    await expect(cancelOrder({ orderId: ORD_1 })).rejects.toThrow(
-      'In Progress',
-    );
+    const result = await cancelOrder({ orderId: ORD_1 });
+    expect(result).toMatchObject({
+      success: false,
+      code: 'VALIDATION',
+      message: expect.stringMatching(/In Progress/),
+    });
   });
 });
 
@@ -335,16 +366,22 @@ describe('assignCopywriter()', () => {
     );
   });
 
-  it('throws FORBIDDEN when caller is not Manager/Admin', async () => {
+  it('returns FORBIDDEN when caller is not Manager/Admin', async () => {
     mockRequireRole.mockRejectedValueOnce(
       new Error('FORBIDDEN: requires role Manager or Admin'),
     );
-    await expect(
-      assignCopywriter({ orderId: ORD_1, copywriterId: CW_1 }),
-    ).rejects.toThrow('permission');
+    const result = await assignCopywriter({
+      orderId: ORD_1,
+      copywriterId: CW_1,
+    });
+    expect(result).toMatchObject({
+      success: false,
+      code: 'FORBIDDEN',
+      message: expect.stringMatching(/permission/),
+    });
   });
 
-  it('throws VALIDATION when order is not New', async () => {
+  it('returns VALIDATION when order is not New', async () => {
     mockRequireRole.mockResolvedValueOnce(
       makeUser({ id: MGR_1, role: 'Manager' }),
     );
@@ -363,12 +400,18 @@ describe('assignCopywriter()', () => {
     });
     mockFrom.mockReturnValueOnce(orderChain).mockReturnValueOnce(cwChain);
 
-    await expect(
-      assignCopywriter({ orderId: ORD_1, copywriterId: CW_1 }),
-    ).rejects.toThrow('In Progress');
+    const result = await assignCopywriter({
+      orderId: ORD_1,
+      copywriterId: CW_1,
+    });
+    expect(result).toMatchObject({
+      success: false,
+      code: 'VALIDATION',
+      message: expect.stringMatching(/In Progress/),
+    });
   });
 
-  it('throws VALIDATION when copywriter is DISABLED', async () => {
+  it('returns VALIDATION when copywriter is DISABLED', async () => {
     mockRequireRole.mockResolvedValueOnce(
       makeUser({ id: MGR_1, role: 'Manager' }),
     );
@@ -387,9 +430,15 @@ describe('assignCopywriter()', () => {
     });
     mockFrom.mockReturnValueOnce(orderChain).mockReturnValueOnce(cwChain);
 
-    await expect(
-      assignCopywriter({ orderId: ORD_1, copywriterId: CW_1 }),
-    ).rejects.toThrow('not active');
+    const result = await assignCopywriter({
+      orderId: ORD_1,
+      copywriterId: CW_1,
+    });
+    expect(result).toMatchObject({
+      success: false,
+      code: 'VALIDATION',
+      message: expect.stringMatching(/not active/),
+    });
   });
 });
 
@@ -435,7 +484,7 @@ describe('reassignCopywriter()', () => {
     );
   });
 
-  it('throws VALIDATION when order is New (cannot reassign)', async () => {
+  it('returns VALIDATION when order is New (cannot reassign)', async () => {
     mockRequireRole.mockResolvedValueOnce(
       makeUser({ id: MGR_1, role: 'Manager' }),
     );
@@ -454,9 +503,15 @@ describe('reassignCopywriter()', () => {
     });
     mockFrom.mockReturnValueOnce(orderChain).mockReturnValueOnce(cwChain);
 
-    await expect(
-      reassignCopywriter({ orderId: ORD_1, copywriterId: CW_1 }),
-    ).rejects.toThrow('New');
+    const result = await reassignCopywriter({
+      orderId: ORD_1,
+      copywriterId: CW_1,
+    });
+    expect(result).toMatchObject({
+      success: false,
+      code: 'VALIDATION',
+      message: expect.stringMatching(/New/),
+    });
   });
 });
 
@@ -485,7 +540,7 @@ describe('saveOrderContent()', () => {
     expect(mockNotify).not.toHaveBeenCalled();
   });
 
-  it('throws FORBIDDEN when copywriter is not assigned', async () => {
+  it('returns FORBIDDEN when copywriter is not assigned', async () => {
     mockRequireRole.mockResolvedValueOnce(
       makeUser({ id: CW_1, role: 'Copywriter' }),
     );
@@ -495,12 +550,15 @@ describe('saveOrderContent()', () => {
     });
     mockFrom.mockReturnValue(chain);
 
-    await expect(
-      saveOrderContent({ orderId: ORD_1, body: 'content' }),
-    ).rejects.toThrow('not assigned');
+    const result = await saveOrderContent({ orderId: ORD_1, body: 'content' });
+    expect(result).toMatchObject({
+      success: false,
+      code: 'FORBIDDEN',
+      message: expect.stringMatching(/not assigned/),
+    });
   });
 
-  it('throws VALIDATION when status is Content Sent', async () => {
+  it('returns VALIDATION when status is Content Sent', async () => {
     mockRequireRole.mockResolvedValueOnce(
       makeUser({ id: CW_1, role: 'Copywriter' }),
     );
@@ -510,9 +568,12 @@ describe('saveOrderContent()', () => {
     });
     mockFrom.mockReturnValue(chain);
 
-    await expect(
-      saveOrderContent({ orderId: ORD_1, body: 'content' }),
-    ).rejects.toThrow('Content Sent');
+    const result = await saveOrderContent({ orderId: ORD_1, body: 'content' });
+    expect(result).toMatchObject({
+      success: false,
+      code: 'VALIDATION',
+      message: expect.stringMatching(/Content Sent/),
+    });
   });
 });
 
@@ -559,7 +620,7 @@ describe('submitOrderContent()', () => {
     );
   });
 
-  it('throws VALIDATION when content is under 50 chars', async () => {
+  it('returns VALIDATION when content is under 50 chars', async () => {
     mockRequireRole.mockResolvedValueOnce(
       makeUser({ id: CW_1, role: 'Copywriter' }),
     );
@@ -576,12 +637,15 @@ describe('submitOrderContent()', () => {
     });
     mockFrom.mockReturnValue(chain);
 
-    await expect(submitOrderContent({ orderId: ORD_1, body: 'short' })).rejects.toThrow(
-      '50 characters',
-    );
+    const result = await submitOrderContent({ orderId: ORD_1, body: 'short' });
+    expect(result).toMatchObject({
+      success: false,
+      code: 'VALIDATION',
+      message: expect.stringMatching(/50 characters/),
+    });
   });
 
-  it('throws VALIDATION when content is null', async () => {
+  it('returns VALIDATION when content is null', async () => {
     mockRequireRole.mockResolvedValueOnce(
       makeUser({ id: CW_1, role: 'Copywriter' }),
     );
@@ -598,12 +662,15 @@ describe('submitOrderContent()', () => {
     });
     mockFrom.mockReturnValue(chain);
 
-    await expect(submitOrderContent({ orderId: ORD_1, body: '' })).rejects.toThrow(
-      '50 characters',
-    );
+    const result = await submitOrderContent({ orderId: ORD_1, body: '' });
+    expect(result).toMatchObject({
+      success: false,
+      code: 'VALIDATION',
+      message: expect.stringMatching(/50 characters/),
+    });
   });
 
-  it('throws FORBIDDEN when not assigned copywriter', async () => {
+  it('returns FORBIDDEN when not assigned copywriter', async () => {
     mockRequireRole.mockResolvedValueOnce(
       makeUser({ id: CW_1, role: 'Copywriter' }),
     );
@@ -620,9 +687,15 @@ describe('submitOrderContent()', () => {
     });
     mockFrom.mockReturnValue(chain);
 
-    await expect(submitOrderContent({ orderId: ORD_1, body: 'A'.repeat(60) })).rejects.toThrow(
-      'not assigned',
-    );
+    const result = await submitOrderContent({
+      orderId: ORD_1,
+      body: 'A'.repeat(60),
+    });
+    expect(result).toMatchObject({
+      success: false,
+      code: 'FORBIDDEN',
+      message: expect.stringMatching(/not assigned/),
+    });
   });
 
   it('succeeds when status is Needs changes (widened guard in M5)', async () => {
@@ -643,9 +716,17 @@ describe('submitOrderContent()', () => {
     const updateChain = makeChain({ data: null, error: null });
     mockFrom.mockReturnValueOnce(selectChain).mockReturnValue(updateChain);
 
-    await expect(
-      submitOrderContent({ orderId: ORD_1, body: 'A'.repeat(60) }),
-    ).resolves.toBeUndefined();
+    // submitOrderContent calls redirect() on success which is a no-op in tests
+    // (mocked). The function returns undefined in this case (real redirect()
+    // throws NEXT_REDIRECT and never returns).
+    const result = await submitOrderContent({
+      orderId: ORD_1,
+      body: 'A'.repeat(60),
+    });
+    // It should not be an error ActionResult.
+    expect(
+      result === undefined || (result as { success: boolean }).success,
+    ).toBeTruthy();
   });
 });
 
@@ -688,16 +769,19 @@ describe('approveOrder()', () => {
     );
   });
 
-  it('throws FORBIDDEN when caller is not Client', async () => {
+  it('returns FORBIDDEN when caller is not Client', async () => {
     mockRequireRole.mockRejectedValueOnce(
       new Error('FORBIDDEN: requires role Client'),
     );
-    await expect(approveOrder({ orderId: ORD_1 })).rejects.toThrow(
-      'permission',
-    );
+    const result = await approveOrder({ orderId: ORD_1 });
+    expect(result).toMatchObject({
+      success: false,
+      code: 'FORBIDDEN',
+      message: expect.stringMatching(/permission/),
+    });
   });
 
-  it('throws FORBIDDEN when order belongs to another client', async () => {
+  it('returns FORBIDDEN when order belongs to another client', async () => {
     mockRequireRole.mockResolvedValueOnce(
       makeUser({ id: CLIENT_1, role: 'Client' }),
     );
@@ -713,12 +797,15 @@ describe('approveOrder()', () => {
     });
     mockFrom.mockReturnValue(chain);
 
-    await expect(approveOrder({ orderId: ORD_1 })).rejects.toThrow(
-      'own this order',
-    );
+    const result = await approveOrder({ orderId: ORD_1 });
+    expect(result).toMatchObject({
+      success: false,
+      code: 'FORBIDDEN',
+      message: expect.stringMatching(/own this order/),
+    });
   });
 
-  it('throws VALIDATION when order is not Content Sent', async () => {
+  it('returns VALIDATION when order is not Content Sent', async () => {
     mockRequireRole.mockResolvedValueOnce(
       makeUser({ id: CLIENT_1, role: 'Client' }),
     );
@@ -734,9 +821,12 @@ describe('approveOrder()', () => {
     });
     mockFrom.mockReturnValue(chain);
 
-    await expect(approveOrder({ orderId: ORD_1 })).rejects.toThrow(
-      'In Progress',
-    );
+    const result = await approveOrder({ orderId: ORD_1 });
+    expect(result).toMatchObject({
+      success: false,
+      code: 'VALIDATION',
+      message: expect.stringMatching(/In Progress/),
+    });
   });
 });
 
@@ -786,26 +876,31 @@ describe('rejectOrder()', () => {
     );
   });
 
-  it('throws VALIDATION when comment is under 20 chars', async () => {
+  it('returns VALIDATION when comment is under 20 chars', async () => {
     mockRequireRole.mockResolvedValueOnce(
       makeUser({ id: CLIENT_1, role: 'Client' }),
     );
-    await expect(
-      rejectOrder({ orderId: ORD_1, comment: 'Too short.' }),
-    ).rejects.toThrow();
+    const result = await rejectOrder({
+      orderId: ORD_1,
+      comment: 'Too short.',
+    });
+    expect(result).toMatchObject({ success: false, code: 'VALIDATION' });
   });
 
-  it('throws FORBIDDEN when caller is not Client', async () => {
+  it('returns FORBIDDEN when caller is not Client', async () => {
     mockRequireRole.mockRejectedValueOnce(new Error('FORBIDDEN'));
-    await expect(
-      rejectOrder({
-        orderId: ORD_1,
-        comment: 'This content needs significant improvement.',
-      }),
-    ).rejects.toThrow('permission');
+    const result = await rejectOrder({
+      orderId: ORD_1,
+      comment: 'This content needs significant improvement.',
+    });
+    expect(result).toMatchObject({
+      success: false,
+      code: 'FORBIDDEN',
+      message: expect.stringMatching(/permission/),
+    });
   });
 
-  it('throws FORBIDDEN when order belongs to another client', async () => {
+  it('returns FORBIDDEN when order belongs to another client', async () => {
     mockRequireRole.mockResolvedValueOnce(
       makeUser({ id: CLIENT_1, role: 'Client' }),
     );
@@ -821,15 +916,18 @@ describe('rejectOrder()', () => {
     });
     mockFrom.mockReturnValue(chain);
 
-    await expect(
-      rejectOrder({
-        orderId: ORD_1,
-        comment: 'This content needs significant improvement.',
-      }),
-    ).rejects.toThrow('own this order');
+    const result = await rejectOrder({
+      orderId: ORD_1,
+      comment: 'This content needs significant improvement.',
+    });
+    expect(result).toMatchObject({
+      success: false,
+      code: 'FORBIDDEN',
+      message: expect.stringMatching(/own this order/),
+    });
   });
 
-  it('throws VALIDATION when status is not Content Sent', async () => {
+  it('returns VALIDATION when status is not Content Sent', async () => {
     mockRequireRole.mockResolvedValueOnce(
       makeUser({ id: CLIENT_1, role: 'Client' }),
     );
@@ -845,12 +943,15 @@ describe('rejectOrder()', () => {
     });
     mockFrom.mockReturnValue(chain);
 
-    await expect(
-      rejectOrder({
-        orderId: ORD_1,
-        comment: 'This content needs significant improvement.',
-      }),
-    ).rejects.toThrow('New');
+    const result = await rejectOrder({
+      orderId: ORD_1,
+      comment: 'This content needs significant improvement.',
+    });
+    expect(result).toMatchObject({
+      success: false,
+      code: 'VALIDATION',
+      message: expect.stringMatching(/New/),
+    });
   });
 });
 
@@ -924,12 +1025,14 @@ describe('addComment()', () => {
     });
     mockFrom.mockReturnValue(chain);
 
-    await expect(
-      addComment({ orderId: ORD_1, text: 'Hello!' }),
-    ).rejects.toThrow('access to this order');
+    const result = await addComment({ orderId: ORD_1, text: 'Hello!' });
+    expect(result).toMatchObject({
+      success: false,
+      message: expect.stringMatching(/access to this order/),
+    });
   });
 
-  it('throws FORBIDDEN when copywriter is not assigned to the order', async () => {
+  it('returns FORBIDDEN when copywriter is not assigned to the order', async () => {
     mockRequireRole.mockResolvedValueOnce(
       makeUser({ id: CW_1, role: 'Copywriter' }),
     );
@@ -945,9 +1048,11 @@ describe('addComment()', () => {
     });
     mockFrom.mockReturnValue(chain);
 
-    await expect(
-      addComment({ orderId: ORD_1, text: 'Hello!' }),
-    ).rejects.toThrow('not assigned to this order');
+    const result = await addComment({ orderId: ORD_1, text: 'Hello!' });
+    expect(result).toMatchObject({
+      success: false,
+      message: expect.stringMatching(/not assigned to this order/),
+    });
   });
 });
 
@@ -1041,31 +1146,32 @@ describe('publishOrder()', () => {
     );
   });
 
-  it('throws VALIDATION when URL is not HTTPS', async () => {
+  it('returns VALIDATION when URL is not HTTPS', async () => {
     mockRequireRole.mockResolvedValueOnce(
       makeUser({ id: MGR_1, role: 'Manager' }),
     );
-    await expect(
-      publishOrder({
-        orderId: ORD_1,
-        published_url: 'http://example.com/post',
-        publish_date: tomorrowStr,
-      }),
-    ).rejects.toThrow();
+    const result = await publishOrder({
+      orderId: ORD_1,
+      published_url: 'http://example.com/post',
+      publish_date: tomorrowStr,
+    });
+    expect(result).toMatchObject({ success: false, code: 'VALIDATION' });
   });
 
-  it('throws FORBIDDEN when caller is not Manager/Admin', async () => {
+  it('returns FORBIDDEN when caller is not Manager/Admin', async () => {
     mockRequireRole.mockRejectedValueOnce(new Error('FORBIDDEN'));
-    await expect(
-      publishOrder({
-        orderId: ORD_1,
-        published_url: 'https://example.com/post',
-        publish_date: tomorrowStr,
-      }),
-    ).rejects.toThrow('permission');
+    const result = await publishOrder({
+      orderId: ORD_1,
+      published_url: 'https://example.com/post',
+      publish_date: tomorrowStr,
+    });
+    expect(result).toMatchObject({
+      success: false,
+      message: expect.stringMatching(/permission/),
+    });
   });
 
-  it('throws VALIDATION when order is not Content Approved', async () => {
+  it('returns VALIDATION when order is not Content Approved', async () => {
     mockRequireRole.mockResolvedValueOnce(
       makeUser({ id: MGR_1, role: 'Manager' }),
     );
@@ -1082,13 +1188,15 @@ describe('publishOrder()', () => {
     });
     mockFrom.mockReturnValue(chain);
 
-    await expect(
-      publishOrder({
-        orderId: ORD_1,
-        published_url: 'https://example.com/post',
-        publish_date: tomorrowStr,
-      }),
-    ).rejects.toThrow('Content Sent');
+    const result = await publishOrder({
+      orderId: ORD_1,
+      published_url: 'https://example.com/post',
+      publish_date: tomorrowStr,
+    });
+    expect(result).toMatchObject({
+      success: false,
+      message: expect.stringMatching(/Content Sent/),
+    });
   });
 });
 

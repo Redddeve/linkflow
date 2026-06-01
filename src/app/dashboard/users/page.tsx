@@ -22,7 +22,7 @@ export default async function UsersPage({ searchParams }: PageProps) {
   const params = await searchParams;
   const { page, pageSize } = parsePagination(params);
 
-  const [{ rows: users, total }, managers] = await Promise.all([
+  const [{ rows: users, total }, managersResult] = await Promise.all([
     fetchUsersList({
       role: params.role as UserRole | undefined,
       status: params.status as UserStatus | undefined,
@@ -32,6 +32,7 @@ export default async function UsersPage({ searchParams }: PageProps) {
     }),
     listManagers(),
   ]);
+  const managers = managersResult.success ? managersResult.data : [];
 
   return (
     <div>

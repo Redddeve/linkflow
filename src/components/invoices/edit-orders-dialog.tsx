@@ -73,7 +73,14 @@ export function EditOrdersDialog({
     setError(null);
     startTransition(async () => {
       try {
-        await removeOrdersFromInvoice({ invoiceId, orderIds: [orderId] });
+        const res = await removeOrdersFromInvoice({
+          invoiceId,
+          orderIds: [orderId],
+        });
+        if (!res.success) {
+          setError(res.message);
+          return;
+        }
         router.refresh();
       } catch (e) {
         setError(e instanceof Error ? e.message : 'Something went wrong');
@@ -87,7 +94,11 @@ export function EditOrdersDialog({
     const ids = Array.from(toAdd);
     startTransition(async () => {
       try {
-        await addOrdersToInvoice({ invoiceId, orderIds: ids });
+        const res = await addOrdersToInvoice({ invoiceId, orderIds: ids });
+        if (!res.success) {
+          setError(res.message);
+          return;
+        }
         setToAdd(new Set());
         router.refresh();
       } catch (e) {

@@ -12,12 +12,12 @@ export function ClearReadButton() {
 
   function handleClick() {
     startTransition(async () => {
-      try {
-        await clearReadNotifications();
-        router.refresh();
-      } catch (e) {
-        console.error(e);
+      const result = await clearReadNotifications();
+      if (!result.success) {
+        console.error('[notifications] clear-read failed', result.message);
+        return;
       }
+      router.refresh();
     });
   }
 

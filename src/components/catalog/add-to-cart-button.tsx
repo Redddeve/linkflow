@@ -19,11 +19,8 @@ export function AddToCartButton({ siteId, inMyCart, inActiveOrder = false }: Pro
   function handleAdd() {
     if (disabled) return;
     startTransition(async () => {
-      try {
-        await addToCart({ siteId });
-      } catch {
-        // revalidation handles UI update; CONFLICT is expected on double-click
-      }
+      // revalidation handles UI update; CONFLICT is expected on double-click
+      await addToCart({ siteId });
     });
   }
 

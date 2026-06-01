@@ -7,7 +7,7 @@ import { fetchActiveUsers, type ChatParticipant } from '@/lib/data/chat';
 import { requireUser, getCurrentUser } from '@/lib/features/auth';
 import { recordAudit } from '@/lib/features/audit';
 import { notify } from '@/lib/features/notify';
-import { AppError } from '@/lib/errors';
+import type { ActionResult } from '@/lib/errors';
 import {
   createChatSchema,
   editChatSchema,
@@ -23,11 +23,16 @@ import {
 
 export async function createChat(
   input: CreateChatInput,
-): Promise<{ chatId: string }> {
+): Promise<ActionResult<{ chatId: string }>> {
   const actor = await requireUser();
   const parsed = createChatSchema.safeParse(input);
-  if (!parsed.success)
-    throw new AppError('VALIDATION', parsed.error.issues[0].message);
+  if (!parsed.success) {
+    return {
+      success: false,
+      code: 'VALIDATION',
+      message: parsed.error.issues[0].message,
+    };
+  }
 
   const { title, userIds } = parsed.data;
   const participantIds = [...new Set([...userIds, actor.id])];
@@ -45,8 +50,13 @@ export async function createChat(
     .select('id')
     .single();
 
-  if (chatError || !chat)
-    throw new Error(chatError?.message ?? 'Failed to create chat');
+  if (chatError || !chat) {
+    return {
+      success: false,
+      code: 'UNKNOWN',
+      message: chatError?.message ?? 'Failed to create chat',
+    };
+  }
 
   const { error: participantsError } = await adminDb
     .from('chat_participants')
@@ -54,7 +64,13 @@ export async function createChat(
       participantIds.map((userId) => ({ chat_id: chat.id, user_id: userId })),
     );
 
-  if (participantsError) throw new Error(participantsError.message);
+  if (participantsError) {
+    return {
+      success: false,
+      code: 'UNKNOWN',
+      message: participantsError.message,
+    };
+  }
 
   await recordAudit({
     entityType: 'chat',
@@ -74,14 +90,19 @@ export async function createChat(
   );
 
   revalidatePath('/dashboard/chat');
-  return { chatId: chat.id };
+  return { success: true, data: { chatId: chat.id } };
 }
 
-export async function editChat(input: EditChatInput): Promise<void> {
+export async function editChat(input: EditChatInput): Promise<ActionResult> {
   const actor = await requireUser();
   const parsed = editChatSchema.safeParse(input);
-  if (!parsed.success)
-    throw new AppError('VALIDATION', parsed.error.issues[0].message);
+  if (!parsed.success) {
+    return {
+      success: false,
+      code: 'VALIDATION',
+      message: parsed.error.issues[0].message,
+    };
+  }
 
   const { chatId, title, userIds } = parsed.data;
   const adminDb = createAdminClient();
@@ -91,17 +112,25 @@ export async function editChat(input: EditChatInput): Promise<void> {
     .select('*')
     .eq('id', chatId)
     .single();
-  if (!chat) throw new AppError('NOT_FOUND', 'Chat not found');
-  if (chat.category !== 'Standard')
-    throw new AppError('FORBIDDEN', 'Only Standard chats can be edited');
+  if (!chat) {
+    return { success: false, code: 'NOT_FOUND', message: 'Chat not found' };
+  }
+  if (chat.category !== 'Standard') {
+    return {
+      success: false,
+      code: 'FORBIDDEN',
+      message: 'Only Standard chats can be edited',
+    };
+  }
 
   const isCreator = chat.created_by_id === actor.id;
   const isAdmin = actor.role === 'Admin';
   if (!isCreator && !isAdmin) {
-    throw new AppError(
-      'FORBIDDEN',
-      'Only the chat creator or an admin can edit this chat',
-    );
+    return {
+      success: false,
+      code: 'FORBIDDEN',
+      message: 'Only the chat creator or an admin can edit this chat',
+    };
   }
 
   const { data: participants } = await adminDb
@@ -150,13 +179,21 @@ export async function editChat(input: EditChatInput): Promise<void> {
 
   revalidatePath('/dashboard/chat');
   revalidatePath(`/dashboard/chat/${chatId}`);
+  return { success: true };
 }
 
-export async function archiveChat(input: ChangeChatStatusInput): Promise<void> {
+export async function archiveChat(
+  input: ChangeChatStatusInput,
+): Promise<ActionResult> {
   const actor = await requireUser();
   const parsed = changeChatStatusSchema.safeParse(input);
-  if (!parsed.success)
-    throw new AppError('VALIDATION', parsed.error.issues[0].message);
+  if (!parsed.success) {
+    return {
+      success: false,
+      code: 'VALIDATION',
+      message: parsed.error.issues[0].message,
+    };
+  }
 
   const { chatId } = parsed.data;
   const adminDb = createAdminClient();
@@ -166,19 +203,32 @@ export async function archiveChat(input: ChangeChatStatusInput): Promise<void> {
     .select('*')
     .eq('id', chatId)
     .single();
-  if (!chat) throw new AppError('NOT_FOUND', 'Chat not found');
-  if (chat.category !== 'Standard')
-    throw new AppError('FORBIDDEN', 'Only Standard chats can be archived');
-  if (chat.status !== 'Active')
-    throw new AppError('VALIDATION', 'Chat is not active');
+  if (!chat) {
+    return { success: false, code: 'NOT_FOUND', message: 'Chat not found' };
+  }
+  if (chat.category !== 'Standard') {
+    return {
+      success: false,
+      code: 'FORBIDDEN',
+      message: 'Only Standard chats can be archived',
+    };
+  }
+  if (chat.status !== 'Active') {
+    return {
+      success: false,
+      code: 'VALIDATION',
+      message: 'Chat is not active',
+    };
+  }
 
   const isCreator = chat.created_by_id === actor.id;
   const isAdmin = actor.role === 'Admin';
   if (!isCreator && !isAdmin) {
-    throw new AppError(
-      'FORBIDDEN',
-      'Only the chat creator or an admin can archive this chat',
-    );
+    return {
+      success: false,
+      code: 'FORBIDDEN',
+      message: 'Only the chat creator or an admin can archive this chat',
+    };
   }
 
   await adminDb.from('chats').update({ status: 'Archived' }).eq('id', chatId);
@@ -190,15 +240,21 @@ export async function archiveChat(input: ChangeChatStatusInput): Promise<void> {
 
   revalidatePath('/dashboard/chat');
   revalidatePath(`/dashboard/chat/${chatId}`);
+  return { success: true };
 }
 
 export async function unarchiveChat(
   input: ChangeChatStatusInput,
-): Promise<void> {
+): Promise<ActionResult> {
   const actor = await requireUser();
   const parsed = changeChatStatusSchema.safeParse(input);
-  if (!parsed.success)
-    throw new AppError('VALIDATION', parsed.error.issues[0].message);
+  if (!parsed.success) {
+    return {
+      success: false,
+      code: 'VALIDATION',
+      message: parsed.error.issues[0].message,
+    };
+  }
 
   const { chatId } = parsed.data;
   const adminDb = createAdminClient();
@@ -208,17 +264,25 @@ export async function unarchiveChat(
     .select('*')
     .eq('id', chatId)
     .single();
-  if (!chat) throw new AppError('NOT_FOUND', 'Chat not found');
-  if (chat.status !== 'Archived')
-    throw new AppError('VALIDATION', 'Chat is not archived');
+  if (!chat) {
+    return { success: false, code: 'NOT_FOUND', message: 'Chat not found' };
+  }
+  if (chat.status !== 'Archived') {
+    return {
+      success: false,
+      code: 'VALIDATION',
+      message: 'Chat is not archived',
+    };
+  }
 
   const isCreator = chat.created_by_id === actor.id;
   const isAdmin = actor.role === 'Admin';
   if (!isCreator && !isAdmin) {
-    throw new AppError(
-      'FORBIDDEN',
-      'Only the chat creator or an admin can unarchive this chat',
-    );
+    return {
+      success: false,
+      code: 'FORBIDDEN',
+      message: 'Only the chat creator or an admin can unarchive this chat',
+    };
   }
 
   await adminDb.from('chats').update({ status: 'Active' }).eq('id', chatId);
@@ -230,13 +294,21 @@ export async function unarchiveChat(
 
   revalidatePath('/dashboard/chat');
   revalidatePath(`/dashboard/chat/${chatId}`);
+  return { success: true };
 }
 
-export async function sendMessage(input: SendMessageInput): Promise<void> {
+export async function sendMessage(
+  input: SendMessageInput,
+): Promise<ActionResult> {
   const actor = await requireUser();
   const parsed = sendMessageSchema.safeParse(input);
-  if (!parsed.success)
-    throw new AppError('VALIDATION', parsed.error.issues[0].message);
+  if (!parsed.success) {
+    return {
+      success: false,
+      code: 'VALIDATION',
+      message: parsed.error.issues[0].message,
+    };
+  }
 
   const { chatId, content } = parsed.data;
   const adminDb = createAdminClient();
@@ -246,12 +318,15 @@ export async function sendMessage(input: SendMessageInput): Promise<void> {
     .select('status')
     .eq('id', chatId)
     .single();
-  if (!chat) throw new AppError('NOT_FOUND', 'Chat not found');
+  if (!chat) {
+    return { success: false, code: 'NOT_FOUND', message: 'Chat not found' };
+  }
   if (chat.status === 'Archived') {
-    throw new AppError(
-      'FORBIDDEN',
-      'This chat is archived. Unarchive it to send messages.',
-    );
+    return {
+      success: false,
+      code: 'FORBIDDEN',
+      message: 'This chat is archived. Unarchive it to send messages.',
+    };
   }
 
   const { data: participant } = await adminDb
@@ -261,8 +336,13 @@ export async function sendMessage(input: SendMessageInput): Promise<void> {
     .eq('user_id', actor.id)
     .single();
 
-  if (!participant)
-    throw new AppError('FORBIDDEN', 'You are not a participant of this chat');
+  if (!participant) {
+    return {
+      success: false,
+      code: 'FORBIDDEN',
+      message: 'You are not a participant of this chat',
+    };
+  }
 
   const { error } = await adminDb.from('chat_messages').insert({
     chat_id: chatId,
@@ -271,7 +351,9 @@ export async function sendMessage(input: SendMessageInput): Promise<void> {
     read_by: [actor.id],
   });
 
-  if (error) throw new Error(error.message);
+  if (error) {
+    return { success: false, code: 'UNKNOWN', message: error.message };
+  }
 
   // Notify all other participants
   const { data: allParticipants } = await adminDb
@@ -291,6 +373,7 @@ export async function sendMessage(input: SendMessageInput): Promise<void> {
   );
 
   revalidatePath(`/dashboard/chat/${chatId}`);
+  return { success: true };
 }
 
 export async function listActiveUsersForChat(): Promise<ChatParticipant[]> {
@@ -306,11 +389,16 @@ export async function listActiveUsersForChat(): Promise<ChatParticipant[]> {
 
 export async function startOrderChat(
   input: StartOrderChatInput,
-): Promise<{ chatId: string }> {
+): Promise<ActionResult<{ chatId: string }>> {
   const actor = await requireUser();
   const parsed = startOrderChatSchema.safeParse(input);
-  if (!parsed.success)
-    throw new AppError('VALIDATION', parsed.error.issues[0].message);
+  if (!parsed.success) {
+    return {
+      success: false,
+      code: 'VALIDATION',
+      message: parsed.error.issues[0].message,
+    };
+  }
 
   const { orderId } = parsed.data;
   const adminDb = createAdminClient();
@@ -323,18 +411,22 @@ export async function startOrderChat(
     .eq('id', orderId)
     .single();
 
-  if (!order) throw new AppError('NOT_FOUND', 'Order not found');
+  if (!order) {
+    return { success: false, code: 'NOT_FOUND', message: 'Order not found' };
+  }
 
   // Access check
   if (actor.role === 'Client' && order.created_by_id !== actor.id) {
-    throw new AppError('FORBIDDEN', 'Access denied');
+    return { success: false, code: 'FORBIDDEN', message: 'Access denied' };
   }
   if (actor.role === 'Copywriter' && order.copywriter_id !== actor.id) {
-    throw new AppError('FORBIDDEN', 'Access denied');
+    return { success: false, code: 'FORBIDDEN', message: 'Access denied' };
   }
 
   // Return existing chat if already linked
-  if (order.chat_id) return { chatId: order.chat_id };
+  if (order.chat_id) {
+    return { success: true, data: { chatId: order.chat_id } };
+  }
 
   // Build participant list: all assigned people on the order + the actor
   const participantIds = [
@@ -349,10 +441,11 @@ export async function startOrderChat(
   ];
 
   if (participantIds.length < 2) {
-    throw new AppError(
-      'VALIDATION',
-      'Cannot start chat: order needs a copywriter assigned',
-    );
+    return {
+      success: false,
+      code: 'VALIDATION',
+      message: 'Cannot start chat: order needs a copywriter assigned',
+    };
   }
 
   const { data: chat, error: chatError } = await adminDb
@@ -366,8 +459,13 @@ export async function startOrderChat(
     .select('id')
     .single();
 
-  if (chatError || !chat)
-    throw new Error(chatError?.message ?? 'Failed to create chat');
+  if (chatError || !chat) {
+    return {
+      success: false,
+      code: 'UNKNOWN',
+      message: chatError?.message ?? 'Failed to create chat',
+    };
+  }
 
   await adminDb
     .from('chat_participants')
@@ -387,7 +485,7 @@ export async function startOrderChat(
   revalidatePath(`/dashboard/orders/${orderId}`);
   revalidatePath('/dashboard/chat');
 
-  return { chatId: chat.id };
+  return { success: true, data: { chatId: chat.id } };
 }
 
 export async function ensureAutoChats(): Promise<void> {

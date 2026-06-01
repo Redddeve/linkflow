@@ -112,7 +112,15 @@ export function EditChatDialog({
     setError(null);
     startTransition(async () => {
       try {
-        await editChat({ chatId, title: title.trim(), userIds });
+        const result = await editChat({
+          chatId,
+          title: title.trim(),
+          userIds,
+        });
+        if (!result.success) {
+          setError(result.message);
+          return;
+        }
         setOpen(false);
       } catch (e) {
         setError(e instanceof Error ? e.message : 'Something went wrong');

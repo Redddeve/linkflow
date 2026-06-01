@@ -54,16 +54,14 @@ export function InviteUserForm({ managers, actorRole }: Props) {
   const selectedRole = useWatch({ control, name: 'role' });
 
   async function onSubmit(data: InviteUserInput) {
-    try {
-      const { userId } = await inviteUser(data);
-      setOpen(false);
-      reset();
-      router.push(`/dashboard/users/${userId}`);
-    } catch (e: unknown) {
-      setError('root', {
-        message: e instanceof Error ? e.message : 'An error occurred',
-      });
+    const result = await inviteUser(data);
+    if (!result.success) {
+      setError('root', { message: result.message });
+      return;
     }
+    setOpen(false);
+    reset();
+    router.push(`/dashboard/users/${result.data.userId}`);
   }
 
   function handleOpenChange(o: boolean) {

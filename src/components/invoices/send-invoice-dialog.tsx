@@ -28,7 +28,11 @@ export function SendInvoiceDialog({ invoiceId }: Props) {
     setError(null);
     startTransition(async () => {
       try {
-        await sendInvoice({ invoiceId });
+        const res = await sendInvoice({ invoiceId });
+        if (!res.success) {
+          setError(res.message);
+          return;
+        }
         setOpen(false);
         router.refresh();
       } catch (e) {

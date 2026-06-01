@@ -1,4 +1,4 @@
-﻿import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 // ---- mocks ----
 vi.mock('@/lib/features/audit', () => ({
@@ -75,46 +75,46 @@ const clientUser = {
 describe('addToCart()', () => {
   beforeEach(() => vi.clearAllMocks());
 
-  it('throws FORBIDDEN for non-Client roles', async () => {
+  it('returns FORBIDDEN for non-Client roles', async () => {
     mockRequireRole.mockRejectedValue(
       new Error('FORBIDDEN: requires role Client'),
     );
 
-    await expect(addToCart({ siteId: 'site-1' })).rejects.toThrow(
-      expect.objectContaining({ code: 'FORBIDDEN' }),
-    );
+    const result = await addToCart({ siteId: 'site-1' });
+    expect(result).toMatchObject({ success: false, code: 'FORBIDDEN' });
   });
 
-  it('throws VALIDATION for invalid uuid', async () => {
+  it('returns VALIDATION for invalid uuid', async () => {
     mockRequireRole.mockResolvedValue(clientUser);
 
-    await expect(addToCart({ siteId: 'not-a-uuid' })).rejects.toThrow(
-      expect.objectContaining({ code: 'VALIDATION' }),
-    );
+    const result = await addToCart({ siteId: 'not-a-uuid' });
+    expect(result).toMatchObject({ success: false, code: 'VALIDATION' });
   });
 
-  it('throws NOT_FOUND when site does not exist', async () => {
+  it('returns NOT_FOUND when site does not exist', async () => {
     mockRequireRole.mockResolvedValue(clientUser);
     mockMaybeSingle.mockResolvedValue({ data: null, error: null });
 
-    await expect(
-      addToCart({ siteId: 'a1b2c3d4-e5f6-4890-abcd-ef1234567890' }),
-    ).rejects.toThrow(expect.objectContaining({ code: 'NOT_FOUND' }));
+    const result = await addToCart({
+      siteId: 'a1b2c3d4-e5f6-4890-abcd-ef1234567890',
+    });
+    expect(result).toMatchObject({ success: false, code: 'NOT_FOUND' });
   });
 
-  it('throws VALIDATION when site is not Active', async () => {
+  it('returns VALIDATION when site is not Active', async () => {
     mockRequireRole.mockResolvedValue(clientUser);
     mockMaybeSingle.mockResolvedValueOnce({
       data: { id: 'site-1', status: 'Archived' },
       error: null,
     });
 
-    await expect(
-      addToCart({ siteId: 'a1b2c3d4-e5f6-4890-abcd-ef1234567890' }),
-    ).rejects.toThrow(expect.objectContaining({ code: 'VALIDATION' }));
+    const result = await addToCart({
+      siteId: 'a1b2c3d4-e5f6-4890-abcd-ef1234567890',
+    });
+    expect(result).toMatchObject({ success: false, code: 'VALIDATION' });
   });
 
-  it('throws CONFLICT when site already in cart (23505)', async () => {
+  it('returns CONFLICT when site already in cart (23505)', async () => {
     mockRequireRole.mockResolvedValue(clientUser);
     // site = Active
     mockMaybeSingle.mockResolvedValueOnce({
@@ -134,35 +134,38 @@ describe('addToCart()', () => {
       error: { code: '23505', message: 'unique' },
     });
 
-    await expect(
-      addToCart({ siteId: 'a1b2c3d4-e5f6-4890-abcd-ef1234567890' }),
-    ).rejects.toThrow(expect.objectContaining({ code: 'CONFLICT' }));
+    const result = await addToCart({
+      siteId: 'a1b2c3d4-e5f6-4890-abcd-ef1234567890',
+    });
+    expect(result).toMatchObject({ success: false, code: 'CONFLICT' });
   });
 });
 
 describe('removeFromCart()', () => {
   beforeEach(() => vi.clearAllMocks());
 
-  it('throws FORBIDDEN for non-Client roles', async () => {
+  it('returns FORBIDDEN for non-Client roles', async () => {
     mockRequireRole.mockRejectedValue(
       new Error('FORBIDDEN: requires role Client'),
     );
 
-    await expect(
-      removeFromCart({ cartItemId: 'a1b2c3d4-e5f6-4890-abcd-ef1234567890' }),
-    ).rejects.toThrow(expect.objectContaining({ code: 'FORBIDDEN' }));
+    const result = await removeFromCart({
+      cartItemId: 'a1b2c3d4-e5f6-4890-abcd-ef1234567890',
+    });
+    expect(result).toMatchObject({ success: false, code: 'FORBIDDEN' });
   });
 
-  it('throws NOT_FOUND when item does not exist', async () => {
+  it('returns NOT_FOUND when item does not exist', async () => {
     mockRequireRole.mockResolvedValue(clientUser);
     mockMaybeSingle.mockResolvedValue({ data: null, error: null });
 
-    await expect(
-      removeFromCart({ cartItemId: 'a1b2c3d4-e5f6-4890-abcd-ef1234567890' }),
-    ).rejects.toThrow(expect.objectContaining({ code: 'NOT_FOUND' }));
+    const result = await removeFromCart({
+      cartItemId: 'a1b2c3d4-e5f6-4890-abcd-ef1234567890',
+    });
+    expect(result).toMatchObject({ success: false, code: 'NOT_FOUND' });
   });
 
-  it('throws FORBIDDEN when item belongs to another client', async () => {
+  it('returns FORBIDDEN when item belongs to another client', async () => {
     mockRequireRole.mockResolvedValue(clientUser);
     mockMaybeSingle.mockResolvedValue({
       data: {
@@ -174,9 +177,10 @@ describe('removeFromCart()', () => {
       error: null,
     });
 
-    await expect(
-      removeFromCart({ cartItemId: 'a1b2c3d4-e5f6-4890-abcd-ef1234567890' }),
-    ).rejects.toThrow(expect.objectContaining({ code: 'FORBIDDEN' }));
+    const result = await removeFromCart({
+      cartItemId: 'a1b2c3d4-e5f6-4890-abcd-ef1234567890',
+    });
+    expect(result).toMatchObject({ success: false, code: 'FORBIDDEN' });
   });
 
   it('successfully removes item from cart', async () => {
@@ -192,9 +196,10 @@ describe('removeFromCart()', () => {
     });
     mockDeleteEq.mockResolvedValue({ error: null });
 
-    await expect(
-      removeFromCart({ cartItemId: 'a1b2c3d4-e5f6-4890-abcd-ef1234567890' }),
-    ).resolves.toBeUndefined();
+    const result = await removeFromCart({
+      cartItemId: 'a1b2c3d4-e5f6-4890-abcd-ef1234567890',
+    });
+    expect(result).toEqual({ success: true });
     expect(mockDeleteEq).toHaveBeenCalled();
   });
 });
@@ -202,31 +207,29 @@ describe('removeFromCart()', () => {
 describe('updateCartItem()', () => {
   beforeEach(() => vi.clearAllMocks());
 
-  it('throws FORBIDDEN for non-Client roles', async () => {
+  it('returns FORBIDDEN for non-Client roles', async () => {
     mockRequireRole.mockRejectedValue(
       new Error('FORBIDDEN: requires role Client'),
     );
 
-    await expect(
-      updateCartItem({
-        cartItemId: 'a1b2c3d4-e5f6-4890-abcd-ef1234567890',
-        publish_date: '2099-01-01',
-      }),
-    ).rejects.toThrow(expect.objectContaining({ code: 'FORBIDDEN' }));
+    const result = await updateCartItem({
+      cartItemId: 'a1b2c3d4-e5f6-4890-abcd-ef1234567890',
+      publish_date: '2099-01-01',
+    });
+    expect(result).toMatchObject({ success: false, code: 'FORBIDDEN' });
   });
 
-  it('throws VALIDATION for past publish_date', async () => {
+  it('returns VALIDATION for past publish_date', async () => {
     mockRequireRole.mockResolvedValue(clientUser);
 
-    await expect(
-      updateCartItem({
-        cartItemId: 'a1b2c3d4-e5f6-4890-abcd-ef1234567890',
-        publish_date: '2020-01-01',
-      }),
-    ).rejects.toThrow(expect.objectContaining({ code: 'VALIDATION' }));
+    const result = await updateCartItem({
+      cartItemId: 'a1b2c3d4-e5f6-4890-abcd-ef1234567890',
+      publish_date: '2020-01-01',
+    });
+    expect(result).toMatchObject({ success: false, code: 'VALIDATION' });
   });
 
-  it('throws FORBIDDEN when item belongs to another client', async () => {
+  it('returns FORBIDDEN when item belongs to another client', async () => {
     mockRequireRole.mockResolvedValue(clientUser);
     mockMaybeSingle.mockResolvedValue({
       data: {
@@ -238,12 +241,11 @@ describe('updateCartItem()', () => {
       error: null,
     });
 
-    await expect(
-      updateCartItem({
-        cartItemId: 'a1b2c3d4-e5f6-4890-abcd-ef1234567890',
-        publish_date: '2099-06-01',
-      }),
-    ).rejects.toThrow(expect.objectContaining({ code: 'FORBIDDEN' }));
+    const result = await updateCartItem({
+      cartItemId: 'a1b2c3d4-e5f6-4890-abcd-ef1234567890',
+      publish_date: '2099-06-01',
+    });
+    expect(result).toMatchObject({ success: false, code: 'FORBIDDEN' });
   });
 
   it('updates publish_date for owner', async () => {
@@ -259,12 +261,11 @@ describe('updateCartItem()', () => {
     });
     mockUpdateEq.mockResolvedValue({ error: null });
 
-    await expect(
-      updateCartItem({
-        cartItemId: 'a1b2c3d4-e5f6-4890-abcd-ef1234567890',
-        publish_date: '2099-06-01',
-      }),
-    ).resolves.toBeUndefined();
+    const result = await updateCartItem({
+      cartItemId: 'a1b2c3d4-e5f6-4890-abcd-ef1234567890',
+      publish_date: '2099-06-01',
+    });
+    expect(result).toEqual({ success: true });
 
     expect(mockUpdateEq).toHaveBeenCalled();
   });

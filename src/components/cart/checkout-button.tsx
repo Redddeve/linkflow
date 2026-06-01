@@ -13,7 +13,6 @@ import {
   DialogTrigger,
 } from '@/components/ui/dialog';
 import { checkoutCart } from '@/app/dashboard/cart/actions';
-import { AppError } from '@/lib/errors';
 
 interface Props {
   disabled: boolean;
@@ -31,15 +30,15 @@ export function CheckoutButton({ disabled, disabledReason, itemCount }: Props) {
     setError(null);
     startTransition(async () => {
       try {
-        const { orderIds } = await checkoutCart();
-        setOpen(false);
-        router.push(`/dashboard/orders?checked_out=${orderIds.length}`);
-      } catch (e) {
-        if (e instanceof AppError) {
-          setError(e.message);
-        } else {
-          setError('Something went wrong. Please try again.');
+        const result = await checkoutCart();
+        if (!result.success) {
+          setError(result.message);
+          return;
         }
+        setOpen(false);
+        router.push(`/dashboard/orders?checked_out=${result.data.orderIds.length}`);
+      } catch {
+        setError('Something went wrong. Please try again.');
       }
     });
   }

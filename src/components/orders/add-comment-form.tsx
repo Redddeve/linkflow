@@ -19,12 +19,12 @@ export function AddCommentForm({ orderId }: Props) {
     if (!text.trim()) return;
     setError(null);
     startTransition(async () => {
-      try {
-        await addComment({ orderId, text: text.trim() });
-        setText('');
-      } catch (err) {
-        setError(err instanceof Error ? err.message : 'Something went wrong');
+      const result = await addComment({ orderId, text: text.trim() });
+      if (!result.success) {
+        setError(result.message);
+        return;
       }
+      setText('');
     });
   }
 

@@ -91,7 +91,7 @@ describe('markOrdersPayoutPaid()', () => {
       payoutReference: 'PAY-2026-05',
     });
 
-    expect(result).toEqual({ updated: 2 });
+    expect(result).toEqual({ success: true, data: { updated: 2 } });
     expect(mockRecordAudit).toHaveBeenCalledTimes(2);
     expect(mockRecordAudit).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -146,7 +146,7 @@ describe('markOrdersPayoutPaid()', () => {
       payoutReference: 'PAY-X',
     });
 
-    expect(result).toEqual({ updated: 1 });
+    expect(result).toEqual({ success: true, data: { updated: 1 } });
     expect(mockNotify).toHaveBeenCalledTimes(1);
     expect(mockNotify).toHaveBeenCalledWith(
       expect.objectContaining({ recipientId: SOURCER_2 }),
@@ -162,48 +162,66 @@ describe('markOrdersPayoutPaid()', () => {
       payoutReference: 'PAY-X',
     });
 
-    expect(result).toEqual({ updated: 0 });
+    expect(result).toEqual({ success: true, data: { updated: 0 } });
     expect(mockFrom).toHaveBeenCalledTimes(1);
     expect(mockRecordAudit).not.toHaveBeenCalled();
     expect(mockNotify).not.toHaveBeenCalled();
     expect(mockRevalidatePath).not.toHaveBeenCalled();
   });
 
-  it('throws FORBIDDEN when caller is not Admin', async () => {
+  it('returns FORBIDDEN when caller is not Admin', async () => {
     mockRequireRole.mockRejectedValueOnce(
       new Error('FORBIDDEN: requires role Admin'),
     );
-    await expect(
-      markOrdersPayoutPaid({ orderIds: [ORD_1], payoutReference: 'PAY-X' }),
-    ).rejects.toThrow('permission');
+    const result = await markOrdersPayoutPaid({
+      orderIds: [ORD_1],
+      payoutReference: 'PAY-X',
+    });
+    expect(result).toEqual({
+      success: false,
+      code: 'FORBIDDEN',
+      message: expect.stringMatching(/permission/i),
+    });
   });
 
-  it('throws VALIDATION when orderIds is empty', async () => {
-    await expect(
-      markOrdersPayoutPaid({ orderIds: [], payoutReference: 'PAY-X' }),
-    ).rejects.toThrow();
+  it('returns VALIDATION when orderIds is empty', async () => {
+    const result = await markOrdersPayoutPaid({
+      orderIds: [],
+      payoutReference: 'PAY-X',
+    });
+    expect(result.success).toBe(false);
+    if (!result.success) expect(result.code).toBe('VALIDATION');
   });
 
-  it('throws VALIDATION when payoutReference is too short', async () => {
-    await expect(
-      markOrdersPayoutPaid({ orderIds: [ORD_1], payoutReference: 'AB' }),
-    ).rejects.toThrow();
+  it('returns VALIDATION when payoutReference is too short', async () => {
+    const result = await markOrdersPayoutPaid({
+      orderIds: [ORD_1],
+      payoutReference: 'AB',
+    });
+    expect(result.success).toBe(false);
+    if (!result.success) expect(result.code).toBe('VALIDATION');
   });
 
-  it('throws when fetch query errors', async () => {
+  it('returns error when fetch query errors', async () => {
     const selectChain = makeChain({
       data: null,
       error: { message: 'fetch boom' },
     });
     mockFrom.mockReturnValueOnce(selectChain);
 
-    await expect(
-      markOrdersPayoutPaid({ orderIds: [ORD_1], payoutReference: 'PAY-X' }),
-    ).rejects.toThrow('fetch boom');
+    const result = await markOrdersPayoutPaid({
+      orderIds: [ORD_1],
+      payoutReference: 'PAY-X',
+    });
+    expect(result).toEqual({
+      success: false,
+      code: 'UNKNOWN',
+      message: 'fetch boom',
+    });
     expect(mockRecordAudit).not.toHaveBeenCalled();
   });
 
-  it('throws when update query errors', async () => {
+  it('returns error when update query errors', async () => {
     const rows = [
       {
         id: ORD_1,
@@ -220,9 +238,15 @@ describe('markOrdersPayoutPaid()', () => {
     });
     mockFrom.mockReturnValueOnce(selectChain).mockReturnValueOnce(updateChain);
 
-    await expect(
-      markOrdersPayoutPaid({ orderIds: [ORD_1], payoutReference: 'PAY-X' }),
-    ).rejects.toThrow('update boom');
+    const result = await markOrdersPayoutPaid({
+      orderIds: [ORD_1],
+      payoutReference: 'PAY-X',
+    });
+    expect(result).toEqual({
+      success: false,
+      code: 'UNKNOWN',
+      message: 'update boom',
+    });
     expect(mockRecordAudit).not.toHaveBeenCalled();
     expect(mockNotify).not.toHaveBeenCalled();
   });
@@ -246,7 +270,7 @@ describe('markOrdersPayoutPaid()', () => {
       payoutReference: 'PAY-X',
     });
 
-    expect(result).toEqual({ updated: 1 });
+    expect(result).toEqual({ success: true, data: { updated: 1 } });
     expect(mockNotify).toHaveBeenCalledWith(
       expect.objectContaining({ recipientId: SOURCER_1 }),
     );

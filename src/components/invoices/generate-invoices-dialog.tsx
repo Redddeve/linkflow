@@ -40,7 +40,11 @@ export function GenerateInvoicesDialog() {
         const res = await generateInvoicesForMonth({
           billing_month: `${month}-01`,
         });
-        setResult(res);
+        if (!res.success) {
+          setError(res.message);
+          return;
+        }
+        setResult(res.data);
         router.refresh();
       } catch (e) {
         setError(e instanceof Error ? e.message : 'Something went wrong');
