@@ -116,7 +116,7 @@ export function Pagination({ total, page, pageSize, className }: Props) {
           aria-label="Previous page"
         >
           <ChevronLeft className="h-4 w-4" />
-          <span className="hidden sm:inline">Previous</span>
+          {/* <span className="hidden sm:inline">Previous</span> */}
         </Button>
 
         {pageItems.map((item, idx) =>
@@ -150,7 +150,7 @@ export function Pagination({ total, page, pageSize, className }: Props) {
           disabled={safePage >= totalPages}
           aria-label="Next page"
         >
-          <span className="hidden sm:inline">Next</span>
+          {/* <span className="hidden sm:inline">Next</span> */}
           <ChevronRight className="h-4 w-4" />
         </Button>
       </div>

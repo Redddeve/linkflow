@@ -7,7 +7,8 @@ export function parsePagination(
   const rawPage = typeof params.page === 'string' ? Number(params.page) : 1;
   const rawSize =
     typeof params.limit === 'string' ? Number(params.limit) : DEFAULT_PAGE_SIZE;
-  const page = Number.isFinite(rawPage) && rawPage > 0 ? Math.floor(rawPage) : 1;
+  const page =
+    Number.isFinite(rawPage) && rawPage > 0 ? Math.floor(rawPage) : 1;
   const pageSize = (PAGE_SIZE_OPTIONS as readonly number[]).includes(rawSize)
     ? rawSize
     : DEFAULT_PAGE_SIZE;
