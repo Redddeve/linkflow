@@ -1,3 +1,4 @@
+import { redirect } from 'next/navigation';
 import { requireUser } from '@/lib/features/auth';
 import { fetchNotifications } from '@/lib/data/notifications';
 import { parsePagination } from '@/lib/features/pagination';
@@ -22,6 +23,11 @@ export default async function NotificationsPage({ searchParams }: PageProps) {
   });
 
   const totalPages = Math.max(1, Math.ceil(total / pageSize));
+
+  if (page > totalPages) {
+    redirect(`/dashboard/notifications?page=${totalPages}&limit=${pageSize}`);
+  }
+
   const readCount = total - unread;
 
   return (
