@@ -41,7 +41,6 @@ export default async function EarningsPage({ searchParams }: PageProps) {
       : addMonths(firstOfMonth(new Date()), -1);
 
   const isSourcer = actor.role === 'Sourcer';
-  const isAdmin = actor.role === 'Admin';
   const sourcerId = isSourcer ? actor.id : params.sourcer || undefined;
   const { page, pageSize } = parsePagination(params);
 
@@ -138,11 +137,7 @@ export default async function EarningsPage({ searchParams }: PageProps) {
           sourcerOptions={sourcerOptions}
           currentSourcer={sourcerId}
         />
-        <EarningsTable
-          rows={tableRows}
-          showSourcer={!isSourcer}
-          canMarkPaid={isAdmin}
-        />
+        <EarningsTable rows={tableRows} showSourcer={!isSourcer} />
         <Pagination total={total} page={page} pageSize={pageSize} />
       </div>
     </div>

@@ -38,11 +38,11 @@ export function InvoicesTable({ invoices, showClient = false }: Props) {
     <>
       <Table>
         <TableHeader>
-          <TableRow>
+          <TableRow theadrow={true}>
             {showClient && <TableHead>Client</TableHead>}
             <TableHead>Billing month</TableHead>
             <TableHead>Status</TableHead>
-            <TableHead className="text-right">Total</TableHead>
+            <TableHead>Total</TableHead>
             <TableHead>Created</TableHead>
           </TableRow>
         </TableHeader>
@@ -68,7 +68,7 @@ export function InvoicesTable({ invoices, showClient = false }: Props) {
               <TableCell>
                 <InvoiceStatusBadge status={inv.status} />
               </TableCell>
-              <TableCell className="text-right text-sm tabular-nums">
+              <TableCell className="text-sm tabular-nums">
                 ${(inv.total_price_cents / 100).toFixed(2)}
               </TableCell>
               <TableCell className="text-sm text-muted-foreground">
