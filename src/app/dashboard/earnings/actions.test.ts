@@ -37,7 +37,7 @@ vi.mock('@/lib/features/auth', async (importOriginal) => {
   return { ...actual, requireRole: mockRequireRole };
 });
 
-const { markOrdersPayoutPaid } = await import('./actions');
+const { markOrdersPayoutPaid, setOrderPayoutPaid } = await import('./actions');
 
 // Fluent thenable chain: any chained method returns the chain; awaiting it resolves to `result`.
 function makeChain(result: { data: unknown; error: unknown }) {
@@ -46,6 +46,7 @@ function makeChain(result: { data: unknown; error: unknown }) {
   methods.forEach((m) => {
     chain[m] = vi.fn(() => chain);
   });
+  chain.maybeSingle = vi.fn(() => Promise.resolve(result));
   // make the chain awaitable: PromiseLike that resolves to `result`
   (
     chain as {
@@ -250,6 +251,157 @@ describe('markOrdersPayoutPaid()', () => {
     expect(mockRecordAudit).not.toHaveBeenCalled();
     expect(mockNotify).not.toHaveBeenCalled();
   });
+});
+
+describe('setOrderPayoutPaid()', () => {
+  beforeEach(() => vi.clearAllMocks());
+
+  it('marks a single order paid, records audit, notifies sourcer, and revalidates', async () => {
+    const selectChain = makeChain({
+      data: {
+        id: ORD_1,
+        sourcer_payout_cents: 4200,
+        sourcer_paid_at: null,
+        sourcer_payout_reference: null,
+        sites: { sourcer_id: SOURCER_1 },
+      },
+      error: null,
+    });
+    const updateChain = makeChain({ data: null, error: null });
+    mockFrom.mockReturnValueOnce(selectChain).mockReturnValueOnce(updateChain);
+
+    const res = await setOrderPayoutPaid({
+      orderId: ORD_1,
+      paid: true,
+      payoutReference: 'PAY-2026-06',
+    });
+
+    expect(res).toEqual({ success: true, data: { paid: true } });
+    expect(mockRecordAudit).toHaveBeenCalledWith(
+      expect.objectContaining({
+        action: 'order.payout_marked_paid',
+        entityId: ORD_1,
+        after: expect.objectContaining({
+          sourcer_payout_reference: 'PAY-2026-06',
+          sourcer_payout_cents: 4200,
+        }),
+      }),
+    );
+    expect(mockNotify).toHaveBeenCalledWith(
+      expect.objectContaining({
+        recipientId: SOURCER_1,
+        type: 'order.payout_paid',
+        payload: expect.objectContaining({
+          orderId: ORD_1,
+          amount_cents: 4200,
+          payout_reference: 'PAY-2026-06',
+        }),
+      }),
+    );
+    expect(mockRevalidatePath).toHaveBeenCalledWith('/dashboard/earnings');
+    expect(mockRevalidatePath).toHaveBeenCalledWith(
+      `/dashboard/orders/${ORD_1}`,
+    );
+  });
+
+  it('clears paid timestamp/reference when paid=false; audits unpaid; does not notify', async () => {
+    const selectChain = makeChain({
+      data: {
+        id: ORD_1,
+        sourcer_payout_cents: 4200,
+        sourcer_paid_at: '2026-05-01T00:00:00Z',
+        sourcer_payout_reference: 'PAY-OLD',
+        sites: { sourcer_id: SOURCER_1 },
+      },
+      error: null,
+    });
+    const updateChain = makeChain({ data: null, error: null });
+    mockFrom.mockReturnValueOnce(selectChain).mockReturnValueOnce(updateChain);
+
+    const res = await setOrderPayoutPaid({ orderId: ORD_1, paid: false });
+
+    expect(res).toEqual({ success: true, data: { paid: false } });
+    expect(mockRecordAudit).toHaveBeenCalledWith(
+      expect.objectContaining({
+        action: 'order.payout_marked_unpaid',
+        entityId: ORD_1,
+        before: expect.objectContaining({
+          sourcer_paid_at: '2026-05-01T00:00:00Z',
+          sourcer_payout_reference: 'PAY-OLD',
+        }),
+        after: expect.objectContaining({
+          sourcer_paid_at: null,
+          sourcer_payout_reference: null,
+        }),
+      }),
+    );
+    expect(mockNotify).not.toHaveBeenCalled();
+  });
+
+  it('returns FORBIDDEN when caller is not Admin', async () => {
+    mockRequireRole.mockRejectedValueOnce(
+      new Error('FORBIDDEN: requires role Admin'),
+    );
+    const res = await setOrderPayoutPaid({
+      orderId: ORD_1,
+      paid: true,
+      payoutReference: 'PAY-X',
+    });
+    expect(res).toEqual({
+      success: false,
+      code: 'FORBIDDEN',
+      message: expect.stringMatching(/permission/i),
+    });
+  });
+
+  it('returns VALIDATION when paid=true and payoutReference is too short', async () => {
+    const res = await setOrderPayoutPaid({
+      orderId: ORD_1,
+      paid: true,
+      payoutReference: 'AB',
+    });
+    expect(res.success).toBe(false);
+    if (!res.success) expect(res.code).toBe('VALIDATION');
+  });
+
+  it('returns NOT_FOUND when order does not exist', async () => {
+    const selectChain = makeChain({ data: null, error: null });
+    mockFrom.mockReturnValueOnce(selectChain);
+    const res = await setOrderPayoutPaid({
+      orderId: ORD_1,
+      paid: true,
+      payoutReference: 'PAY-X',
+    });
+    expect(res.success).toBe(false);
+    if (!res.success) expect(res.code).toBe('NOT_FOUND');
+  });
+
+  it('rejects orders with no sourcer or no payout amount', async () => {
+    const selectChain = makeChain({
+      data: {
+        id: ORD_1,
+        sourcer_payout_cents: null,
+        sourcer_paid_at: null,
+        sourcer_payout_reference: null,
+        sites: { sourcer_id: SOURCER_1 },
+      },
+      error: null,
+    });
+    mockFrom.mockReturnValueOnce(selectChain);
+
+    const res = await setOrderPayoutPaid({
+      orderId: ORD_1,
+      paid: true,
+      payoutReference: 'PAY-X',
+    });
+    expect(res.success).toBe(false);
+    if (!res.success) expect(res.code).toBe('VALIDATION');
+  });
+
+});
+
+describe('markOrdersPayoutPaid() — extra', () => {
+  beforeEach(() => vi.clearAllMocks());
 
   it('handles `sites` returned as an array (treats first entry as the relation)', async () => {
     const rows = [

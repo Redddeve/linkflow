@@ -8,7 +8,9 @@ import { notify } from '@/lib/features/notify';
 import type { ActionResult } from '@/lib/errors';
 import {
   markOrdersPayoutPaidSchema,
+  setOrderPayoutPaidSchema,
   type MarkOrdersPayoutPaidInput,
+  type SetOrderPayoutPaidInput,
 } from '@/lib/schemas/earnings';
 
 export async function markOrdersPayoutPaid(
@@ -122,4 +124,143 @@ export async function markOrdersPayoutPaid(
 
   revalidatePath('/dashboard/earnings');
   return { success: true, data: { updated: eligible.length } };
+}
+
+export async function setOrderPayoutPaid(
+  input: SetOrderPayoutPaidInput,
+): Promise<ActionResult<{ paid: boolean }>> {
+  try {
+    await requireRole(['Admin']);
+  } catch (e) {
+    if (e instanceof Error && e.message.startsWith('FORBIDDEN')) {
+      return {
+        success: false,
+        code: 'FORBIDDEN',
+        message: 'You do not have permission to perform this action',
+      };
+    }
+    throw e;
+  }
+
+  const parsed = setOrderPayoutPaidSchema.safeParse(input);
+  if (!parsed.success) {
+    return {
+      success: false,
+      code: 'VALIDATION',
+      message: parsed.error.issues[0].message,
+    };
+  }
+
+  const supabase = await createClient();
+  const { orderId } = parsed.data;
+
+  const { data: row, error: fetchError } = await supabase
+    .from('orders')
+    .select(
+      'id, sourcer_payout_cents, sourcer_paid_at, sourcer_payout_reference, sites!inner(sourcer_id)',
+    )
+    .eq('id', orderId)
+    .maybeSingle();
+
+  if (fetchError) {
+    return { success: false, code: 'UNKNOWN', message: fetchError.message };
+  }
+  if (!row) {
+    return { success: false, code: 'NOT_FOUND', message: 'Order not found' };
+  }
+
+  type Row = {
+    id: string;
+    sourcer_payout_cents: number | null;
+    sourcer_paid_at: string | null;
+    sourcer_payout_reference: string | null;
+    sites:
+      | { sourcer_id: string | null }
+      | { sourcer_id: string | null }[]
+      | null;
+  };
+  const r = row as unknown as Row;
+  const sourcerId = (
+    Array.isArray(r.sites) ? r.sites[0]?.sourcer_id : r.sites?.sourcer_id
+  ) as string | null | undefined;
+
+  if (!sourcerId || r.sourcer_payout_cents == null) {
+    return {
+      success: false,
+      code: 'VALIDATION',
+      message: 'Order has no sourcer payout to update',
+    };
+  }
+
+  const before = {
+    sourcer_paid_at: r.sourcer_paid_at,
+    sourcer_payout_reference: r.sourcer_payout_reference,
+  };
+
+  if (parsed.data.paid) {
+    const paidAt = new Date().toISOString();
+    const payoutReference = parsed.data.payoutReference;
+    const { error: updateError } = await supabase
+      .from('orders')
+      .update({
+        sourcer_paid_at: paidAt,
+        sourcer_payout_reference: payoutReference,
+      })
+      .eq('id', orderId);
+
+    if (updateError) {
+      return { success: false, code: 'UNKNOWN', message: updateError.message };
+    }
+
+    await Promise.all([
+      recordAudit({
+        entityType: 'order',
+        entityId: orderId,
+        action: 'order.payout_marked_paid',
+        before,
+        after: {
+          sourcer_paid_at: paidAt,
+          sourcer_payout_reference: payoutReference,
+          sourcer_payout_cents: r.sourcer_payout_cents,
+        },
+      }),
+      notify({
+        recipientId: sourcerId,
+        type: 'order.payout_paid',
+        payload: {
+          orderId,
+          amount_cents: r.sourcer_payout_cents,
+          payout_reference: payoutReference,
+        },
+      }),
+    ]);
+  } else {
+    const { error: updateError } = await supabase
+      .from('orders')
+      .update({
+        sourcer_paid_at: null,
+        sourcer_payout_reference: null,
+      })
+      .eq('id', orderId);
+
+    if (updateError) {
+      return { success: false, code: 'UNKNOWN', message: updateError.message };
+    }
+
+    await recordAudit({
+      entityType: 'order',
+      entityId: orderId,
+      action: 'order.payout_marked_unpaid',
+      before,
+      after: {
+        sourcer_paid_at: null,
+        sourcer_payout_reference: null,
+        sourcer_payout_cents: r.sourcer_payout_cents,
+      },
+    });
+  }
+
+  revalidatePath('/dashboard/earnings');
+  revalidatePath(`/dashboard/orders/${orderId}`);
+  return { success: true, data: { paid: parsed.data.paid } };
 }

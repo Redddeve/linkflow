@@ -72,9 +72,15 @@ export function EarningsTable({ rows, showSourcer }: Props) {
                 ${(r.commission_cents / 100).toFixed(2)}
               </TableCell>
               <TableCell className="text-sm">
-                <span className="rounded-full bg-(--st-live-bg) px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-(--st-live-fg)">
-                  Paid
-                </span>
+                {r.paid_at ? (
+                  <span className="rounded-full bg-(--st-live-bg) px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-(--st-live-fg)">
+                    Paid
+                  </span>
+                ) : (
+                  <span className="rounded-full bg-muted px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                    Unpaid
+                  </span>
+                )}
               </TableCell>
               <TableCell className="text-sm text-muted-foreground">
                 {r.payout_reference ?? '—'}

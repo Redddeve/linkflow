@@ -51,9 +51,24 @@ describe('fetchEarningsTotals()', () => {
     const selectArg = String((mockSelect.mock.calls[0] as unknown[])[0]);
     expect(selectArg).toContain('sourcer_payout_cents');
     expect(selectArg).toContain('sites!inner');
+    expect(selectArg).not.toContain('invoices');
     expect(mockEqMonth).toHaveBeenCalledWith('billing_month', '2026-04-01');
     expect(mockNotCalls).toHaveBeenCalledWith('published_at', 'is', null);
-    expect(mockNotCalls).toHaveBeenCalledWith('sourcer_payout_cents', 'is', null);
+    expect(mockNotCalls).toHaveBeenCalledWith(
+      'sourcer_payout_cents',
+      'is',
+      null,
+    );
+  });
+
+  it('does not filter by invoice status (sourcer sees all published-order payouts)', async () => {
+    await fetchEarningsTotals({ month: '2026-04-01' });
+    const eqCalls = (
+      currentChain.eq as unknown as { mock: { calls: unknown[][] } }
+    ).mock.calls;
+    expect(
+      eqCalls.some((c) => String(c[0]).startsWith('invoices')),
+    ).toBe(false);
   });
 
   it('filters by sites.sourcer_id when sourcerId is provided', async () => {

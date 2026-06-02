@@ -17,9 +17,7 @@ function relativeTime(iso: string): string {
 export async function AuditTimeline({ orderId }: Props) {
   const rows = await fetchOrderAuditTrail(orderId);
   if (rows.length === 0) {
-    return (
-      <p className="text-sm text-muted-foreground">No activity yet.</p>
-    );
+    return <p className="text-sm text-muted-foreground">No activity yet.</p>;
   }
 
   const actorIds = Array.from(
@@ -43,15 +41,17 @@ export async function AuditTimeline({ orderId }: Props) {
               className="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-primary"
             />
             <div className="flex-1">
+              <div className="font-medium">
+                {formatAuditAction(r.action, r.before, r.after)}
+              </div>
               <div className="flex items-center justify-between gap-2">
-                <span className="font-medium">
-                  {formatAuditAction(r.action, r.before, r.after)}
+                <span className="text-xs text-muted-foreground">
+                  {actorName}
                 </span>
                 <span className="text-xs text-muted-foreground">
                   {relativeTime(r.occurred_at)}
                 </span>
               </div>
-              <div className="text-xs text-muted-foreground">{actorName}</div>
             </div>
           </li>
         );

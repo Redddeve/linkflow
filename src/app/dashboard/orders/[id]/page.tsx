@@ -19,6 +19,7 @@ import { AuditTimeline } from '@/components/orders/audit-timeline';
 import { listCopywriters } from '../actions';
 import { BackLink } from '@/components/ui/back-link';
 import { StartChatButton } from '@/components/orders/start-chat-button';
+import { PayoutPaidDialog } from '@/components/orders/payout-paid-dialog';
 
 interface PageProps {
   params: Promise<{ id: string }>;
@@ -51,9 +52,12 @@ export default async function OrderDetailPage({ params }: PageProps) {
   }
 
   const isManagerOrAdmin = actor.role === 'Manager' || actor.role === 'Admin';
+  const isAdmin = actor.role === 'Admin';
   const isClient = actor.role === 'Client';
   const isCopywriter = actor.role === 'Copywriter';
   const isSourcer = actor.role === 'Sourcer';
+  const canTogglePayout =
+    isAdmin && order.sourcer_payout_cents != null && !!order.published_at;
 
   const comments = await fetchOrderComments(id);
 
@@ -240,6 +244,13 @@ export default async function OrderDetailPage({ params }: PageProps) {
             <StartChatButton
               orderId={id}
               existingChatId={order.chat_id ?? null}
+            />
+          )}
+          {canTogglePayout && (
+            <PayoutPaidDialog
+              orderId={id}
+              currentlyPaid={!!order.sourcer_paid_at}
+              currentReference={order.sourcer_payout_reference ?? null}
             />
           )}
         </div>
