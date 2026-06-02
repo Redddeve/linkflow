@@ -16,6 +16,7 @@ import { RejectOrderDialog } from '@/components/orders/reject-order-dialog';
 import { CommentsTimeline } from '@/components/orders/comments-timeline';
 import { AddCommentForm } from '@/components/orders/add-comment-form';
 import { AuditTimeline } from '@/components/orders/audit-timeline';
+import { parsePagination } from '@/lib/features/pagination';
 import { listCopywriters } from '../actions';
 import { BackLink } from '@/components/ui/back-link';
 import { StartChatButton } from '@/components/orders/start-chat-button';
@@ -23,14 +24,19 @@ import { PayoutPaidDialog } from '@/components/orders/payout-paid-dialog';
 
 interface PageProps {
   params: Promise<{ id: string }>;
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
 }
 
 function formatDate(iso: string | null | undefined) {
   return iso ? new Date(iso).toLocaleDateString('en-CA') : '—';
 }
 
-export default async function OrderDetailPage({ params }: PageProps) {
+export default async function OrderDetailPage({
+  params,
+  searchParams,
+}: PageProps) {
   const { id } = await params;
+  const { page, pageSize } = parsePagination(await searchParams);
   const actor = await requireUser();
   if (!actor.role) notFound();
 
@@ -411,7 +417,7 @@ export default async function OrderDetailPage({ params }: PageProps) {
               <CardTitle>Activity</CardTitle>
             </CardHeader>
             <CardContent>
-              <AuditTimeline orderId={id} />
+              <AuditTimeline orderId={id} page={page} pageSize={pageSize} />
             </CardContent>
           </Card>
         </div>

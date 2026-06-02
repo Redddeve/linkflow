@@ -26,16 +26,21 @@ export interface EarningsTableRow {
 interface Props {
   rows: EarningsTableRow[];
   showSourcer: boolean;
+  rowClickable?: boolean;
 }
 
-export function EarningsTable({ rows, showSourcer }: Props) {
+export function EarningsTable({
+  rows,
+  showSourcer,
+  rowClickable = true,
+}: Props) {
   const router = useRouter();
 
   return (
     <div className="space-y-3">
       <Table>
         <TableHeader>
-          <TableRow theadrow={true}>
+          <TableRow clickable={false}>
             <TableHead>Site</TableHead>
             {showSourcer && <TableHead>Sourcer</TableHead>}
             <TableHead>Published</TableHead>
@@ -49,8 +54,13 @@ export function EarningsTable({ rows, showSourcer }: Props) {
           {rows.map((r) => (
             <TableRow
               key={r.id}
-              className="cursor-pointer"
-              onClick={() => router.push(`/dashboard/orders/${r.id}`)}
+              className={rowClickable ? 'cursor-pointer' : undefined}
+              clickable={rowClickable}
+              onClick={
+                rowClickable
+                  ? () => router.push(`/dashboard/orders/${r.id}`)
+                  : undefined
+              }
             >
               <TableCell className="font-medium">{r.site_domain}</TableCell>
               {showSourcer && (

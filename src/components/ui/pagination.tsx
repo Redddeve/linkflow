@@ -51,6 +51,8 @@ export function Pagination({ total, page, pageSize, className }: Props) {
   const pathname = usePathname();
   const searchParams = useSearchParams();
 
+  if (total <= DEFAULT_PAGE_SIZE) return null;
+
   const totalPages = Math.max(1, Math.ceil(total / pageSize));
   const safePage = Math.min(Math.max(1, page), totalPages);
   const start = total === 0 ? 0 : (safePage - 1) * pageSize + 1;

@@ -54,17 +54,17 @@ function TableFooter({ className, ...props }: React.ComponentProps<'tfoot'>) {
 
 function TableRow({
   className,
-  theadrow = false,
+  clickable = true,
   ...props
 }: React.ComponentProps<'tr'> & {
-  theadrow?: boolean;
+  clickable?: boolean;
 }) {
   return (
     <tr
       data-slot="table-row"
       className={cn(
         'border-b border-border transition-colors has-aria-expanded:bg-muted/30 data-[state=selected]:bg-primary/5',
-        !theadrow && 'hover:bg-muted/60',
+        clickable && 'hover:bg-muted/60',
         className,
       )}
       {...props}

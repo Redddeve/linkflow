@@ -1,9 +1,12 @@
-import { fetchOrderAuditTrail } from '@/lib/data/audit';
+import { fetchOrderAuditTrailPage } from '@/lib/data/audit';
 import { fetchUsersWithEmailByIds } from '@/lib/data/users';
 import { formatAuditAction } from '@/lib/features/audit-format';
+import { Pagination } from '@/components/ui/pagination';
 
 interface Props {
   orderId: string;
+  page: number;
+  pageSize: number;
 }
 
 function relativeTime(iso: string): string {
@@ -14,9 +17,13 @@ function relativeTime(iso: string): string {
   return new Date(iso).toLocaleDateString('en-CA');
 }
 
-export async function AuditTimeline({ orderId }: Props) {
-  const rows = await fetchOrderAuditTrail(orderId);
-  if (rows.length === 0) {
+export async function AuditTimeline({ orderId, page, pageSize }: Props) {
+  const { rows, total } = await fetchOrderAuditTrailPage(
+    orderId,
+    page,
+    pageSize,
+  );
+  if (total === 0) {
     return <p className="text-sm text-muted-foreground">No activity yet.</p>;
   }
 
@@ -28,34 +35,37 @@ export async function AuditTimeline({ orderId }: Props) {
   const userMap = Object.fromEntries(userList.map((u) => [u.id, u]));
 
   return (
-    <ol className="space-y-3">
-      {rows.map((r) => {
-        const actor = r.actor_id ? userMap[r.actor_id] : null;
-        const actorName = actor
-          ? `${actor.first_name} ${actor.last_name}`.trim() || actor.email
-          : 'System';
-        return (
-          <li key={r.id} className="flex gap-3 text-sm">
-            <span
-              aria-hidden="true"
-              className="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-primary"
-            />
-            <div className="flex-1">
-              <div className="font-medium">
-                {formatAuditAction(r.action, r.before, r.after)}
+    <div className="space-y-4">
+      <ol className="space-y-3">
+        {rows.map((r) => {
+          const actor = r.actor_id ? userMap[r.actor_id] : null;
+          const actorName = actor
+            ? `${actor.first_name} ${actor.last_name}`.trim() || actor.email
+            : 'System';
+          return (
+            <li key={r.id} className="flex gap-3 text-sm">
+              <span
+                aria-hidden="true"
+                className="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-primary"
+              />
+              <div className="flex-1">
+                <div className="font-medium">
+                  {formatAuditAction(r.action, r.before, r.after)}
+                </div>
+                <div className="flex items-center justify-between gap-2">
+                  <span className="text-xs text-muted-foreground">
+                    {actorName}
+                  </span>
+                  <span className="text-xs text-muted-foreground">
+                    {relativeTime(r.occurred_at)}
+                  </span>
+                </div>
               </div>
-              <div className="flex items-center justify-between gap-2">
-                <span className="text-xs text-muted-foreground">
-                  {actorName}
-                </span>
-                <span className="text-xs text-muted-foreground">
-                  {relativeTime(r.occurred_at)}
-                </span>
-              </div>
-            </div>
-          </li>
-        );
-      })}
-    </ol>
+            </li>
+          );
+        })}
+      </ol>
+      <Pagination total={total} page={page} pageSize={pageSize} />
+    </div>
   );
 }

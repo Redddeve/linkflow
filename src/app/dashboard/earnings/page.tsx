@@ -121,7 +121,11 @@ export default async function EarningsPage({ searchParams }: PageProps) {
           sourcerOptions={sourcerOptions}
           currentSourcer={sourcerId}
         />
-        <EarningsTable rows={tableRows} showSourcer={!isSourcer} />
+        <EarningsTable
+          rows={tableRows}
+          showSourcer={!isSourcer}
+          rowClickable={!isSourcer}
+        />
         <Pagination total={total} page={page} pageSize={pageSize} />
       </div>
     </div>

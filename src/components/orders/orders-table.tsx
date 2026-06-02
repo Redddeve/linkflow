@@ -50,7 +50,7 @@ export function OrdersTable({
     <>
       <Table>
         <TableHeader>
-          <TableRow theadrow={true}>
+          <TableRow clickable={true}>
             <TableHead>Site</TableHead>
             <TableHead>Status</TableHead>
             <TableHead>Publish date</TableHead>

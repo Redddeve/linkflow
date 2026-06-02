@@ -49,7 +49,7 @@ export function SitesTable({ sites }: Props) {
     <>
       <Table>
         <TableHeader>
-          <TableRow theadrow={true}>
+          <TableRow clickable={true}>
             <TableHead>Domain</TableHead>
             <TableHead>DR</TableHead>
             <TableHead>Category</TableHead>
