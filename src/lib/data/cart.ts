@@ -44,3 +44,19 @@ export async function fetchCartItemsWithPrice(
     .eq('cart_id', cartId);
   return (data ?? []) as { id: string; sites: { price_cents: number } }[];
 }
+
+/** Total cart items for the given client. Returns 0 when no cart exists. */
+export async function fetchCartItemCount(clientId: string): Promise<number> {
+  const supabase = await createClient();
+  const { data: cart } = await supabase
+    .from('carts')
+    .select('id')
+    .eq('created_by_id', clientId)
+    .maybeSingle();
+  if (!cart) return 0;
+  const { count } = await supabase
+    .from('cart_items')
+    .select('id', { count: 'exact', head: true })
+    .eq('cart_id', cart.id);
+  return count ?? 0;
+}

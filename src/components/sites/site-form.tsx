@@ -244,7 +244,7 @@ export function SiteForm({
 
       <section className="space-y-4">
         <h2 className="text-lg font-medium">SEO metrics</h2>
-        <div className="grid grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
           <div className="grid gap-1.5">
             <Label htmlFor="dr">DR (0–100)</Label>
             <Input
@@ -286,7 +286,7 @@ export function SiteForm({
 
       <section className="space-y-4">
         <h2 className="text-lg font-medium">Placement details</h2>
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <div className="grid gap-1.5">
             <Label htmlFor="price">Price (USD)</Label>
             <Input

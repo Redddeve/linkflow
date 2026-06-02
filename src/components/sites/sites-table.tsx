@@ -36,9 +36,7 @@ interface Props {
   sites: SiteRow[];
 }
 
-function statusVariant(
-  status: SiteStatus,
-): 'success' | 'warning' | 'outline' {
+function statusVariant(status: SiteStatus): 'success' | 'warning' | 'outline' {
   if (status === 'Active') return 'success';
   if (status === 'Pending') return 'warning';
   return 'outline';
@@ -51,7 +49,7 @@ export function SitesTable({ sites }: Props) {
     <>
       <Table>
         <TableHeader>
-          <TableRow>
+          <TableRow clickable={true}>
             <TableHead>Domain</TableHead>
             <TableHead>DR</TableHead>
             <TableHead>Category</TableHead>

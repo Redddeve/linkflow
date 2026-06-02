@@ -47,7 +47,10 @@ export function formatAuditAction(
     case 'order.add_comment':
       return 'Comment added';
     case 'order.payout_paid':
+    case 'order.payout_marked_paid':
       return 'Sourcer payout marked paid';
+    case 'order.payout_marked_unpaid':
+      return 'Sourcer payout marked unpaid';
     default: {
       const fromStatus = field(before, 'status');
       const toStatus = field(after, 'status');

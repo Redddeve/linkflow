@@ -16,20 +16,27 @@ import { RejectOrderDialog } from '@/components/orders/reject-order-dialog';
 import { CommentsTimeline } from '@/components/orders/comments-timeline';
 import { AddCommentForm } from '@/components/orders/add-comment-form';
 import { AuditTimeline } from '@/components/orders/audit-timeline';
+import { parsePagination } from '@/lib/features/pagination';
 import { listCopywriters } from '../actions';
 import { BackLink } from '@/components/ui/back-link';
 import { StartChatButton } from '@/components/orders/start-chat-button';
+import { PayoutPaidDialog } from '@/components/orders/payout-paid-dialog';
 
 interface PageProps {
   params: Promise<{ id: string }>;
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
 }
 
 function formatDate(iso: string | null | undefined) {
   return iso ? new Date(iso).toLocaleDateString('en-CA') : '—';
 }
 
-export default async function OrderDetailPage({ params }: PageProps) {
+export default async function OrderDetailPage({
+  params,
+  searchParams,
+}: PageProps) {
   const { id } = await params;
+  const { page, pageSize } = parsePagination(await searchParams);
   const actor = await requireUser();
   if (!actor.role) notFound();
 
@@ -51,9 +58,12 @@ export default async function OrderDetailPage({ params }: PageProps) {
   }
 
   const isManagerOrAdmin = actor.role === 'Manager' || actor.role === 'Admin';
+  const isAdmin = actor.role === 'Admin';
   const isClient = actor.role === 'Client';
   const isCopywriter = actor.role === 'Copywriter';
   const isSourcer = actor.role === 'Sourcer';
+  const canTogglePayout =
+    isAdmin && order.sourcer_payout_cents != null && !!order.published_at;
 
   const comments = await fetchOrderComments(id);
 
@@ -242,6 +252,13 @@ export default async function OrderDetailPage({ params }: PageProps) {
               existingChatId={order.chat_id ?? null}
             />
           )}
+          {canTogglePayout && (
+            <PayoutPaidDialog
+              orderId={id}
+              currentlyPaid={!!order.sourcer_paid_at}
+              currentReference={order.sourcer_payout_reference ?? null}
+            />
+          )}
         </div>
       </div>
 
@@ -262,6 +279,26 @@ export default async function OrderDetailPage({ params }: PageProps) {
 
       <div className="grid gap-4 lg:grid-cols-3">
         <div className="space-y-4 lg:col-span-2">
+          {order.content_body &&
+            (isManagerOrAdmin ||
+              isCopywriter ||
+              (isClient &&
+                (order.status === 'Content Sent' ||
+                  order.status === 'Content Approved' ||
+                  order.status === 'Published' ||
+                  order.status === 'Needs changes'))) && (
+              <Card>
+                <CardHeader>
+                  <CardTitle>Content</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-sm whitespace-pre-wrap font-mono leading-relaxed">
+                    {order.content_body}
+                  </p>
+                </CardContent>
+              </Card>
+            )}
+
           {order.published_url && (
             <Card>
               <CardHeader>
@@ -318,26 +355,6 @@ export default async function OrderDetailPage({ params }: PageProps) {
               </CardContent>
             </Card>
           )}
-
-          {order.content_body &&
-            (isManagerOrAdmin ||
-              isCopywriter ||
-              (isClient &&
-                (order.status === 'Content Sent' ||
-                  order.status === 'Content Approved' ||
-                  order.status === 'Published' ||
-                  order.status === 'Needs changes'))) && (
-              <Card>
-                <CardHeader>
-                  <CardTitle>Content</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-sm whitespace-pre-wrap font-mono leading-relaxed">
-                    {order.content_body}
-                  </p>
-                </CardContent>
-              </Card>
-            )}
 
           <Card>
             <CardHeader>
@@ -400,7 +417,7 @@ export default async function OrderDetailPage({ params }: PageProps) {
               <CardTitle>Activity</CardTitle>
             </CardHeader>
             <CardContent>
-              <AuditTimeline orderId={id} />
+              <AuditTimeline orderId={id} page={page} pageSize={pageSize} />
             </CardContent>
           </Card>
         </div>

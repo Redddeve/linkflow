@@ -8,6 +8,7 @@ import {
   fetchUnreadNotificationCount,
 } from '@/lib/data/notifications';
 import { fetchTotalUnreadChatCount } from '@/lib/data/chat';
+import { fetchCartItemCount } from '@/lib/data/cart';
 
 export default async function DashboardLayout({
   children,
@@ -19,17 +20,20 @@ export default async function DashboardLayout({
     await ensureAutoChats();
   }
 
-  const [unreadCount, recent, chatUnreadCount] = await Promise.all([
-    fetchUnreadNotificationCount(user.id),
-    fetchRecentUnreadNotifications(user.id, 6),
-    fetchTotalUnreadChatCount(user.id),
-  ]);
+  const [unreadCount, recent, chatUnreadCount, cartItemCount] =
+    await Promise.all([
+      fetchUnreadNotificationCount(user.id),
+      fetchRecentUnreadNotifications(user.id, 6),
+      fetchTotalUnreadChatCount(user.id),
+      user.role === 'Client' ? fetchCartItemCount(user.id) : Promise.resolve(0),
+    ]);
 
   return (
     <ChatReadStateProvider>
       <DashboardShell
         user={user}
         chatUnreadCount={chatUnreadCount}
+        cartItemCount={cartItemCount}
         notificationsSlot={
           <NotificationsPopover unreadCount={unreadCount} items={recent} />
         }

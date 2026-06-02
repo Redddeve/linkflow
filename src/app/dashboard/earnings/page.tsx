@@ -17,6 +17,7 @@ import {
   EarningsTable,
   type EarningsTableRow,
 } from '@/components/earnings/earnings-table';
+import { StatCard } from '@/components/dashboard/home/stat-card';
 
 interface PageProps {
   searchParams: Promise<Record<string, string | undefined>>;
@@ -41,7 +42,6 @@ export default async function EarningsPage({ searchParams }: PageProps) {
       : addMonths(firstOfMonth(new Date()), -1);
 
   const isSourcer = actor.role === 'Sourcer';
-  const isAdmin = actor.role === 'Admin';
   const sourcerId = isSourcer ? actor.id : params.sourcer || undefined;
   const { page, pageSize } = parsePagination(params);
 
@@ -88,47 +88,30 @@ export default async function EarningsPage({ searchParams }: PageProps) {
         description={`${isSourcer ? 'Your earnings' : 'All sourcer earnings'} — ${formatBillingMonth(month)}`}
       />
 
-      <div className="mb-6 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-5">
-        <div className="rounded-xl border border-border bg-card p-4 shadow-xs">
-          <div className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-            Total earned
-          </div>
-          <div className="mt-1 text-2xl font-semibold tabular-nums">
-            {formatMoney(totals.earningsCents)}
-          </div>
-        </div>
-        <div className="rounded-xl border border-border bg-card p-4 shadow-xs">
-          <div className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-            Paid
-          </div>
-          <div className="mt-1 text-2xl font-semibold tabular-nums">
-            {formatMoney(totals.paidCents)}
-          </div>
-        </div>
-        <div className="rounded-xl border border-border bg-card p-4 shadow-xs">
-          <div className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-            Unpaid
-          </div>
-          <div className="mt-1 text-2xl font-semibold tabular-nums">
-            {formatMoney(totals.unpaidCents)}
-          </div>
-        </div>
-        <div className="rounded-xl border border-border bg-card p-4 shadow-xs">
-          <div className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-            Commission
-          </div>
-          <div className="mt-1 text-2xl font-semibold tabular-nums">
-            {formatMoney(totals.commissionCents)}
-          </div>
-        </div>
-        <div className="rounded-xl border border-border bg-card p-4 shadow-xs">
-          <div className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-            Orders
-          </div>
-          <div className="mt-1 text-2xl font-semibold tabular-nums">
-            {totals.ordersCount}
-          </div>
-        </div>
+      <div className="mb-6 grid gap-3 grid-cols-2 md:grid-cols-5">
+        <StatCard
+          label="Total earned"
+          value={formatMoney(totals.earningsCents)}
+        />
+        <StatCard
+          label="Paid"
+          value={formatMoney(totals.paidCents)}
+          tone="success"
+        />
+        <StatCard
+          label="Unpaid"
+          value={formatMoney(totals.unpaidCents)}
+          tone={totals.unpaidCents > 0 ? 'warn' : 'default'}
+        />
+        <StatCard
+          label="Commission"
+          value={formatMoney(totals.commissionCents)}
+        />
+        <StatCard
+          label="Orders"
+          value={totals.ordersCount}
+          className="col-span-2 md:col-span-1"
+        />
       </div>
 
       <div className="space-y-4">
@@ -141,7 +124,7 @@ export default async function EarningsPage({ searchParams }: PageProps) {
         <EarningsTable
           rows={tableRows}
           showSourcer={!isSourcer}
-          canMarkPaid={isAdmin}
+          rowClickable={!isSourcer}
         />
         <Pagination total={total} page={page} pageSize={pageSize} />
       </div>

@@ -135,6 +135,7 @@ export async function addToCart(
 
     revalidatePath('/dashboard/catalog');
     revalidatePath('/dashboard/cart');
+    revalidatePath('/dashboard', 'layout');
 
     return { success: true };
   } catch (e) {
@@ -198,6 +199,7 @@ export async function removeFromCart(
     }
 
     revalidatePath('/dashboard/cart');
+    revalidatePath('/dashboard', 'layout');
 
     return { success: true };
   } catch (e) {
@@ -439,6 +441,7 @@ export async function checkoutCart(): Promise<ActionResult<{ orderIds: string[] 
 
     revalidatePath('/dashboard/cart');
     revalidatePath('/dashboard/orders');
+    revalidatePath('/dashboard', 'layout');
 
     return { success: true, data: { orderIds } };
   } catch (e) {

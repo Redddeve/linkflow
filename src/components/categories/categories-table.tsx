@@ -97,7 +97,7 @@ export function CategoriesTable({ categories, siteCountMap }: Props) {
     <>
       <Table>
         <TableHeader>
-          <TableRow>
+          <TableRow clickable={true}>
             <TableHead>Name</TableHead>
             <TableHead />
           </TableRow>
@@ -189,7 +189,9 @@ export function CategoriesTable({ categories, siteCountMap }: Props) {
           </DialogHeader>
           {deleteTarget && (siteCountMap[deleteTarget.id] ?? 0) > 0 ? (
             <p className="text-sm text-destructive">
-              Cannot delete: {siteCountMap[deleteTarget.id]} site{siteCountMap[deleteTarget.id] === 1 ? '' : 's'} are assigned to this category. Reassign them first.
+              Cannot delete: {siteCountMap[deleteTarget.id]} site
+              {siteCountMap[deleteTarget.id] === 1 ? '' : 's'} are assigned to
+              this category. Reassign them first.
             </p>
           ) : (
             <p className="text-sm text-muted-foreground">
@@ -202,7 +204,12 @@ export function CategoriesTable({ categories, siteCountMap }: Props) {
             </Button>
             <Button
               variant="destructive"
-              disabled={isPending || (deleteTarget ? (siteCountMap[deleteTarget.id] ?? 0) > 0 : false)}
+              disabled={
+                isPending ||
+                (deleteTarget
+                  ? (siteCountMap[deleteTarget.id] ?? 0) > 0
+                  : false)
+              }
               onClick={handleArchive}
             >
               {isPending ? 'Deleting…' : 'Delete'}

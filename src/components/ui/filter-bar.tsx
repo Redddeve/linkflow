@@ -174,7 +174,7 @@ export function FilterBar({
             placeholder={searchPlaceholder}
             value={values[searchKey] ?? ''}
             onChange={(e) => handleText(searchKey, e.target.value)}
-            className="w-64 h-9"
+            className="h-9 w-full sm:w-64"
           />
         )}
         {fields.length > 0 && (

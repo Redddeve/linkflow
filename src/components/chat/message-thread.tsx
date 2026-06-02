@@ -152,7 +152,7 @@ export function MessageThread({
               </span>
               {isOwn && idx === lastReadOwnIndex && uniqueReadBy.length > 0 && (
                 <span className="text-xs text-muted-foreground">
-                  Read ✓✓ {uniqueReadBy.join(', ')}
+                  Read by {uniqueReadBy.join(', ')}
                 </span>
               )}
             </div>

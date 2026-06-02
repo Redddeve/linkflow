@@ -26,7 +26,7 @@ export function CatalogTable({ sites }: Props) {
     <>
       <Table>
         <TableHeader>
-          <TableRow>
+          <TableRow clickable={true}>
             <TableHead>Domain</TableHead>
             <TableHead>Category</TableHead>
             <TableHead>Link type</TableHead>
@@ -34,7 +34,7 @@ export function CatalogTable({ sites }: Props) {
             <TableHead>Top countries</TableHead>
             <TableHead>Countries</TableHead>
             <TableHead>Languages</TableHead>
-            <TableHead className="text-right">Price</TableHead>
+            <TableHead>Price</TableHead>
             <TableHead />
           </TableRow>
         </TableHeader>
@@ -73,7 +73,7 @@ export function CatalogTable({ sites }: Props) {
               <TableCell className="text-muted-foreground text-sm">
                 {site.languages.length > 0 ? site.languages.join(', ') : '—'}
               </TableCell>
-              <TableCell className="text-right text-sm">
+              <TableCell className="text-sm">
                 {site.price_cents > 0
                   ? `$${(site.price_cents / 100).toFixed(2)}`
                   : '—'}

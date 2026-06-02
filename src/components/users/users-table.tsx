@@ -47,7 +47,7 @@ export function UsersTable({ users }: Props) {
     <>
       <Table>
         <TableHeader>
-          <TableRow>
+          <TableRow clickable={true}>
             <TableHead>User</TableHead>
             <TableHead>Role</TableHead>
             <TableHead>Status</TableHead>

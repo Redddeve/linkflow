@@ -3,7 +3,7 @@
 import { useRouter, useSearchParams, usePathname } from 'next/navigation';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
+import { DatePicker } from '@/components/ui/date-picker';
 import {
   Select,
   SelectContent,
@@ -11,7 +11,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { addMonths, type BillingMonth } from '@/lib/features/billing';
+import {
+  addMonths,
+  isValidBillingMonth,
+  type BillingMonth,
+} from '@/lib/features/billing';
 
 export interface SourcerOption {
   value: string;
@@ -42,9 +46,11 @@ export function EarningsFilters({
     router.replace(`${pathname}?${params.toString()}`);
   }
 
-  function setMonthFromInput(yyyyMm: string) {
-    if (!/^\d{4}-(0[1-9]|1[0-2])$/.test(yyyyMm)) return;
-    pushParam('month', `${yyyyMm}-01`);
+  function setMonthFromPicker(yyyyMmDd: string | null) {
+    if (!yyyyMmDd) return;
+    const yyyyMm01 = `${yyyyMmDd.slice(0, 7)}-01`;
+    if (!isValidBillingMonth(yyyyMm01)) return;
+    pushParam('month', yyyyMm01);
   }
 
   function step(delta: number) {
@@ -66,11 +72,12 @@ export function EarningsFilters({
         <ChevronLeft className="h-4 w-4" />
         Prev
       </Button>
-      <Input
-        type="month"
-        value={currentMonth.slice(0, 7)}
-        onChange={(e) => setMonthFromInput(e.target.value)}
-        className="w-44 h-9"
+      <DatePicker
+        mode="month"
+        value={currentMonth}
+        onChange={setMonthFromPicker}
+        className="w-40 h-9"
+        placeholder="Pick a month"
       />
       <Button
         variant="outline"

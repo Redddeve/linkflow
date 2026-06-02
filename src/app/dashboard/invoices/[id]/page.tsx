@@ -70,7 +70,7 @@ export default async function InvoiceDetailPage({ params }: PageProps) {
   return (
     <div className="space-y-6">
       <BackLink href="/dashboard/invoices" label="Invoices" />
-      <div className="flex items-start justify-between">
+      <div className="flex items-start justify-between gap-4 flex-wrap">
         <div>
           <h1 className="text-2xl font-semibold">
             {formatBillingMonth(invoice.billing_month)} invoice
@@ -182,41 +182,74 @@ export default async function InvoiceDetailPage({ params }: PageProps) {
           {orders.length === 0 ? (
             <p className="text-sm text-muted-foreground">No orders attached.</p>
           ) : (
-            <table className="w-full text-sm">
-              <thead className="text-left text-muted-foreground">
-                <tr className="border-b">
-                  <th className="py-2 font-medium">Site</th>
-                  <th className="py-2 font-medium">Published</th>
-                  <th className="py-2 font-medium">Billing month</th>
-                  <th className="py-2 font-medium text-right">Price</th>
-                </tr>
-              </thead>
-              <tbody>
-                {orders.map((o) => (
-                  <tr key={o.id} className="border-b last:border-b-0">
-                    <td className="py-2">
-                      <Link
-                        href={`/dashboard/orders/${o.id}`}
-                        className="hover:underline"
-                      >
-                        {o.site_domain}
-                      </Link>
-                    </td>
-                    <td className="py-2 text-muted-foreground tabular-nums">
-                      {o.publish_date ?? '—'}
-                    </td>
-                    <td className="py-2 text-muted-foreground tabular-nums">
-                      {o.billing_month
-                        ? formatBillingMonth(o.billing_month)
-                        : '—'}
-                    </td>
-                    <td className="py-2 text-right tabular-nums">
-                      ${(o.price_cents / 100).toFixed(2)}
-                    </td>
+            <div className="relative w-full overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead className="text-left text-muted-foreground">
+                  <tr className="border-b">
+                    <th className="py-2 pr-3 font-medium whitespace-nowrap">
+                      Site
+                    </th>
+                    <th className="py-2 pr-3 font-medium whitespace-nowrap">
+                      Published
+                    </th>
+                    <th className="py-2 pr-3 font-medium leading-tight min-[425px]:whitespace-nowrap">
+                      <span className="hidden min-[350px]:max-[425px]:inline">
+                        Billing
+                        <br />
+                        month
+                      </span>
+                      <span className="min-[350px]:max-[425px]:hidden">
+                        Billing month
+                      </span>
+                    </th>
+                    <th className="py-2 font-medium whitespace-nowrap">
+                      Price
+                    </th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody>
+                  {orders.map((o) => (
+                    <tr key={o.id} className="border-b last:border-b-0">
+                      <td className="py-2 pr-3 whitespace-nowrap">
+                        <Link
+                          href={`/dashboard/orders/${o.id}`}
+                          className="hover:underline"
+                        >
+                          {o.site_domain}
+                        </Link>
+                      </td>
+                      <td className="py-2 pr-3 text-muted-foreground tabular-nums whitespace-nowrap">
+                        {o.publish_date ?? '—'}
+                      </td>
+                      <td className="py-2 pr-3 text-muted-foreground tabular-nums leading-tight min-[425px]:whitespace-nowrap">
+                        {o.billing_month
+                          ? (() => {
+                              const [m, y] = formatBillingMonth(
+                                o.billing_month,
+                              ).split(' ');
+                              return (
+                                <>
+                                  <span className="hidden min-[350px]:max-[425px]:inline">
+                                    {m}
+                                    <br />
+                                    {y}
+                                  </span>
+                                  <span className="min-[350px]:max-[425px]:hidden">
+                                    {m} {y}
+                                  </span>
+                                </>
+                              );
+                            })()
+                          : '—'}
+                      </td>
+                      <td className="py-2 tabular-nums whitespace-nowrap">
+                        ${(o.price_cents / 100).toFixed(2)}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           )}
         </CardContent>
       </Card>

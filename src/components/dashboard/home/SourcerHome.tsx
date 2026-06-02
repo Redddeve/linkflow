@@ -24,7 +24,7 @@ export async function SourcerHome({ user }: { user: UserRow }) {
 
       <div>
         <SectionHeading title="My sites" />
-        <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
           <StatCard
             label="Pending"
             value={pending}
@@ -41,13 +41,14 @@ export async function SourcerHome({ user }: { user: UserRow }) {
             label="Archived"
             value={archived}
             href="/dashboard/sites?status=Archived"
+            className="col-span-2 sm:col-span-1"
           />
         </div>
       </div>
 
       <div>
         <SectionHeading title="Earnings (last month)" />
-        <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
           <StatCard
             label="Earned"
             value={formatCurrency(earnings.earningsCents)}
@@ -63,7 +64,8 @@ export async function SourcerHome({ user }: { user: UserRow }) {
             label="Unpaid"
             value={formatCurrency(earnings.unpaidCents)}
             href="/dashboard/earnings"
-            tone="warn"
+            tone={earnings.unpaidCents > 0 ? 'warn' : 'default'}
+            className="col-span-2 sm:col-span-1"
           />
         </div>
       </div>

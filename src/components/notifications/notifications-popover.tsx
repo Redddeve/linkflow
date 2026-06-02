@@ -72,7 +72,11 @@ export function NotificationsPopover({ unreadCount, items }: Props) {
         <TooltipContent>Notifications</TooltipContent>
       </Tooltip>
 
-      <PopoverContent align="end" sideOffset={8} className="w-96 p-0">
+      <PopoverContent
+        align="end"
+        sideOffset={8}
+        className="w-[calc(100vw-1rem)] max-w-96 p-0 sm:w-96"
+      >
         <div className="flex items-center justify-between border-b px-3 py-2">
           <div className="text-sm font-medium">Notifications</div>
           {unreadCount > 0 && (

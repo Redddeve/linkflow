@@ -1,7 +1,14 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
 import { TableEmptyState } from '@/components/ui/table-empty-state';
 import { OrderStatusBadge } from './order-status-badge';
 import type { Database } from '@/types/database.types';
@@ -43,7 +50,7 @@ export function OrdersTable({
     <>
       <Table>
         <TableHeader>
-          <TableRow>
+          <TableRow clickable={true}>
             <TableHead>Site</TableHead>
             <TableHead>Status</TableHead>
             <TableHead>Publish date</TableHead>
@@ -65,7 +72,9 @@ export function OrdersTable({
               <TableCell>
                 <OrderStatusBadge status={order.status} />
               </TableCell>
-              <TableCell className="text-sm tabular-nums">{order.publish_date}</TableCell>
+              <TableCell className="text-sm tabular-nums">
+                {order.publish_date}
+              </TableCell>
               {showPrice && (
                 <TableCell className="text-sm tabular-nums">
                   ${(order.price_cents / 100).toFixed(2)}
@@ -93,16 +102,20 @@ export function OrdersTable({
               )}
               {showCopywriter && (
                 <TableCell className="text-sm">
-                  {order.copywriter
-                    ? `${order.copywriter.first_name} ${order.copywriter.last_name}`
-                    : <span className="text-muted-foreground">Unassigned</span>}
+                  {order.copywriter ? (
+                    `${order.copywriter.first_name} ${order.copywriter.last_name}`
+                  ) : (
+                    <span className="text-muted-foreground">Unassigned</span>
+                  )}
                 </TableCell>
               )}
               {showManager && (
                 <TableCell className="text-sm">
-                  {order.manager
-                    ? `${order.manager.first_name} ${order.manager.last_name}`
-                    : <span className="text-muted-foreground">—</span>}
+                  {order.manager ? (
+                    `${order.manager.first_name} ${order.manager.last_name}`
+                  ) : (
+                    <span className="text-muted-foreground">—</span>
+                  )}
                 </TableCell>
               )}
               <TableCell className="text-sm text-muted-foreground">

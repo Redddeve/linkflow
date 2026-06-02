@@ -4,10 +4,10 @@ import {
   fetchUnreadCountsByChat,
 } from '@/lib/data/chat';
 import { PageHeader } from '@/components/ui/page-header';
-import { Card } from '@/components/ui/card';
 import { ChatFilters } from '@/components/chat/chat-filters';
 import { CreateChatDialog } from '@/components/chat/create-chat-dialog';
 import { ChatListPane } from '@/components/chat/chat-list-pane';
+import { ChatLayoutClient } from '@/components/chat/chat-layout-client';
 import { ChatUnreadHydrator } from '@/components/chat/read-state-provider';
 
 interface Props {
@@ -43,11 +43,10 @@ export default async function ChatLayout({ children, searchParams }: Props) {
         className="mb-0"
       />
 
-      <ChatFilters />
-
-      <Card className="flex-1 min-h-0 overflow-hidden p-0! gap-0" size="sm">
-        <div className="grid h-full grid-cols-1 md:grid-cols-[300px_1fr]">
-          <aside className="flex min-h-0 flex-col border-b md:border-b-0 md:border-r">
+      <ChatLayoutClient
+        filters={<ChatFilters />}
+        list={
+          <>
             <div className="flex h-14 shrink-0 flex-col justify-center border-b px-4">
               <h2 className="font-semibold leading-tight">Conversations</h2>
               <p className="text-xs text-muted-foreground mt-0.5">
@@ -59,11 +58,10 @@ export default async function ChatLayout({ children, searchParams }: Props) {
               viewerRole={actor.role}
               actorId={actor.id}
             />
-          </aside>
-
-          <section className="flex min-h-0 flex-col">{children}</section>
-        </div>
-      </Card>
+          </>
+        }
+        conversation={children}
+      />
     </div>
   );
 }

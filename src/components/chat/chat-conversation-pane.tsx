@@ -1,4 +1,5 @@
-import { Users } from 'lucide-react';
+import Link from 'next/link';
+import { ChevronLeft, Users } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { MessageThread } from './message-thread';
 import { MessageInputForm } from './message-input-form';
@@ -67,6 +68,13 @@ export function ChatConversationPane({
   return (
     <>
       <header className="flex h-14 shrink-0 items-center justify-between gap-3 border-b px-4">
+        <Link
+          href="/dashboard/chat"
+          aria-label="Back to chat list"
+          className="-ml-1 flex h-8 w-8 shrink-0 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring md:hidden"
+        >
+          <ChevronLeft className="h-5 w-5" />
+        </Link>
         <div className="min-w-0 flex-1">
           <h2 className="truncate font-semibold leading-tight">{chat.title}</h2>
           <div className="mt-0.5 flex items-center gap-1.5 text-xs text-muted-foreground">
