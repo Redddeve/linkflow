@@ -92,6 +92,9 @@
   /* Sidebar width on 8px grid */
   --sidebar-w: 224px;
 
+  /* Topbar height — referenced by app shell offsets */
+  --topbar-h: 56px;
+
   /* shadcn semantic tokens */
   --background: var(--bg);
   --foreground: var(--text);
@@ -162,10 +165,19 @@ body {
 }
 
 /* ─── App shell ─────────────────────────────────── */
+/* Mobile-first: single column. Sidebar sits in an off-canvas drawer
+   gated by data-open on the <aside>. At lg (1024px) the sidebar
+   becomes the first column of a two-column grid. */
 .app {
-  display: grid;
-  grid-template-columns: var(--sidebar-w) 1fr;
+  display: block;
   min-height: 100vh;
+}
+
+@media (min-width: 1024px) {
+  .app {
+    display: grid;
+    grid-template-columns: var(--sidebar-w) 1fr;
+  }
 }
 
 /* ─── Sidebar ────────────────────────────────────── */
@@ -175,11 +187,49 @@ body {
   padding: 0;
   display: flex;
   flex-direction: column;
-  position: sticky;
-  top: 0;
-  height: 100vh;
   overflow-y: auto;
   overflow-x: hidden;
+
+  /* Mobile: fixed off-canvas drawer, hidden by default. */
+  position: fixed;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  width: min(var(--sidebar-w), 84vw);
+  height: 100vh;
+  z-index: 60;
+  transform: translateX(-100%);
+  transition: transform 0.2s ease;
+  box-shadow: var(--shadow-lg);
+}
+.sidebar[data-open='true'] {
+  transform: translateX(0);
+}
+
+@media (min-width: 1024px) {
+  .sidebar {
+    position: sticky;
+    top: 0;
+    width: auto;
+    height: 100vh;
+    transform: none;
+    box-shadow: none;
+    z-index: auto;
+  }
+}
+
+/* Backdrop behind the mobile drawer */
+.sidebar-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgb(0 0 0 / 0.35);
+  backdrop-filter: blur(2px);
+  z-index: 50;
+}
+@media (min-width: 1024px) {
+  .sidebar-backdrop {
+    display: none;
+  }
 }
 
 /* Brand / logo */
@@ -323,11 +373,16 @@ body {
   background: var(--surface);
   display: flex;
   align-items: center;
-  padding: 0 24px;
+  padding: 0 16px;
   gap: 8px;
   position: sticky;
   top: 0;
   z-index: 10;
+}
+@media (min-width: 640px) {
+  .topbar {
+    padding: 0 24px;
+  }
 }
 
 .crumbs {
@@ -426,11 +481,16 @@ body {
   flex-wrap: wrap;
 }
 .page-title {
-  font-size: 24px;
+  font-size: 20px;
   font-weight: 650;
   letter-spacing: -0.02em;
   line-height: 1.2;
   margin: 0 0 2px;
+}
+@media (min-width: 640px) {
+  .page-title {
+    font-size: 24px;
+  }
 }
 .page-sub {
   color: var(--text-muted);
@@ -538,9 +598,19 @@ body {
 /* ─── Stats ──────────────────────────────────────── */
 .stats {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: 1fr;
   gap: 12px;
   margin-bottom: 24px;
+}
+@media (min-width: 640px) {
+  .stats {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+@media (min-width: 1024px) {
+  .stats {
+    grid-template-columns: repeat(4, 1fr);
+  }
 }
 .stat {
   background: var(--surface);
@@ -667,10 +737,21 @@ body {
 /* ─── Kanban ─────────────────────────────────────── */
 .kanban {
   display: grid;
-  grid-template-columns: repeat(6, minmax(220px, 1fr));
+  /* Mobile: swipe-card columns (~85vw each) so users can swipe through statuses. */
+  grid-template-columns: repeat(6, 85vw);
   gap: 12px;
   overflow-x: auto;
   padding-bottom: 4px;
+  scroll-snap-type: x mandatory;
+}
+.kanban > .kcol {
+  scroll-snap-align: start;
+}
+@media (min-width: 768px) {
+  .kanban {
+    grid-template-columns: repeat(6, minmax(220px, 1fr));
+    scroll-snap-type: none;
+  }
 }
 .kcol {
   background: var(--surface-2);
@@ -805,9 +886,14 @@ body {
 /* ─── Split layout ───────────────────────────────── */
 .split {
   display: grid;
-  grid-template-columns: 1fr 320px;
+  grid-template-columns: 1fr;
   gap: 24px;
   align-items: start;
+}
+@media (min-width: 1024px) {
+  .split {
+    grid-template-columns: 1fr 320px;
+  }
 }
 
 /* ─── Stepper ────────────────────────────────────── */
@@ -899,12 +985,17 @@ body {
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: var(--radius);
-  padding: 36px 44px;
+  padding: 20px 16px;
   min-height: 480px;
   max-width: 720px;
   margin: 0 auto;
   line-height: 1.7;
   font-size: 14px;
+}
+@media (min-width: 640px) {
+  .editor-doc {
+    padding: 36px 44px;
+  }
 }
 .editor-doc h1 {
   font-size: 24px;

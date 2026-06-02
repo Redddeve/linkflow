@@ -120,7 +120,7 @@ export default async function OrdersPage({ searchParams }: PageProps) {
     ) as Parameters<typeof OrdersKanban>[0]['initialColumns'];
 
     return (
-      <div className="flex h-full flex-col">
+      <div className="flex h-[calc(100vh-56px-2.5rem)] flex-col sm:h-[calc(100vh-56px-3rem)] md:h-[calc(100vh-56px-4rem)]">
         <PageHeader
           title="Orders"
           description={isClient ? 'Your orders' : 'All orders'}

@@ -262,6 +262,26 @@ export default async function OrderDetailPage({ params }: PageProps) {
 
       <div className="grid gap-4 lg:grid-cols-3">
         <div className="space-y-4 lg:col-span-2">
+          {order.content_body &&
+            (isManagerOrAdmin ||
+              isCopywriter ||
+              (isClient &&
+                (order.status === 'Content Sent' ||
+                  order.status === 'Content Approved' ||
+                  order.status === 'Published' ||
+                  order.status === 'Needs changes'))) && (
+              <Card>
+                <CardHeader>
+                  <CardTitle>Content</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-sm whitespace-pre-wrap font-mono leading-relaxed">
+                    {order.content_body}
+                  </p>
+                </CardContent>
+              </Card>
+            )}
+
           {order.published_url && (
             <Card>
               <CardHeader>
@@ -318,26 +338,6 @@ export default async function OrderDetailPage({ params }: PageProps) {
               </CardContent>
             </Card>
           )}
-
-          {order.content_body &&
-            (isManagerOrAdmin ||
-              isCopywriter ||
-              (isClient &&
-                (order.status === 'Content Sent' ||
-                  order.status === 'Content Approved' ||
-                  order.status === 'Published' ||
-                  order.status === 'Needs changes'))) && (
-              <Card>
-                <CardHeader>
-                  <CardTitle>Content</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-sm whitespace-pre-wrap font-mono leading-relaxed">
-                    {order.content_body}
-                  </p>
-                </CardContent>
-              </Card>
-            )}
 
           <Card>
             <CardHeader>

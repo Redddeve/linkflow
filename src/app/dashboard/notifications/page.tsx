@@ -3,10 +3,10 @@ import { requireUser } from '@/lib/features/auth';
 import { fetchNotifications } from '@/lib/data/notifications';
 import { parsePagination } from '@/lib/features/pagination';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Pagination } from '@/components/ui/pagination';
 import { NotificationItem } from '@/components/notifications/notification-item';
 import { MarkAllReadButton } from '@/components/notifications/mark-all-read-button';
 import { ClearReadButton } from '@/components/notifications/clear-read-button';
-import Link from 'next/link';
 
 interface PageProps {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
@@ -23,7 +23,6 @@ export default async function NotificationsPage({ searchParams }: PageProps) {
   });
 
   const totalPages = Math.max(1, Math.ceil(total / pageSize));
-
   if (page > totalPages) {
     redirect(`/dashboard/notifications?page=${totalPages}&limit=${pageSize}`);
   }
@@ -32,8 +31,8 @@ export default async function NotificationsPage({ searchParams }: PageProps) {
 
   return (
     <div className="mx-auto max-w-3xl space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
+        <div className="min-w-0">
           <h1 className="text-2xl font-semibold tracking-tight">
             Notifications
           </h1>
@@ -43,10 +42,12 @@ export default async function NotificationsPage({ searchParams }: PageProps) {
               : `${total} notifications · auto-deleted after 30 days`}
           </p>
         </div>
-        <div className="flex gap-2">
-          {unread > 0 && <MarkAllReadButton />}
-          {readCount > 0 && <ClearReadButton />}
-        </div>
+        {(unread > 0 || readCount > 0) && (
+          <div className="flex flex-wrap gap-2">
+            {unread > 0 && <MarkAllReadButton />}
+            {readCount > 0 && <ClearReadButton />}
+          </div>
+        )}
       </div>
 
       <Card>
@@ -76,33 +77,7 @@ export default async function NotificationsPage({ searchParams }: PageProps) {
         </CardContent>
       </Card>
 
-      {totalPages > 1 && (
-        <div className="flex items-center justify-between text-sm">
-          {page > 1 ? (
-            <Link
-              href={`/dashboard/notifications?page=${page - 1}&limit=${pageSize}`}
-              className="text-primary hover:underline"
-            >
-              ← Previous
-            </Link>
-          ) : (
-            <span />
-          )}
-          <span className="text-muted-foreground">
-            Page {page} of {totalPages}
-          </span>
-          {page < totalPages ? (
-            <Link
-              href={`/dashboard/notifications?page=${page + 1}&limit=${pageSize}`}
-              className="text-primary hover:underline"
-            >
-              Next →
-            </Link>
-          ) : (
-            <span />
-          )}
-        </div>
-      )}
+      <Pagination total={total} page={page} pageSize={pageSize} />
     </div>
   );
 }

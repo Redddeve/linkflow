@@ -33,7 +33,7 @@ export async function CopywriterHome({ user }: { user: UserRow }) {
     <div className="space-y-6">
       <DashboardHeader user={user} />
 
-      <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+      <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
         <StatCard
           label="Assigned (active)"
           value={active}
@@ -49,6 +49,7 @@ export async function CopywriterHome({ user }: { user: UserRow }) {
           value={needsChanges}
           href="/dashboard/orders?status=Needs+changes"
           tone="warn"
+          className="col-span-2 sm:col-span-1"
         />
       </div>
 

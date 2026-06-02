@@ -40,7 +40,16 @@ export function InvoicesTable({ invoices, showClient = false }: Props) {
         <TableHeader>
           <TableRow theadrow={true}>
             {showClient && <TableHead>Client</TableHead>}
-            <TableHead>Billing month</TableHead>
+            <TableHead>
+              <span className="hidden min-[365px]:max-[425px]:inline">
+                Billing
+                <br />
+                month
+              </span>
+              <span className="min-[365px]:max-[425px]:hidden">
+                Billing month
+              </span>
+            </TableHead>
             <TableHead>Status</TableHead>
             <TableHead>Total</TableHead>
             <TableHead>Created</TableHead>
@@ -63,7 +72,25 @@ export function InvoicesTable({ invoices, showClient = false }: Props) {
                 </TableCell>
               )}
               <TableCell className="font-medium">
-                {formatBillingMonth(inv.billing_month)}
+                {inv.billing_month
+                  ? (() => {
+                      const [m, y] = formatBillingMonth(
+                        inv.billing_month,
+                      ).split(' ');
+                      return (
+                        <>
+                          <span className="hidden min-[365px]:max-[425px]:inline">
+                            {m}
+                            <br />
+                            {y}
+                          </span>
+                          <span className="min-[365px]:max-[425px]:hidden">
+                            {m} {y}
+                          </span>
+                        </>
+                      );
+                    })()
+                  : '—'}
               </TableCell>
               <TableCell>
                 <InvoiceStatusBadge status={inv.status} />
