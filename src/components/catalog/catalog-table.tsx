@@ -26,7 +26,7 @@ export function CatalogTable({ sites }: Props) {
     <>
       <Table>
         <TableHeader>
-          <TableRow clickable={true}>
+          <TableRow clickable={false}>
             <TableHead>Domain</TableHead>
             <TableHead>Category</TableHead>
             <TableHead>Link type</TableHead>

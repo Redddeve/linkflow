@@ -91,7 +91,7 @@ export function MessageThread({
   }
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-2">
       {messages.map((msg, idx) => {
         const isOwn = msg.created_by_id === actorId;
         const msgAuthor = userMap[msg.created_by_id];
@@ -152,7 +152,7 @@ export function MessageThread({
               </span>
               {isOwn && idx === lastReadOwnIndex && uniqueReadBy.length > 0 && (
                 <span className="text-xs text-muted-foreground">
-                  Read by {uniqueReadBy.join(', ')}
+                  Read ✓✓ {uniqueReadBy.join(', ')}
                 </span>
               )}
             </div>
