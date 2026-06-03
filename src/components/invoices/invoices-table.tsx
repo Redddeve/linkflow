@@ -38,7 +38,7 @@ export function InvoicesTable({ invoices, showClient = false }: Props) {
     <>
       <Table>
         <TableHeader>
-          <TableRow clickable={true}>
+          <TableRow clickable={false}>
             {showClient && <TableHead>Client</TableHead>}
             <TableHead>
               <span className="hidden min-[365px]:max-[425px]:inline">

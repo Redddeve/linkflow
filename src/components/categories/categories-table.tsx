@@ -97,7 +97,7 @@ export function CategoriesTable({ categories, siteCountMap }: Props) {
     <>
       <Table>
         <TableHeader>
-          <TableRow clickable={true}>
+          <TableRow clickable={false}>
             <TableHead>Name</TableHead>
             <TableHead />
           </TableRow>
